@@ -225,7 +225,7 @@ function Prompter({ lines, nameA, nameB, onExit }: { lines: Line[]; nameA: strin
   }
 
   return (
-    <div className="fixed inset-0 bg-background">
+    <div className="fixed inset-0 z-50 bg-background">
       <video ref={videoRef} autoPlay muted playsInline
         className="absolute inset-0 h-full w-full object-cover"
         style={{ transform: mirror ? "scaleX(-1)" : undefined }} />
