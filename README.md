@@ -60,6 +60,17 @@ Tüm ses ve video işleme süreçleri doğrudan kullanıcının bilgisayarında 
 
 ---
 
+👤 Geliştirici & Künye / Credits
+Bu proje Hüseyin Bayer (Teknodoz) tarafından açık kaynak topluluğuna ücretsiz olarak sunulmuştur.
+
+Geliştirici: Hüseyin Bayer
+E-posta: izmgamestudios@gmail.com
+Telefon: +90 541 770 92 05
+LinkedIn: linkedin.com/in/huseyin-bayer-izmgamestudios
+Topluluk & Destek: Geri bildirim, hata bildirimi ve katkılar için GitHub Issues sekmesini kullanabilirsiniz.
+
+---
+
 ## 🛠️ Kurulum / Installation
 
 Projeyi yerel ortamınızda çalıştırmak için:
@@ -76,3 +87,5 @@ npm install
 
 # Geliştirici sunucusunu başlatın
 npm run dev
+
+
