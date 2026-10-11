@@ -10,6 +10,7 @@ import { AboutDialog, CreditsFooter } from "@/studio/ui/credits";
 import { Inspector } from "@/studio/ui/inspector";
 import { LayerPanel } from "@/studio/ui/layer-panel";
 import { MediaLibrary } from "@/studio/ui/media-library";
+import { PrompterPanel } from "@/studio/ui/prompter-panel";
 import { ProjectMenu } from "@/studio/ui/project-menu";
 import { PrototypePanel } from "@/studio/ui/prototype-panel";
 import { RecordBar } from "@/studio/ui/record-bar";
@@ -148,6 +149,7 @@ function StudioApp() {
         <div className="order-3 space-y-3">
           <Inspector selectedId={selected} />
           <AudioMixer />
+          <PrompterPanel />
         </div>
       </div>
 
