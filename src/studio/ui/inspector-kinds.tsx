@@ -267,6 +267,57 @@ export function KindFields({
           </p>
         </div>
       );
+    case "chat":
+      return (
+        <div className="space-y-2">
+          <Field label="Gösterim">
+            <SelectInput
+              value={layer.mode}
+              options={[
+                {
+                  value: "spotlight",
+                  label: "Yayındaki mesaj (reji seçer)",
+                },
+                { value: "feed", label: "Onaylı mesaj akışı" },
+              ]}
+              onChange={(mode) => patch({ mode })}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Yazı boyutu">
+              <NumInput
+                value={layer.fontSize}
+                min={8}
+                max={400}
+                step={2}
+                onChange={(fontSize) => patch({ fontSize })}
+              />
+            </Field>
+            {layer.mode === "feed" && (
+              <Field label="Mesaj sayısı">
+                <NumInput
+                  value={layer.maxMessages}
+                  min={1}
+                  max={8}
+                  step={1}
+                  onChange={(maxMessages) => patch({ maxMessages })}
+                />
+              </Field>
+            )}
+            <Field label="Vurgu rengi">
+              <ColorInput
+                value={layer.accent}
+                onChange={(accent) => patch({ accent })}
+              />
+            </Field>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Oda sohbetindeki mesajlar önce editör/reji onayından geçer; yalnızca
+            onaylananlar (ve “yayına al” denen mesaj) videoya girer. Oda
+            kapalıyken katman boş kalır.
+          </p>
+        </div>
+      );
   }
 }
 

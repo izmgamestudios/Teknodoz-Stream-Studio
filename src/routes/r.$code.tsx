@@ -12,6 +12,7 @@ import {
   RoomGuestSession,
   type GuestSnapshot,
 } from "@/studio/room/guest-session";
+import { ParticipantChat } from "@/studio/ui/chat-panels";
 import { CreditsFooter } from "@/studio/ui/credits";
 import { BTN, BTN_ACCENT, INPUT } from "@/studio/ui/fields";
 import { RemoteView, ViewerGuestView } from "@/studio/ui/guest-views";
@@ -268,7 +269,10 @@ function RoomLanding() {
         (snap.role === "remote" ? (
           <RemoteView client={snap.client} />
         ) : (
-          <ViewerGuestView client={snap.client} />
+          <>
+            <ViewerGuestView client={snap.client} />
+            {session && <ParticipantChat chat={session.chat} />}
+          </>
         ))}
 
       <CreditsFooter className="border-t pt-3" />

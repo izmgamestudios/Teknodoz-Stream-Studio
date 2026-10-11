@@ -98,6 +98,7 @@ const NAMES: Record<LayerKind, string> = {
   shape: "Şekil",
   text: "Yazı",
   prompter: "Prompter (burn-in)",
+  chat: "Sohbet",
 };
 
 /**
@@ -199,6 +200,17 @@ export function createLayer<K extends LayerKind>(
         kind: "prompter",
         transform: box(160, 860, 1600, 160),
         mode: "subtitle",
+      };
+      break;
+    case "chat":
+      layer = {
+        ...base,
+        kind: "chat",
+        transform: box(160, 760, 1600, 200),
+        mode: "spotlight",
+        fontSize: 44,
+        accent: "#e11d2e",
+        maxMessages: 4,
       };
       break;
     default:

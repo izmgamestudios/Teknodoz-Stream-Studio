@@ -6,7 +6,7 @@ import type { StudioRuntime } from "../runtime/runtime";
 import type { AssetType, Layer } from "../types";
 
 export type NewLayerKind =
-  "webcam" | "screen" | "web" | "shape" | "text" | "prompter";
+  "webcam" | "screen" | "web" | "shape" | "text" | "prompter" | "chat";
 
 export const LAYER_KIND_LABEL: Record<Layer["kind"], string> = {
   webcam: "Kamera",
@@ -18,6 +18,7 @@ export const LAYER_KIND_LABEL: Record<Layer["kind"], string> = {
   shape: "Şekil / banner",
   text: "Yazı",
   prompter: "Prompter (burn-in)",
+  chat: "Sohbet (oda)",
 };
 
 export const LAYER_ICON: Record<Layer["kind"], string> = {
@@ -30,6 +31,7 @@ export const LAYER_ICON: Record<Layer["kind"], string> = {
   shape: "▭",
   text: "T",
   prompter: "📜",
+  chat: "💬",
 };
 
 export function classifyFile(file: File): AssetType | null {

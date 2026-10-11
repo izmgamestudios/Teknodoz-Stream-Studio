@@ -20,6 +20,7 @@ const ADD_KINDS: NewLayerKind[] = [
   "text",
   "shape",
   "prompter",
+  "chat",
 ];
 
 export function LayerPanel({

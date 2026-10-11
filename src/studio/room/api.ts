@@ -1,8 +1,13 @@
 // src/studio/room/api.ts
 // Browser client for the /api/room signaling relay (see src/server/rooms.ts).
-import type { RoomRole } from "../../server/rooms";
+import type {
+  ChatAction,
+  ChatMessage,
+  ChatMode,
+  RoomRole,
+} from "../../server/rooms";
 
-export type { RoomRole };
+export type { ChatAction, ChatMessage, ChatMode, RoomRole };
 
 export type RoomApiErrorCode =
   /** the relay is not there (static hosting / serverless): fall back to manual codes */
@@ -21,6 +26,8 @@ export class RoomApiError extends Error {
   constructor(
     readonly code: RoomApiErrorCode,
     readonly status = 0,
+    /** raw error code of the relay, e.g. "chat-closed" / "queue-full" */
+    readonly detail?: string,
   ) {
     super(code);
     this.name = "RoomApiError";
@@ -46,6 +53,18 @@ export interface GuestEvent {
   n: number;
   type: "offer" | "rejected" | "closed";
   offer?: string;
+}
+
+export interface ChatPollResponse {
+  messages: ChatMessage[];
+  rev: number;
+  mode: ChatMode;
+  /** id of the message currently on air (director's choice) */
+  onAir: number | null;
+  closed: boolean;
+  /** moderators only */
+  pending?: number;
+  as?: "host" | "editor";
 }
 
 function mapStatus(
@@ -107,7 +126,7 @@ export function createRoomApi(opts: RoomApiOptions = {}) {
     }
     if (!res.ok) {
       const code = (data as { error?: string } | null)?.error;
-      throw new RoomApiError(mapStatus(res.status, code), res.status);
+      throw new RoomApiError(mapStatus(res.status, code), res.status, code);
     }
     return data as T;
   }
@@ -186,6 +205,80 @@ export function createRoomApi(opts: RoomApiOptions = {}) {
         method: "POST",
         guest: token,
         json: { answer },
+      }),
+    /* ---- chat: director (host token) / editor (editor key) ---- */
+    chatPoll: (
+      code: string,
+      bearer: string,
+      since: number,
+      waitSec: number,
+      signal?: AbortSignal,
+    ) =>
+      request<ChatPollResponse>(
+        `/${code}/chat?since=${since}&wait=${waitSec}`,
+        { host: bearer, ...(signal ? { signal } : {}) },
+      ),
+    chatPost: (code: string, bearer: string, text: string) =>
+      request<{ message: ChatMessage }>(`/${code}/chat`, {
+        method: "POST",
+        host: bearer,
+        json: { text },
+      }),
+    chatAction: (
+      code: string,
+      bearer: string,
+      id: number,
+      action: ChatAction,
+      text?: string,
+    ) =>
+      request<{ message: ChatMessage; onAir: number | null }>(
+        `/${code}/chat/${id}`,
+        {
+          method: "POST",
+          host: bearer,
+          json: text === undefined ? { action } : { action, text },
+        },
+      ),
+    setChatMode: (code: string, host: string, mode: ChatMode) =>
+      request<{ mode: ChatMode }>(`/${code}/host/chat-mode`, {
+        method: "POST",
+        host,
+        json: { mode },
+      }),
+    /** (Re)issue the editor key; the previous one stops working. */
+    issueEditorKey: (code: string, host: string) =>
+      request<{ editorKey: string }>(`/${code}/host/editor`, {
+        method: "POST",
+        host,
+      }),
+    revokeEditorKey: (code: string, host: string) =>
+      request<{ editorKey: null }>(`/${code}/host/editor`, {
+        method: "DELETE",
+        host,
+      }),
+    /* ---- chat: participants ---- */
+    guestChatPoll: (
+      code: string,
+      guestId: string,
+      token: string,
+      since: number,
+      waitSec: number,
+      signal?: AbortSignal,
+    ) =>
+      request<ChatPollResponse>(
+        `/${code}/guest/${guestId}/chat?since=${since}&wait=${waitSec}`,
+        { guest: token, ...(signal ? { signal } : {}) },
+      ),
+    guestChatPost: (
+      code: string,
+      guestId: string,
+      token: string,
+      text: string,
+    ) =>
+      request<{ message: ChatMessage }>(`/${code}/guest/${guestId}/chat`, {
+        method: "POST",
+        guest: token,
+        json: { text },
       }),
     guestLeave: (code: string, guestId: string, token: string) =>
       request<{ ok: true }>(`/${code}/guest/${guestId}/leave`, {

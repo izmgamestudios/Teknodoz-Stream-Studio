@@ -11,6 +11,7 @@ export type LogKind =
   | "reject"
   | "connect"
   | "disconnect"
+  | "chat"
   | "error";
 
 export interface LogEntry {

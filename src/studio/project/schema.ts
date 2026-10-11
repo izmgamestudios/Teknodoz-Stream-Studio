@@ -159,6 +159,14 @@ export const layerSchema = z.discriminatedUnion("kind", [
     kind: z.literal("prompter"),
     mode: z.enum(["ticker", "subtitle", "notch"]),
   }),
+  z.object({
+    ...layerBase,
+    kind: z.literal("chat"),
+    mode: z.enum(["spotlight", "feed"]),
+    fontSize: num(8, 400),
+    accent: cssColor,
+    maxMessages: num(1, 8),
+  }),
 ]);
 
 const sceneSchema = z.object({

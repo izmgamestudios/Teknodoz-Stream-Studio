@@ -81,7 +81,7 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
 }
 
 /** Pages opened by guests / phones: no studio navigation around them. */
-const BARE_PREFIXES = ["/join", "/remote", "/r"];
+const BARE_PREFIXES = ["/join", "/remote", "/r", "/chat"];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useT();

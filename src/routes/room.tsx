@@ -11,6 +11,7 @@ import {
   useStudio,
 } from "@/studio/runtime/use-studio";
 import { CreditsFooter } from "@/studio/ui/credits";
+import { EditorLinkCard, ModerationDesk } from "@/studio/ui/chat-panels";
 import { GuestCard } from "@/studio/ui/live-panel";
 import { RoomLinks, RoomLog, RoomPool } from "@/studio/ui/room-panels";
 import { PANEL, PanelTitle } from "@/studio/ui/fields";
@@ -81,6 +82,7 @@ function RoomApp() {
       <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-2">
         <div className="space-y-4">
           <RoomLinks />
+          <EditorLinkCard />
         </div>
         <div className="space-y-4">
           <RoomPool />
@@ -99,6 +101,15 @@ function RoomApp() {
             </section>
           )}
         </div>
+        {room.status === "open" && (
+          <div className="lg:col-span-2">
+            <ModerationDesk
+              chat={rt.room.chat}
+              director
+              onMode={(m) => rt.room.setChatMode(m)}
+            />
+          </div>
+        )}
         <div className="lg:col-span-2">
           <RoomLog />
         </div>

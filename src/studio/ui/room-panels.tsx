@@ -333,6 +333,7 @@ const KIND_LABEL: Record<LogKind, string> = {
   reject: "ret",
   connect: "bağlandı",
   disconnect: "ayrıldı",
+  chat: "sohbet",
   error: "hata",
 };
 const KIND_COLOR: Record<LogKind, string> = {
@@ -343,6 +344,7 @@ const KIND_COLOR: Record<LogKind, string> = {
   reject: "text-destructive",
   connect: "text-speaker-b",
   disconnect: "text-muted-foreground",
+  chat: "text-muted-foreground",
   error: "text-destructive",
 };
 

@@ -31,6 +31,7 @@ Tüm ses ve video işleme süreçleri doğrudan kullanıcının bilgisayarında 
 | Yeşil perde (chroma key) | ✅ | WebGL2, yoksa CPU |
 | **DozGreenRoom** — P2P konuk, kulis, "Yayına al", konuk katmanı, ses (0–150 %, mute, VU) | ✅ | Manuel imzalama (bkz. aşağı) |
 | **Oda modu** — kısa link/QR (`/r/KOD`), bekleme havuzu, onayla → otomatik bağlan, günlük (`/room`) | ✅ | Kod kopyalama yok; küçük bir bellek-içi röle gerekir, bkz. [`docs/ROOM.md`](docs/ROOM.md) |
+| **Moderasyonlu oda sohbeti** — katılımcı mesajı → editör/reji onayı → yayına al (overlay katmanı) | ✅ | Reji (`/room`) ve editör (`/chat/KOD#k=…`, ayrı cihaz) masaları; modlar: onaylı / serbest / kapalı. Bkz. [`docs/ROOM.md`](docs/ROOM.md) |
 | **DozDeck** — telefon kumandası (`/r/KOD?as=remote`, manuel: `/remote`) | ✅ | Sahne, prompter, mute, kayıt, işaret |
 | Ayarlar (`/settings`) — çözünürlük/fps/bit hızı, STUN, kısayol düzenleme, dil (TR/EN) | ✅ | Arayüz çevirisi: menü, ayarlar, konuk/kumanda sayfaları. Stüdyo panelleri henüz Türkçe |
 | Manuel (sunucusuz) bağlantı + QR tarama (`BarcodeDetector`) | ✅ | Röle yoksa yedek; QR tarama yalnızca Chromium (Android/macOS) |

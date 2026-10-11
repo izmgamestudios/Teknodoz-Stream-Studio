@@ -12,6 +12,20 @@
 // platforms with per-request isolates the in-memory state is not shared.
 import { z } from "zod";
 
+import {
+  ChatError,
+  RoomChat,
+  type ChatViewer,
+  type Moderator,
+} from "./room-chat";
+
+export type {
+  ChatAction,
+  ChatMessage,
+  ChatMode,
+  ChatStatus,
+} from "./room-chat";
+
 export const ROOM_API_PREFIX = "/api/room";
 
 /** Unambiguous alphabet (no 0/O/1/I). 32^6 ≈ 10^9 codes. */
@@ -89,6 +103,9 @@ interface Room {
   events: HostEvent[];
   waiters: Set<Waiter>;
   guests: Map<string, Guest>;
+  /** rotatable secret of the chat editor; null = no editor link issued */
+  editorKey: string | null;
+  chat: RoomChat;
 }
 
 class HttpError extends Error {
@@ -162,6 +179,12 @@ const joinBody = z.object({
 const offerBody = z.object({ guestId: z.string().max(40), offer: codeField });
 const rejectBody = z.object({ guestId: z.string().max(40) });
 const answerBody = z.object({ answer: codeField });
+const chatPostBody = z.object({ text: z.string().max(2000) });
+const chatActionBody = z.object({
+  action: z.enum(["approve", "reject", "edit", "onair", "offair"]),
+  text: z.string().max(2000).optional(),
+});
+const chatModeBody = z.object({ mode: z.enum(["moderated", "open", "off"]) });
 const leaveBody = z
   .object({ token: z.string().max(100).optional() })
   .passthrough();
@@ -259,13 +282,16 @@ export function createRoomsApi(options: RoomsOptions = {}) {
         idle > LIMITS.roomIdleMs
       ) {
         wake(room.waiters);
+        wake(room.chat.waiters);
         for (const g of room.guests.values()) wake(g.waiters);
         rooms.delete(code);
         continue;
       }
       for (const [gid, g] of room.guests) {
         if (g.status === "answered" || g.status === "rejected") {
-          if (g.doneAt !== null && t - g.doneAt > LIMITS.doneRetainMs)
+          // answered guests that keep polling (chat) stay alive via lastSeen
+          const last = Math.max(g.doneAt ?? 0, g.lastSeen);
+          if (g.doneAt !== null && t - last > LIMITS.doneRetainMs)
             room.guests.delete(gid);
         } else if (t - g.lastSeen > LIMITS.guestStaleMs) {
           room.guests.delete(gid);
@@ -370,6 +396,8 @@ export function createRoomsApi(options: RoomsOptions = {}) {
       events: [],
       waiters: new Set(),
       guests: new Map(),
+      editorKey: null,
+      chat: new RoomChat(now),
     };
     rooms.set(room.code, room);
     return json(
@@ -396,6 +424,7 @@ export function createRoomsApi(options: RoomsOptions = {}) {
     if (room.closedAt === null) {
       room.closedAt = now();
       for (const g of room.guests.values()) pushGuest(g, { type: "closed" });
+      room.chat.clear();
     }
     return json({ ok: true });
   }
@@ -539,6 +568,135 @@ export function createRoomsApi(options: RoomsOptions = {}) {
     return json({ ok: true });
   }
 
+  /* ------------------------------- chat -------------------------------- */
+
+  /** Director (host token) or editor (rotatable key). */
+  function authModerator(req: Request, room: Room): Moderator {
+    const m = /^Bearer\s+(\S{10,100})$/.exec(
+      req.headers.get("authorization") ?? "",
+    );
+    const tok = m?.[1];
+    if (!tok) throw new HttpError(403, "forbidden");
+    if (safeEqual(tok, room.hostToken)) {
+      room.lastHostSeen = now();
+      return "host";
+    }
+    if (room.editorKey && safeEqual(tok, room.editorKey)) return "editor";
+    throw new HttpError(403, "forbidden");
+  }
+
+  function chatGuest(room: Room, gid: string, req: Request): Guest {
+    const g = getGuest(room, gid, req.headers.get("x-guest-token"));
+    if (g.role === "remote") throw new HttpError(403, "forbidden");
+    if (g.status !== "answered") throw new HttpError(409, "bad-state");
+    return g;
+  }
+
+  async function chatPoll(
+    req: Request,
+    url: URL,
+    room: Room,
+    viewer: ChatViewer,
+    extra: Record<string, unknown> = {},
+  ): Promise<Response> {
+    const { since, waitMs } = parseWait(url);
+    if (room.chat.rev <= since && waitMs > 0 && room.closedAt === null)
+      await waitFor(room.chat.waiters, waitMs, req.signal);
+    const messages = room.chat.view(since, viewer);
+    return json({
+      messages,
+      rev: room.chat.rev,
+      mode: room.chat.mode,
+      onAir: room.chat.onAir,
+      closed: room.closedAt !== null,
+      ...(viewer.kind === "moderator"
+        ? { pending: room.chat.pendingCount() }
+        : {}),
+      ...extra,
+    });
+  }
+
+  async function modChatPoll(
+    req: Request,
+    url: URL,
+    room: Room,
+  ): Promise<Response> {
+    const by = authModerator(req, room);
+    return chatPoll(req, url, room, { kind: "moderator" }, { as: by });
+  }
+
+  async function modChatPost(req: Request, room: Room): Promise<Response> {
+    const by = authModerator(req, room);
+    rateLimit(req, "chat", 120, 60_000);
+    if (room.closedAt !== null) throw new HttpError(410, "closed");
+    const body = await readJson(req, chatPostBody);
+    const msg = room.chat.post(
+      by === "host"
+        ? { id: "reji", name: "Reji", role: "reji" }
+        : { id: "editor", name: "Editör", role: "editor" },
+      body.text,
+    );
+    return json({ message: msg }, 201);
+  }
+
+  async function modChatAction(
+    req: Request,
+    room: Room,
+    idRaw: string,
+  ): Promise<Response> {
+    const by = authModerator(req, room);
+    const id = Number(idRaw);
+    if (!Number.isInteger(id) || id < 1) throw new HttpError(404, "not-found");
+    const body = await readJson(req, chatActionBody);
+    const msg = room.chat.moderate(id, body.action, by, body.text);
+    return json({ message: msg, onAir: room.chat.onAir });
+  }
+
+  async function hostChatMode(req: Request, room: Room): Promise<Response> {
+    authHost(req, room);
+    const body = await readJson(req, chatModeBody);
+    room.chat.setMode(body.mode);
+    return json({ mode: room.chat.mode });
+  }
+
+  function hostEditorKey(req: Request, room: Room, revoke: boolean): Response {
+    authHost(req, room);
+    room.editorKey = revoke ? null : newToken(18);
+    // wake editors so a revoked key is noticed immediately
+    for (const w of [...room.chat.waiters]) w();
+    return json({ editorKey: room.editorKey });
+  }
+
+  async function guestChatPoll(
+    req: Request,
+    url: URL,
+    room: Room,
+    gid: string,
+  ): Promise<Response> {
+    const g = chatGuest(room, gid, req);
+    return chatPoll(req, url, room, { kind: "participant", id: g.id });
+  }
+
+  async function guestChatPost(
+    req: Request,
+    room: Room,
+    gid: string,
+  ): Promise<Response> {
+    const g = chatGuest(room, gid, req);
+    rateLimit(req, "chat", 120, 60_000);
+    if (room.closedAt !== null) throw new HttpError(410, "closed");
+    const body = await readJson(req, chatPostBody);
+    const msg = room.chat.post(
+      {
+        id: g.id,
+        name: g.name,
+        role: g.role === "viewer" ? "viewer" : "guest",
+      },
+      body.text,
+    );
+    return json({ message: msg }, 201);
+  }
+
   /* ------------------------------ router ------------------------------ */
 
   /** Handle `/api/room/*`. Returns null for any other path so the caller can fall through. */
@@ -571,7 +729,19 @@ export function createRoomsApi(options: RoomsOptions = {}) {
       }
       if (rest[1] === "join" && rest.length === 2 && method === "POST")
         return await join(req, room);
+      if (rest[1] === "chat") {
+        if (rest.length === 2 && method === "GET")
+          return await modChatPoll(req, url, room);
+        if (rest.length === 2 && method === "POST")
+          return await modChatPost(req, room);
+        if (rest.length === 3 && method === "POST")
+          return await modChatAction(req, room, rest[2] as string);
+      }
       if (rest[1] === "host" && rest.length === 3) {
+        if (rest[2] === "chat-mode" && method === "POST")
+          return await hostChatMode(req, room);
+        if (rest[2] === "editor" && (method === "POST" || method === "DELETE"))
+          return hostEditorKey(req, room, method === "DELETE");
         if (rest[2] === "events" && method === "GET")
           return await hostEvents(req, url, room);
         if (rest[2] === "offer" && method === "POST")
@@ -587,10 +757,15 @@ export function createRoomsApi(options: RoomsOptions = {}) {
           return await guestAnswer(req, room, gid);
         if (rest[3] === "leave" && method === "POST")
           return await guestLeave(req, room, gid);
+        if (rest[3] === "chat" && method === "GET")
+          return await guestChatPoll(req, url, room, gid);
+        if (rest[3] === "chat" && method === "POST")
+          return await guestChatPost(req, room, gid);
       }
       throw new HttpError(404, "not-found");
     } catch (e) {
-      if (e instanceof HttpError) return json({ error: e.code }, e.status);
+      if (e instanceof HttpError || e instanceof ChatError)
+        return json({ error: e.code }, e.status);
       console.error("[rooms]", e);
       return json({ error: "internal" }, 500);
     }
@@ -603,6 +778,7 @@ export function createRoomsApi(options: RoomsOptions = {}) {
     dispose(): void {
       for (const room of rooms.values()) {
         wake(room.waiters);
+        wake(room.chat.waiters);
         for (const g of room.guests.values()) wake(g.waiters);
       }
       rooms.clear();

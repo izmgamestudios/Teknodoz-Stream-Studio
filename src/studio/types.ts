@@ -21,7 +21,8 @@ export type LayerKind =
   | "video"
   | "shape"
   | "text"
-  | "prompter";
+  | "prompter"
+  | "chat";
 
 export type BlendMode =
   | "source-over"
@@ -142,6 +143,22 @@ export interface PrompterLayer extends LayerBase {
   mode: BurnInMode;
 }
 
+/**
+ * Room chat on the program output. `spotlight` shows only the message the director put on
+ * air; `feed` shows the latest approved messages. Empty (draws nothing) while there is none.
+ */
+export type ChatLayerMode = "spotlight" | "feed";
+export interface ChatLayer extends LayerBase {
+  kind: "chat";
+  mode: ChatLayerMode;
+  /** logical px */
+  fontSize: number;
+  /** author tag / accent bar color */
+  accent: string;
+  /** feed mode: how many messages to show (1..8) */
+  maxMessages: number;
+}
+
 export type Layer =
   | WebcamLayer
   | ScreenLayer
@@ -151,7 +168,8 @@ export type Layer =
   | VideoLayer
   | ShapeLayer
   | TextLayer
-  | PrompterLayer;
+  | PrompterLayer
+  | ChatLayer;
 
 /* ------------------------------------------------------------------ */
 /* Scenes                                                              */
@@ -407,6 +425,13 @@ export interface CompositorHooks {
   drawPrompter?(
     ctx: CanvasRenderingContext2D,
     layer: PrompterLayer,
+    box: Rect,
+    nowMs: number,
+  ): void;
+  /** Room chat overlay (see `ChatLayer`). `box` is the layer transform in output px. */
+  drawChat?(
+    ctx: CanvasRenderingContext2D,
+    layer: ChatLayer,
     box: Rect,
     nowMs: number,
   ): void;

@@ -732,6 +732,9 @@ export class Compositor {
       case "prompter":
         if (!this.hooks.drawPrompter) return;
         break;
+      case "chat":
+        if (!this.hooks.drawChat) return;
+        break;
       default:
         break;
     }
@@ -774,6 +777,11 @@ export class Compositor {
         case "prompter":
           this.callHook(ctx, () =>
             this.hooks.drawPrompter?.(ctx, layer, box, nowMs),
+          );
+          break;
+        case "chat":
+          this.callHook(ctx, () =>
+            this.hooks.drawChat?.(ctx, layer, box, nowMs),
           );
           break;
       }

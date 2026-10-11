@@ -15,6 +15,7 @@ import { Route as RemoteRouteImport } from './routes/remote'
 import { Route as RoomRouteImport } from './routes/room'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StudioRouteImport } from './routes/studio'
+import { Route as ChatCodeRouteImport } from './routes/chat.$code'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +48,11 @@ const StudioRoute = StudioRouteImport.update({
   path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatCodeRoute = ChatCodeRouteImport.update({
+  id: '/chat/$code',
+  path: '/chat/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RCodeRoute = RCodeRouteImport.update({
   id: '/r/$code',
   path: '/r/$code',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/room': typeof RoomRoute
   '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
+  '/chat/$code': typeof ChatCodeRoute
   '/r/$code': typeof RCodeRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/room': typeof RoomRoute
   '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
+  '/chat/$code': typeof ChatCodeRoute
   '/r/$code': typeof RCodeRoute
 }
 export interface FileRoutesById {
@@ -79,14 +87,30 @@ export interface FileRoutesById {
   '/room': typeof RoomRoute
   '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
+  '/chat/$code': typeof ChatCodeRoute
   '/r/$code': typeof RCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/join' | '/remote' | '/room' | '/settings' | '/studio' | '/r/$code'
+    | '/'
+    | '/join'
+    | '/remote'
+    | '/room'
+    | '/settings'
+    | '/studio'
+    | '/chat/$code'
+    | '/r/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/join' | '/remote' | '/room' | '/settings' | '/studio' | '/r/$code'
+  to:
+    | '/'
+    | '/join'
+    | '/remote'
+    | '/room'
+    | '/settings'
+    | '/studio'
+    | '/chat/$code'
+    | '/r/$code'
   id:
     | '__root__'
     | '/'
@@ -95,6 +119,7 @@ export interface FileRouteTypes {
     | '/room'
     | '/settings'
     | '/studio'
+    | '/chat/$code'
     | '/r/$code'
   fileRoutesById: FileRoutesById
 }
@@ -105,6 +130,7 @@ export interface RootRouteChildren {
   RoomRoute: typeof RoomRoute
   SettingsRoute: typeof SettingsRoute
   StudioRoute: typeof StudioRoute
+  ChatCodeRoute: typeof ChatCodeRoute
   RCodeRoute: typeof RCodeRoute
 }
 
@@ -152,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat/$code': {
+      id: '/chat/$code'
+      path: '/chat/$code'
+      fullPath: '/chat/$code'
+      preLoaderRoute: typeof ChatCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/r/$code': {
       id: '/r/$code'
       path: '/r/$code'
@@ -169,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   RoomRoute: RoomRoute,
   SettingsRoute: SettingsRoute,
   StudioRoute: StudioRoute,
+  ChatCodeRoute: ChatCodeRoute,
   RCodeRoute: RCodeRoute,
 }
 export const routeTree = rootRouteImport

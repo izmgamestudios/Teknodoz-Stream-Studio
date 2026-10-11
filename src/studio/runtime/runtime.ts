@@ -51,9 +51,11 @@ import { buildTemplateScene, resolveOptions } from "../templates/build";
 import { getTemplate } from "../templates/catalog";
 import type { TemplateMode, TemplateOptions } from "../templates/types";
 import { roomBadge } from "../room/badge";
+import { drawChat, type ChatLine } from "../room/chat-draw";
 import { RoomHostSession } from "../room/host-session";
 import type {
   AssetStore,
+  ChatLayer,
   CompositorHooks,
   PeerInfo,
   PeerRole,
@@ -223,6 +225,27 @@ export class StudioRuntime {
 
   private hooks: CompositorHooks = {
     resolveSource: (layer: Layer) => this.sources.resolve(layer),
+    drawChat: (ctx, layer: ChatLayer, box) => {
+      const chat = this.roomSession?.chat.getSnapshot();
+      if (!chat || chat.status === "idle") return;
+      const line = (m: { author: string; text: string }): ChatLine => ({
+        author: m.author,
+        text: m.text,
+      });
+      const feed: ChatLine[] = [];
+      for (
+        let i = chat.messages.length - 1;
+        i >= 0 && feed.length < layer.maxMessages;
+        i--
+      ) {
+        const m = chat.messages[i];
+        if (m && m.status === "approved") feed.unshift(line(m));
+      }
+      drawChat(ctx, layer, box, {
+        spotlight: chat.onAir ? line(chat.onAir) : null,
+        feed,
+      });
+    },
     drawPrompter: (ctx, layer: PrompterLayer, box, now) => {
       const p = this.project.getState().prompter;
       if (!p.settings.burnIn) return;

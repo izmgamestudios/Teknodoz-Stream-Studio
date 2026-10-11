@@ -2,6 +2,7 @@
 // Guest side of a room: asks to join, waits in the pool, and answers the host's offer
 // automatically once approved. The guest never copies or pastes any code.
 import { StudioClient } from "../p2p";
+import { RoomChatClient } from "./chat-client";
 import {
   RoomApiError,
   createRoomApi,
@@ -60,6 +61,8 @@ function defaultStorage(): GuestSessionOptions["storage"] {
 }
 
 export class RoomGuestSession {
+  /** moderated room chat; connects once the host has accepted our answer */
+  readonly chat: RoomChatClient;
   private readonly code: string;
   private readonly api: RoomApi;
   private readonly usePublicStun: boolean;
@@ -91,6 +94,7 @@ export class RoomGuestSession {
     this.waitSec = opts.waitSec ?? 20;
     this.acceptOffer =
       opts.acceptOffer ?? StudioClient.acceptOffer.bind(StudioClient);
+    this.chat = new RoomChatClient({ api: this.api, waitSec: this.waitSec });
     this.snap = this.build();
   }
 
@@ -282,6 +286,12 @@ export class RoomGuestSession {
         answerCode,
       );
       this.storage?.removeItem(this.key());
+      if (this.role !== "remote")
+        this.chat.connect(this.code, {
+          kind: "guest",
+          guestId: this.guestId as string,
+          token: this.token as string,
+        });
     } catch (e) {
       this.set({
         phase: "error",
@@ -309,6 +319,7 @@ export class RoomGuestSession {
     this.disposed = true;
     this.runId++;
     this.abort?.abort();
+    this.chat.dispose();
     this.client?.dispose();
     this.listeners.clear();
   }

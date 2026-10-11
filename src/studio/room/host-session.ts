@@ -6,10 +6,12 @@ import {
   RoomApiError,
   buildRoomLink,
   createRoomApi,
+  type ChatMode,
   type HostEvent,
   type RoomApi,
   type RoomRole,
 } from "./api";
+import { RoomChatClient } from "./chat-client";
 import { loadLog, newLogId, saveLog, type LogEntry, type LogKind } from "./log";
 
 /** What the session needs from the studio runtime (kept as an interface to avoid cycles). */
@@ -56,6 +58,8 @@ export interface RoomSnapshot {
   readonly waiting: number;
   readonly log: readonly LogEntry[];
   readonly autoApprove: Readonly<Record<RoomRole, boolean>>;
+  /** secret of the chat-editor link, null until the director issues one */
+  readonly editorKey: string | null;
   readonly error: string | null;
 }
 
@@ -113,10 +117,13 @@ export class RoomHostSession {
   private readonly connectTimeoutMs: number;
   private readonly keepEndedMs: number;
   private readonly waitSec: number;
+  /** moderated chat of this room (director seat); connected while the room is open */
+  readonly chat: RoomChatClient;
 
   private status: RoomStatus = "idle";
   private code: string | null = null;
   private token: string | null = null;
+  private editorKey: string | null = null;
   private since = 0;
   private online = true;
   private error: string | null = null;
@@ -145,6 +152,7 @@ export class RoomHostSession {
     this.connectTimeoutMs = opts.connectTimeoutMs ?? 60_000;
     this.keepEndedMs = opts.keepEndedMs ?? 120_000;
     this.waitSec = opts.waitSec ?? 20;
+    this.chat = new RoomChatClient({ api: this.api, waitSec: this.waitSec });
     this.auto = this.readAuto();
     this.snap = this.build();
     this.logLoaded = loadLog(this.kv).then((l) => {
@@ -178,6 +186,7 @@ export class RoomHostSession {
       waiting: pool.filter((e) => e.state === "waiting").length,
       log: this.log,
       autoApprove: { ...this.auto },
+      editorKey: this.editorKey,
       error: this.error,
     };
   }
@@ -265,6 +274,7 @@ export class RoomHostSession {
           this.code = saved.code;
           this.token = saved.token;
           this.since = saved.since;
+          this.editorKey = saved.editorKey;
           resumed = true;
         } catch (e) {
           if (
@@ -282,6 +292,7 @@ export class RoomHostSession {
         this.code = r.code;
         this.token = r.hostToken;
         this.since = 0;
+        this.editorKey = null;
         this.persist();
         this.record("room", `Oda oluşturuldu: ${r.code}`);
       } else {
@@ -291,6 +302,8 @@ export class RoomHostSession {
       this.online = true;
       this.emit();
       void this.loop(++this.runId);
+      if (this.code && this.token)
+        this.chat.connect(this.code, { kind: "bearer", token: this.token });
       return true;
     } catch (e) {
       const code = errorCode(e);
@@ -303,7 +316,12 @@ export class RoomHostSession {
     }
   }
 
-  private readSaved(): { code: string; token: string; since: number } | null {
+  private readSaved(): {
+    code: string;
+    token: string;
+    since: number;
+    editorKey: string | null;
+  } | null {
     try {
       const raw = this.storage?.getItem(STORE_KEY);
       if (!raw) return null;
@@ -311,12 +329,14 @@ export class RoomHostSession {
         code?: unknown;
         token?: unknown;
         since?: unknown;
+        editorKey?: unknown;
       };
       if (typeof p.code === "string" && typeof p.token === "string") {
         return {
           code: p.code,
           token: p.token,
           since: typeof p.since === "number" ? p.since : 0,
+          editorKey: typeof p.editorKey === "string" ? p.editorKey : null,
         };
       }
     } catch {
@@ -333,6 +353,7 @@ export class RoomHostSession {
           code: this.code,
           token: this.token,
           since: this.since,
+          editorKey: this.editorKey,
         }),
       );
     } catch {
@@ -347,14 +368,72 @@ export class RoomHostSession {
     }
   }
 
+  /* ------------------------------- chat ------------------------------- */
+
+  /** Link for the chat editor; the key travels in the URL fragment (never sent to a server). */
+  editorLink(): string {
+    const origin = typeof location === "undefined" ? "" : location.origin;
+    return this.code && this.editorKey
+      ? `${origin.replace(/\/+$/, "")}/chat/${this.code}#k=${this.editorKey}`
+      : "";
+  }
+
+  /** Issue (or rotate) the editor key. Any previously shared editor link stops working. */
+  async issueEditorKey(): Promise<boolean> {
+    if (!this.code || !this.token) return false;
+    try {
+      const r = await this.api.issueEditorKey(this.code, this.token);
+      this.editorKey = r.editorKey;
+      this.persist();
+      this.record("chat", "Editör bağlantısı oluşturuldu / yenilendi");
+      this.emit();
+      return true;
+    } catch (e) {
+      this.record(
+        "error",
+        `Editör bağlantısı oluşturulamadı (${errorCode(e)})`,
+      );
+      this.emit();
+      return false;
+    }
+  }
+
+  async revokeEditorKey(): Promise<boolean> {
+    if (!this.code || !this.token) return false;
+    try {
+      await this.api.revokeEditorKey(this.code, this.token);
+      this.editorKey = null;
+      this.persist();
+      this.record("chat", "Editör bağlantısı iptal edildi");
+      this.emit();
+      return true;
+    } catch (e) {
+      this.record(
+        "error",
+        `Editör bağlantısı iptal edilemedi (${errorCode(e)})`,
+      );
+      this.emit();
+      return false;
+    }
+  }
+
+  async setChatMode(mode: ChatMode): Promise<void> {
+    await this.chat.setMode(mode);
+    const label = { moderated: "onaylı", open: "serbest", off: "kapalı" }[mode];
+    this.record("chat", `Sohbet modu: ${label}`);
+    this.emit();
+  }
+
   /** Close the room on the relay. Connected peers stay connected (they are direct). */
   async close(): Promise<void> {
     const code = this.code;
     const token = this.token;
     this.stopLoop();
+    this.chat.disconnect();
     this.forgetSaved();
     this.code = null;
     this.token = null;
+    this.editorKey = null;
     this.status = "idle";
     this.pool.clear();
     for (const t of this.timers.values()) clearTimeout(t);
@@ -605,6 +684,7 @@ export class RoomHostSession {
   dispose(): void {
     this.disposed = true;
     this.stopLoop();
+    this.chat.dispose();
     this.unsubPeers?.();
     for (const t of this.timers.values()) clearTimeout(t);
     this.timers.clear();
