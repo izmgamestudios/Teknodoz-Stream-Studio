@@ -7,6 +7,7 @@ export type Lang = "tr" | "en";
 export const tr = {
   // shell / navigation
   "nav.menu": "Ana menü",
+  "shell.badge": "Erken erişim",
   "nav.prompter": "Prompter",
   "nav.prompter.hint": "Metin, kamera, kayıt",
   "nav.studio": "Stüdyo",
@@ -17,6 +18,10 @@ export const tr = {
   "nav.live.hint": "YouTube, Instagram, TikTok… (RTMPS)",
   "nav.community": "Topluluk",
   "nav.community.hint": "Kanallar, duyuru, destekçiler",
+  "nav.guide": "Kılavuz",
+  "nav.guide.hint": "Adım adım, PDF, video, SSS",
+  "nav.download": "İndir",
+  "nav.download.hint": "Windows, macOS, Linux, Android, iOS",
   "nav.settings": "Ayarlar",
   "nav.settings.hint": "Çıkış, kısayol, dil",
   "shell.workspace": "Yayıncı çalışma alanı",
@@ -209,6 +214,7 @@ export const tr = {
   "settings.lang": "Dil",
   "settings.lang.body":
     "Yan menü, ayarlar ve konuk/kumanda sayfaları çevrilir. Stüdyo panelleri henüz yalnızca Türkçe.",
+  "settings.site.summary": "Site, meta ve paylaşım ayarları (dağıtım sahibi)",
   "settings.reset.all": "Tüm ayarları varsayılana döndür",
   "settings.reset.confirm": "Tüm ayarlar varsayılana dönsün mü?",
   "action.record.toggle": "Kaydı başlat / bitir",
@@ -226,6 +232,7 @@ export type MessageKey = keyof typeof tr;
 
 export const en: Record<MessageKey, string> = {
   "nav.menu": "Main menu",
+  "shell.badge": "Early access",
   "nav.prompter": "Prompter",
   "nav.prompter.hint": "Script, camera, record",
   "nav.studio": "Studio",
@@ -236,6 +243,10 @@ export const en: Record<MessageKey, string> = {
   "nav.live.hint": "YouTube, Instagram, TikTok… (RTMPS)",
   "nav.community": "Community",
   "nav.community.hint": "Channels, announcements, supporters",
+  "nav.guide": "Guide",
+  "nav.guide.hint": "Step by step, PDF, video, FAQ",
+  "nav.download": "Download",
+  "nav.download.hint": "Windows, macOS, Linux, Android, iOS",
   "nav.settings": "Settings",
   "nav.settings.hint": "Output, shortcuts, language",
   "shell.workspace": "Broadcaster workspace",
@@ -424,6 +435,7 @@ export const en: Record<MessageKey, string> = {
   "settings.lang": "Language",
   "settings.lang.body":
     "The side menu, settings and the guest/remote pages are translated. Studio panels are Turkish only for now.",
+  "settings.site.summary": "Site, metadata and sharing (owner)",
   "settings.reset.all": "Reset all settings to defaults",
   "settings.reset.confirm": "Reset all settings to defaults?",
   "action.record.toggle": "Start / stop recording",

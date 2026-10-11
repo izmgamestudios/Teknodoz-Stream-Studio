@@ -8,11 +8,12 @@ import { useEffect, useMemo, useState } from "react";
 import { RoomChatClient } from "@/studio/room/chat-client";
 import { ModerationDesk, useChatSnapshot } from "@/studio/ui/chat-panels";
 import { CreditsFooter } from "@/studio/ui/credits";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/chat/$code")({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "Sohbet editörü — Teknodoz Studio" },
+      { title: titleFromMatches(matches, "Sohbet editörü") },
       { name: "robots", content: "noindex" },
       { name: "referrer", content: "no-referrer" },
     ],

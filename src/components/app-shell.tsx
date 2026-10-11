@@ -2,13 +2,21 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useSyncExternalStore, type ReactNode } from "react";
 
-import { TeknodozLogo } from "@/components/teknodoz-logo";
+import { BrandBadge, BrandLogo, useBrand } from "@/studio/ui/brand-context";
 import { useT } from "@/studio/i18n/use-t";
 import type { MessageKey } from "@/studio/i18n/messages";
 import { roomBadge } from "@/studio/room/badge";
 
 const NAV: readonly {
-  to: "/" | "/studio" | "/room" | "/live" | "/community" | "/settings";
+  to:
+    | "/"
+    | "/studio"
+    | "/room"
+    | "/live"
+    | "/community"
+    | "/guide"
+    | "/download"
+    | "/settings";
   label: MessageKey;
   hint: MessageKey;
   icon: string;
@@ -22,6 +30,18 @@ const NAV: readonly {
     label: "nav.community",
     hint: "nav.community.hint",
     icon: "🤝",
+  },
+  {
+    to: "/guide",
+    label: "nav.guide",
+    hint: "nav.guide.hint",
+    icon: "📖",
+  },
+  {
+    to: "/download",
+    label: "nav.download",
+    hint: "nav.download.hint",
+    icon: "⬇️",
   },
   {
     to: "/settings",
@@ -98,8 +118,21 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
 /** Pages opened by guests / phones: no studio navigation around them. */
 const BARE_PREFIXES = ["/join", "/remote", "/r", "/chat"];
 
+/** Slogan with its last word highlighted (the translated default when no slogan is set). */
+function useHeadline(): { a: string; b: string } {
+  const t = useT();
+  const { slogan } = useBrand();
+  if (!slogan) return { a: t("shell.headline.a"), b: t("shell.headline.b") };
+  const i = slogan.lastIndexOf(" ");
+  return i < 0
+    ? { a: "", b: slogan }
+    : { a: slogan.slice(0, i), b: slogan.slice(i + 1) };
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useT();
+  const brand = useBrand();
+  const head = useHeadline();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (
     BARE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
@@ -110,10 +143,19 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* desktop sidebar */}
       <aside className="sticky top-0 z-30 hidden h-screen w-72 shrink-0 flex-col border-r bg-card md:flex">
-        <div className="flex items-center gap-3 border-b px-5 py-5">
-          <TeknodozLogo className="text-xl" />
-          <span className="h-5 w-px bg-border" />
-          <span className="text-sm font-bold tracking-wide">STUDIO</span>
+        <div className="space-y-2 border-b px-5 py-5">
+          <div className="flex items-center gap-3">
+            <BrandLogo className="text-xl" />
+            {brand.productLabel && (
+              <>
+                <span className="h-5 w-px bg-border" />
+                <span className="text-sm font-bold tracking-wide">
+                  {brand.productLabel}
+                </span>
+              </>
+            )}
+          </div>
+          <BrandBadge />
         </div>
 
         <div className="flex-1 space-y-6 overflow-y-auto px-4 py-6">
@@ -123,11 +165,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               {t("shell.workspace")}
             </p>
             <h2 className="text-2xl font-bold leading-tight">
-              {t("shell.headline.a")}{" "}
-              <span className="text-speaker-b">{t("shell.headline.b")}</span>
+              {head.a} <span className="text-speaker-b">{head.b}</span>
             </h2>
             <p className="mt-2 text-xs text-muted-foreground">
-              {t("shell.tagline")}
+              {brand.tagline || t("shell.tagline")}
             </p>
           </div>
 
@@ -147,9 +188,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* mobile top bar */}
       <header className="sticky top-0 z-30 border-b bg-card md:hidden">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <TeknodozLogo className="text-lg" />
-          <span className="text-xs font-bold tracking-wide">STUDIO</span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3">
+          <BrandLogo className="text-lg" />
+          {brand.productLabel && (
+            <span className="text-xs font-bold tracking-wide">
+              {brand.productLabel}
+            </span>
+          )}
+          <BrandBadge />
         </div>
         <nav
           className="flex gap-1 overflow-x-auto px-3 pb-2"

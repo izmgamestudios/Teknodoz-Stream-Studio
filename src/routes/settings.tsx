@@ -3,6 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { useT } from "@/studio/i18n/use-t";
 import { StudioProvider } from "@/studio/runtime/use-studio";
+import {
+  BrandLocalSection,
+  BrandSiteSection,
+} from "@/studio/ui/brand-settings";
 import { CreditsFooter } from "@/studio/ui/credits";
 import {
   ConnectionSection,
@@ -10,11 +14,12 @@ import {
   OutputSection,
   ShortcutsSection,
 } from "@/studio/ui/settings-panels";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "Ayarlar — Teknodoz Studio" },
+      { title: titleFromMatches(matches, "Ayarlar") },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -53,8 +58,15 @@ function SettingsApp() {
         <div className="space-y-4">
           <ShortcutsSection />
           <LanguageSection />
+          <BrandLocalSection />
         </div>
       </div>
+      <details className="group mx-auto mt-4 max-w-5xl">
+        <summary className="cursor-pointer rounded-md px-1 py-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground">
+          {t("settings.site.summary")}
+        </summary>
+        <BrandSiteSection />
+      </details>
       <CreditsFooter className="mx-auto mt-6 max-w-5xl border-t pt-3" />
     </div>
   );

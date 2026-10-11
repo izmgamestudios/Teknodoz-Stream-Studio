@@ -8,11 +8,12 @@ import { ConnectCard } from "@/studio/ui/connect-card";
 import { CreditsFooter } from "@/studio/ui/credits";
 import { ViewerGuestView } from "@/studio/ui/guest-views";
 import { useClientConnection } from "@/studio/ui/use-client";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/join")({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "Yayına katıl — Teknodoz Studio" },
+      { title: titleFromMatches(matches, "Yayına katıl") },
       { name: "robots", content: "noindex" },
       { name: "referrer", content: "no-referrer" },
     ],

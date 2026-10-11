@@ -4,11 +4,22 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+
+import { DEFAULT_BRAND, type Brand } from "@/studio/branding/brand";
+import {
+  brandCss,
+  brandHeadLinks,
+  brandHeadMeta,
+} from "@/studio/branding/head";
+import { getBrand } from "@/studio/branding/server-fn";
+import { registerServiceWorker } from "@/studio/pwa/register";
+import { BrandProvider } from "@/studio/ui/brand-context";
 
 import appCss from "../styles.css?url";
 import { AppShell } from "../components/app-shell";
@@ -79,27 +90,32 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
-    head: () => ({
-      meta: [
-        { charSet: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { name: "author", content: "Hüseyin Bayer · Teknodoz" },
-        { property: "og:site_name", content: "Teknodoz Studio" },
-        { property: "og:type", content: "website" },
-        { name: "twitter:card", content: "summary_large_image" },
-      ],
-      links: [
-        { rel: "stylesheet", href: appCss },
-        {
-          rel: "preload",
-          href: "/fonts/space-grotesk-latin-wght-normal.woff2",
-          as: "font",
-          type: "font/woff2",
-          crossOrigin: "anonymous",
-        },
-        { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-      ],
-    }),
+    // identity (name, colors, share data, icons) comes from config.ts + BRAND_* on the server
+    loader: () => getBrand(),
+    head: ({ loaderData, matches }) => {
+      const brand: Brand = loaderData ?? DEFAULT_BRAND;
+      const pathname = matches.at(-1)?.pathname;
+      const css = brandCss(brand);
+      return {
+        meta: [
+          { charSet: "utf-8" },
+          { name: "viewport", content: "width=device-width, initial-scale=1" },
+          ...brandHeadMeta(brand, pathname),
+        ],
+        links: [
+          { rel: "stylesheet", href: appCss },
+          {
+            rel: "preload",
+            href: "/fonts/space-grotesk-latin-wght-normal.woff2",
+            as: "font",
+            type: "font/woff2",
+            crossOrigin: "anonymous",
+          },
+          ...brandHeadLinks(brand, pathname),
+        ],
+        ...(css ? { styles: [{ children: css }] } : {}),
+      };
+    },
     shellComponent: RootShell,
     component: RootComponent,
     notFoundComponent: NotFoundComponent,
@@ -108,8 +124,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 );
 
 function RootShell({ children }: { children: ReactNode }) {
+  const lang = useRouterState({
+    select: (s) => {
+      const d = s.matches.find((m) => m.routeId === "__root__")?.loaderData as
+        Partial<Brand> | undefined;
+      return d?.lang ?? DEFAULT_BRAND.lang;
+    },
+  });
   return (
-    <html lang="tr">
+    <html lang={lang}>
       <head>
         <HeadContent />
       </head>
@@ -123,13 +146,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const brand = Route.useLoaderData();
+  // installable app + offline page: production only (see public/sw.js)
+  useEffect(() => registerServiceWorker(import.meta.env.PROD), []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <AppShell>
-        <Outlet />
-      </AppShell>
+      <BrandProvider server={brand}>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      </BrandProvider>
     </QueryClientProvider>
   );
 }

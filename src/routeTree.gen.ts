@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CommunityRouteImport } from './routes/community'
+import { Route as DownloadRouteImport } from './routes/download'
+import { Route as GuideRouteImport } from './routes/guide'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as RemoteRouteImport } from './routes/remote'
@@ -28,6 +30,16 @@ const IndexRoute = IndexRouteImport.update({
 const CommunityRoute = CommunityRouteImport.update({
   id: '/community',
   path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DownloadRoute = DownloadRouteImport.update({
+  id: '/download',
+  path: '/download',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideRoute = GuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JoinRoute = JoinRouteImport.update({
@@ -74,6 +86,8 @@ const RCodeRoute = RCodeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/community': typeof CommunityRoute
+  '/download': typeof DownloadRoute
+  '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
   '/live': typeof LiveRoute
   '/remote': typeof RemoteRoute
@@ -86,6 +100,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/community': typeof CommunityRoute
+  '/download': typeof DownloadRoute
+  '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
   '/live': typeof LiveRoute
   '/remote': typeof RemoteRoute
@@ -99,6 +115,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/community': typeof CommunityRoute
+  '/download': typeof DownloadRoute
+  '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
   '/live': typeof LiveRoute
   '/remote': typeof RemoteRoute
@@ -113,6 +131,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/community'
+    | '/download'
+    | '/guide'
     | '/join'
     | '/live'
     | '/remote'
@@ -125,6 +145,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/community'
+    | '/download'
+    | '/guide'
     | '/join'
     | '/live'
     | '/remote'
@@ -137,6 +159,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/community'
+    | '/download'
+    | '/guide'
     | '/join'
     | '/live'
     | '/remote'
@@ -150,6 +174,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CommunityRoute: typeof CommunityRoute
+  DownloadRoute: typeof DownloadRoute
+  GuideRoute: typeof GuideRoute
   JoinRoute: typeof JoinRoute
   LiveRoute: typeof LiveRoute
   RemoteRoute: typeof RemoteRoute
@@ -174,6 +200,20 @@ declare module '@tanstack/react-router' {
       path: '/community'
       fullPath: '/community'
       preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/download': {
+      id: '/download'
+      path: '/download'
+      fullPath: '/download'
+      preLoaderRoute: typeof DownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide': {
+      id: '/guide'
+      path: '/guide'
+      fullPath: '/guide'
+      preLoaderRoute: typeof GuideRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/join': {
@@ -238,6 +278,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CommunityRoute: CommunityRoute,
+  DownloadRoute: DownloadRoute,
+  GuideRoute: GuideRoute,
   JoinRoute: JoinRoute,
   LiveRoute: LiveRoute,
   RemoteRoute: RemoteRoute,

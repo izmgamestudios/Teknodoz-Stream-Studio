@@ -10,6 +10,23 @@ hesabıyla açar**; platformlar hesap/sayfa oluşturmayı başkası adına yapma
   LinkedIn, Facebook, X, e-posta paylaşım pencereleri; Slack/Discord/grup için "metni kopyala". Hesap bağlama ve API
   anahtarı yoktur; her paylaşımı platformun kendi penceresinde siz onaylarsınız.
 
+## Güncel durum
+
+`src/studio/community/links.ts` içinde tanımlı ve `/community` sayfasında "Katıl" düğmesi olan kanallar:
+
+| Kanal | Adres | Not |
+|---|---|---|
+| WhatsApp Kanalı | `https://whatsapp.com/channel/0029VbE4O60FnSz2cQgj9U0A` | tek yönlü duyuru |
+| LinkedIn (Showcase sayfası) | `https://www.linkedin.com/showcase/teknodoz` | `/showcase/` ve `/company/` yolları kabul edilir |
+| Instagram | `https://www.instagram.com/teknodoz` | |
+| YouTube | `https://www.youtube.com/@teknodoz` | |
+| X | `https://x.com/infoteknodoz` | paylaşım kartındaki hesap (`twitterHandle`) ile aynı |
+| Slack | `https://teknodozproje-dfg7355.slack.com/archives/C0C8BR8HHHC` | ⚠️ çalışma alanının **bir kanalına** giden bağlantıdır; yalnızca üyeler açabilir. Herkese açık katılım için Slack'ten *davet bağlantısı* (`https://join.slack.com/t/…`) üretip `slack` alanına yazın |
+| GitHub | `CREDITS.repo` | |
+
+Henüz tanımlı olmayanlar: **Telegram**, **Discord**, **Facebook grubu**, **TikTok** (boş bırakıldı; kanal açılınca adresi yazın).
+Adresler derleme zamanındadır: değiştirince yeniden derleyip dağıtın.
+
 ## 1. Kanal mimarisi (öneri)
 
 | Rol | Kanal | Neden |
@@ -35,7 +52,7 @@ sonra neyin kullanıldığına bakıp ekleyin/kapatın.
 | **Telegram** | Yeni Kanal → herkese açık `t.me/kullaniciadi` | Kanal ayarlarından bir **tartışma grubu** bağlayın; grupta yavaş mod (slow mode) açın. | `telegram` (`https://t.me/…`) |
 | **LinkedIn Sayfası** | İş için → Sayfa oluştur → Şirket (ya da Showcase) | Kişisel profil ≠ Sayfa. Logo, kapak, tek cümlelik slogan, web sitesi, "Hakkında" metni. İkinci bir yönetici ekleyin. | `linkedin` (`…/company/…`) |
 | **Facebook** | Gruplar → yeni grup (herkese açık/gizli seç) | Üyelik soruları (spam için 1–2 soru), kurallar sekmesi. Marka sayfası ayrıca gerekiyorsa Sayfa açın. | `facebook` (`…/groups/…`) |
-| **Slack** | Çalışma alanı oluştur → `#sponsorlar`, `#ortaklar`, `#duyuru` | Davet bağlantısı süreli olabilir; ücretsiz planın geçmiş/entegrasyon sınırlarını güncel fiyat sayfasından doğrulayın. | `slack` (`join.slack.com/…`) |
+| **Slack** | Çalışma alanı oluştur → `#sponsorlar`, `#ortaklar`, `#duyuru` | Davet bağlantısı süreli olabilir; ücretsiz planın geçmiş/entegrasyon sınırlarını güncel fiyat sayfasından doğrulayın. | `slack` (`join.slack.com/…`; çalışma alanı kanal bağlantıları yalnızca üyelere açılır) |
 | **Discord** | Sunucu oluştur → Community'yi etkinleştir | `#kurallar`, `#duyuru`, `#sohbet`, `#destek`, `#yayın-sohbeti`. Kalıcı (süresiz) davet bağlantısı üretin. | `discord` (`discord.gg/…`) |
 | **GitHub** | Depoda Settings → Features → **Discussions** | Kategoriler: Duyurular, Fikirler, Soru-Cevap, Sergi. | zaten tanımlı |
 

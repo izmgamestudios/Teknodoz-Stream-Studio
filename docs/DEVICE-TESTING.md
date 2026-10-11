@@ -4,7 +4,7 @@
 
 | Check | Environment | Result |
 |---|---|---|
-| Unit tests (1500+) | Node 22 + jsdom | pass |
+| Unit tests (1800+) | Node 22 + jsdom | pass |
 | Studio, prompter, recording (MP4 + chapters/SRT), `.pptdz` export | headless Chromium 140-class, fake camera/mic | pass |
 | Room flow: short link → waiting pool → approve → auto-connect → video | 2–3 Chromium pages | pass |
 | Phone remote (scene switch, record start) | Chromium with iPhone 13 / Pixel 7 / 320 px Android *emulation* (touch, viewport, UA) | pass, no horizontal overflow, tap targets ≥ 66 px |

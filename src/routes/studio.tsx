@@ -19,18 +19,18 @@ import { ScenePanel } from "@/studio/ui/scene-panel";
 import { SponsorPanel } from "@/studio/ui/sponsor-panel";
 import { SourceBar } from "@/studio/ui/source-bar";
 import { Stage } from "@/studio/ui/stage";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/studio")({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "Stüdyo — Teknodoz Studio" },
+      { title: titleFromMatches(matches, "Stüdyo") },
       {
         name: "description",
         content:
           "Tarayıcıda çalışan, sunucusuz yayın ve kayıt stüdyosu: sahneler, katmanlar, yeşil perde, prototip yayını, ses mikseri ve bölüm işaretleri.",
       },
-      { property: "og:title", content: "Stüdyo — Teknodoz Studio" },
-      { property: "og:type", content: "website" },
+      { property: "og:title", content: titleFromMatches(matches, "Stüdyo") },
     ],
   }),
   component: StudioPage,

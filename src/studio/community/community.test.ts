@@ -69,6 +69,19 @@ describe("validateChannelUrl", () => {
     expect(st.filter((s) => s.problem)).toEqual([]);
     expect(st.find((s) => s.def.id === "github")?.url).toContain("github.com/");
   });
+
+  it("publishes the project's own channels", () => {
+    const url = (id: string) =>
+      channelStatuses(COMMUNITY_LINKS).find((s) => s.def.id === id)?.url;
+    expect(url("linkedin")).toBe("https://www.linkedin.com/showcase/teknodoz");
+    expect(url("instagram")).toBe("https://www.instagram.com/teknodoz");
+    expect(url("whatsapp")).toBe(
+      "https://whatsapp.com/channel/0029VbE4O60FnSz2cQgj9U0A",
+    );
+    expect(url("youtube")).toBe("https://www.youtube.com/@teknodoz");
+    expect(url("slack")).toContain("teknodozproje-dfg7355.slack.com");
+    expect(url("x")).toBe("https://x.com/infoteknodoz");
+  });
 });
 
 describe("share urls", () => {

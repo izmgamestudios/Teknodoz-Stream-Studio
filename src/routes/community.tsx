@@ -9,11 +9,12 @@ import { AnnounceCard } from "@/studio/ui/announce-card";
 import { CreditsFooter } from "@/studio/ui/credits";
 import { SupportersSection } from "@/studio/ui/supporters";
 import { BTN, BTN_ACCENT, PANEL, PanelTitle } from "@/studio/ui/fields";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/community")({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "Topluluk — Teknodoz Studio" },
+      { title: titleFromMatches(matches, "Topluluk") },
       {
         name: "description",
         content:

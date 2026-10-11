@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use Teknodoz Studio in your work, please cite it as below."
+title: "Teknodoz Studio: free and open-source web prompter, live-stream and prototype broadcast studio"
+type: software
+authors:
+  - family-names: "Bayer"
+    given-names: "Hüseyin"
+    email: "izmgamestudios@gmail.com"
+    alias: "Teknodoz"
+repository-code: "https://github.com/izmgamestudios/Teknodoz-Stream-Studio"
+url: "https://github.com/izmgamestudios/Teknodoz-Stream-Studio"
+license: MIT
+abstract: >-
+  Teknodoz Studio is a free, open-source, browser-based prompter, recording, live-streaming
+  and prototype broadcast studio. Media processing happens on the user's device; no database
+  or login is required.
+keywords:
+  - prompter
+  - live streaming
+  - WebRTC
+  - RTMP
+  - open source
+  - broadcast studio

@@ -6,11 +6,12 @@ import { useT } from "@/studio/i18n/use-t";
 import { ConnectCard } from "@/studio/ui/connect-card";
 import { RemoteView } from "@/studio/ui/guest-views";
 import { useClientConnection } from "@/studio/ui/use-client";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/remote")({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "Kumanda — Teknodoz Studio" },
+      { title: titleFromMatches(matches, "Kumanda") },
       { name: "robots", content: "noindex" },
       { name: "referrer", content: "no-referrer" },
       {

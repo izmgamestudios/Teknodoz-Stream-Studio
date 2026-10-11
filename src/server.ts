@@ -4,6 +4,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { createLiveApi } from "./server/live";
 import { liveConfigFromEnv, tokenTooShort } from "./server/live-policy";
+import { handleManifest } from "./server/manifest";
 import { createRoomsApi } from "./server/rooms";
 
 type ServerEntry = {
@@ -74,6 +75,8 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const manifestResponse = handleManifest(request);
+      if (manifestResponse) return manifestResponse;
       const roomResponse = await rooms.handle(request);
       if (roomResponse) return roomResponse;
       const liveResponse = await live.handle(request);

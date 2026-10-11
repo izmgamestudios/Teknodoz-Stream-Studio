@@ -15,11 +15,12 @@ import { EditorLinkCard, ModerationDesk } from "@/studio/ui/chat-panels";
 import { GuestCard } from "@/studio/ui/live-panel";
 import { RoomLinks, RoomLog, RoomPool } from "@/studio/ui/room-panels";
 import { PANEL, PanelTitle } from "@/studio/ui/fields";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/room")({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "Oda — Teknodoz Studio" },
+      { title: titleFromMatches(matches, "Oda") },
       {
         name: "description",
         content:

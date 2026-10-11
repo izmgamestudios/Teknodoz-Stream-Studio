@@ -21,18 +21,18 @@ import {
 } from "@/studio/ui/fields";
 import { PrompterPanel } from "@/studio/ui/prompter-panel";
 import { NotchView, PrompterView } from "@/studio/ui/prompter-view";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "Prompter — Teknodoz Studio" },
+      { title: titleFromMatches(matches, "Prompter") },
       {
         name: "description",
         content:
           "Sunucusuz, tarayıcıda çalışan akıllı teleprompter: sesle takip, kamera altı notch modu, burn-in ve .docx/.txt içe aktarma.",
       },
-      { property: "og:title", content: "Prompter — Teknodoz Studio" },
-      { property: "og:type", content: "website" },
+      { property: "og:title", content: titleFromMatches(matches, "Prompter") },
     ],
   }),
   component: PrompterPage,

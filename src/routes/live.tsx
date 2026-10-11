@@ -5,11 +5,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { StudioProvider } from "@/studio/runtime/use-studio";
 import { CreditsFooter } from "@/studio/ui/credits";
 import { LiveApp } from "@/studio/ui/live-page";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/live")({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "Canlı yayın — Teknodoz Studio" },
+      { title: titleFromMatches(matches, "Canlı yayın") },
       {
         name: "description",
         content:

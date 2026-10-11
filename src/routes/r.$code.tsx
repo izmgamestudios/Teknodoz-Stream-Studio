@@ -16,6 +16,7 @@ import { ParticipantChat } from "@/studio/ui/chat-panels";
 import { CreditsFooter } from "@/studio/ui/credits";
 import { BTN, BTN_ACCENT, INPUT } from "@/studio/ui/fields";
 import { RemoteView, ViewerGuestView } from "@/studio/ui/guest-views";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/r/$code")({
   validateSearch: (s: Record<string, unknown>): { as?: RoomRole } =>
@@ -25,9 +26,9 @@ export const Route = createFileRoute("/r/$code")({
     s["as"] === "chat"
       ? { as: s["as"] }
       : {},
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "Teknodoz Studio" },
+      { title: titleFromMatches(matches) },
       { name: "robots", content: "noindex" },
       { name: "referrer", content: "no-referrer" },
     ],

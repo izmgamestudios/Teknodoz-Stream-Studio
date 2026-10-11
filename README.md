@@ -35,6 +35,9 @@ Tüm ses ve video işleme süreçleri doğrudan kullanıcının bilgisayarında 
 | **Canlı yayın** (`/live`) — YouTube, Facebook, Twitch, Kick, Instagram, TikTok veya özel RTMP(S) hedefi; yayın anahtarı + sunucu adresi, çoklu hedef | ✅ | Tarayıcı → **kendi sunucunuzdaki ffmpeg köprüsü** → RTMPS. Varsayılan **kapalı**: `LIVE_ADMIN_TOKEN` + ffmpeg gerekir. Yerelde RTMP'ye uçtan uca doğrulandı; gerçek platform/RTMPS denenmedi. Bkz. [`docs/LIVE.md`](docs/LIVE.md) |
 | **Topluluk merkezi** (`/community`) — WhatsApp kanalı, Telegram, Slack, Discord, Facebook grubu, LinkedIn sayfası bağlantıları (doğrulamalı) + **yayın duyurusu** paylaşımı (WhatsApp/Telegram/LinkedIn/Facebook/X/e-posta, API anahtarı yok) | ✅ | Kanalları sahibi açar; adresler `src/studio/community/links.ts`'e yazılır. Rehber ve hazır metinler: [`docs/COMMUNITY.md`](docs/COMMUNITY.md) |
 | **Sponsor / ortak / yatırımcı sistemi** — Stüdyo → *Sponsorlar* paneli (logo, seviye, yayında göster), dönüşümlü **Sponsorlar** yayın katmanı, ekranda kalma süresi raporu (CSV); `/community` destekçi duvarı, paket taslakları ve başvuru kiti (e-posta/WhatsApp taslağı, sunucuya veri gitmez) | ✅ | Süre = ekranda kalma, izleyici sayısı değil. Strateji, fiyat hipotezleri ve 90 günlük plan: [`docs/STRATEGY.md`](docs/STRATEGY.md) |
+| **Marka sistemi** — ad, logo, slogan, logo altı **"Erken erişim"** etiketi, tema renkleri, köşe/ölçek, simgeler, paylaşım (Open Graph/X) ve arama meta verisi özelleştirilebilir | ✅ | Ayarlar'da düzenleyici (bu tarayıcı + site için dışa/içe aktarma), `config.ts` ve `BRAND_*` ortam değişkenleri; tüm değerler doğrulanır. Bkz. [`docs/BRANDING.md`](docs/BRANDING.md) |
+| **İndir** (`/download`) — Windows, macOS, Linux, Android, iOS: **uygulama olarak yükle (PWA)**, platforma özel adımlar, QR; yerel kurulum dosyası/mağaza bağlantıları yapılandırılabilir | ✅ PWA · ⏳ yerel yükleyiciler | Yerel yükleyiciler henüz **üretilmedi** (sayfada "Henüz yok"); yol haritası ve bağlantı ekleme: [`docs/DOWNLOADS.md`](docs/DOWNLOADS.md) |
+| **Kılavuz** (`/guide`) — adım adım kullanım, **Drive PDF** ve **YouTube video** gömme (tıklayınca yüklenir), kısayollar, SSS; aynı içerik GitHub'da | ✅ | PDF/video adresleri `src/studio/guide/resources-config.ts`'e yazılır. [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) · [`docs/USER-GUIDE.en.md`](docs/USER-GUIDE.en.md) |
 | **DozDeck** — telefon kumandası (`/r/KOD?as=remote`, manuel: `/remote`) | ✅ | Sahne, prompter, mute, kayıt, işaret |
 | Ayarlar (`/settings`) — çözünürlük/fps/bit hızı, STUN, kısayol düzenleme, dil (TR/EN) | ✅ | Arayüz çevirisi: menü, ayarlar, konuk/kumanda sayfaları. Stüdyo panelleri henüz Türkçe |
 | Manuel (sunucusuz) bağlantı + QR tarama (`BarcodeDetector`) | ✅ | Röle yoksa yedek; QR tarama yalnızca Chromium (Android/macOS) |
@@ -56,6 +59,20 @@ Tüm ses ve video işleme süreçleri doğrudan kullanıcının bilgisayarında 
   Yayıncı her katılımcıya ayrı kodlama yaptığı için pratik üst sınır ≈ 8 kişidir.
 - Konuk sesi yayın karışımına girer; geri besleme olmaması için **kulaklık** önerilir (mix-minus yok).
 - Ses/efekt dosyaları `.pptdz` paketine girmez (yalnızca sahnelerde kullanılan görsel ve videolar).
+
+## 🌐 Topluluk ve kanallar
+
+| Kanal | Bağlantı |
+|---|---|
+| WhatsApp Kanalı | [whatsapp.com/channel/…](https://whatsapp.com/channel/0029VbE4O60FnSz2cQgj9U0A) |
+| LinkedIn (Showcase) | [linkedin.com/showcase/teknodoz](https://www.linkedin.com/showcase/teknodoz) |
+| Instagram | [instagram.com/teknodoz](https://www.instagram.com/teknodoz) |
+| YouTube | [youtube.com/@teknodoz](https://www.youtube.com/@teknodoz) |
+| X | [x.com/infoteknodoz](https://x.com/infoteknodoz) |
+| Slack | çalışma alanı üyelerine özel (`teknodozproje-dfg7355.slack.com`) |
+| GitHub | [Issues / Discussions](https://github.com/izmgamestudios/Teknodoz-Stream-Studio) |
+
+Uygulamada `/community` sayfası aynı bağlantıları doğrulayarak gösterir. Kurulum ve kurallar: [`docs/COMMUNITY.md`](docs/COMMUNITY.md).
 
 ## 🔒 Güvenlik & Gizlilik İlkeleri / Privacy & Security
 
@@ -106,7 +123,7 @@ npm install
 
 # Geliştirici sunucusunu başlatın
 npm run dev        # http://localhost:5173
-npm run test       # vitest (1400+ birim testi)
+npm run test       # vitest (1800+ birim testi)
 npm run build      # üretim derlemesi (varsayılan hedef Cloudflare; Node için NITRO_PRESET=node-server)
 ```
 
@@ -115,8 +132,25 @@ npm run build      # üretim derlemesi (varsayılan hedef Cloudflare; Node için
 ## 🧱 Mimari / Architecture
 
 Ayrıntılar: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Kısaca: `src/studio/` altında saf mantık modülleri
-(`storage`, `engine`, `prompter`, `proto`, `p2p`, `project`), onları birleştiren `runtime/StudioRuntime` ve
-React arayüzü `ui/` bulunur. Sayfalar: `/` (prompter), `/studio`, `/join` (izleyici/konuk), `/remote` (telefon).
+(`storage`, `engine`, `prompter`, `proto`, `p2p`, `project`, `branding`, `pwa`, `guide`), onları birleştiren `runtime/StudioRuntime` ve
+React arayüzü `ui/` bulunur. Sayfalar: `/` (prompter), `/studio`, `/room`, `/live`, `/community`, `/guide`, `/download`, `/settings`,
+`/join` (izleyici/konuk), `/remote` (telefon).
+
+---
+
+## 📚 Dokümantasyon
+
+Tüm belgelerin dizini: [`docs/README.md`](docs/README.md).
+
+| Belge | İçerik |
+|---|---|
+| [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) · [EN](docs/USER-GUIDE.en.md) | kullanım kılavuzu |
+| [`docs/BRANDING.md`](docs/BRANDING.md) | marka, tema, meta/paylaşım, simgeler |
+| [`docs/DOWNLOADS.md`](docs/DOWNLOADS.md) | PWA kurulumu, yerel yükleyici yol haritası |
+| [`docs/COMMUNITY.md`](docs/COMMUNITY.md) · [`docs/STRATEGY.md`](docs/STRATEGY.md) | topluluk kanalları, sponsor stratejisi |
+| [`docs/ROOM.md`](docs/ROOM.md) · [`docs/LIVE.md`](docs/LIVE.md) | oda rölesi/sohbet, canlı yayın köprüsü |
+| [`docs/KAYNAKCA.md`](docs/KAYNAKCA.md) | kaynakça |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`SECURITY.md`](SECURITY.md) · [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) · [`CITATION.cff`](CITATION.cff) | katkı, güvenlik, davranış, alıntı |
 
 ---
 
@@ -134,4 +168,5 @@ cd ~/htdocs/ALANADI.COM && git fetch origin && git reset --hard origin/main \
 - CloudPanel sitesi `127.0.0.1:3011`'e reverse proxy olmalı, **HTTPS** şarttır (kamera/mikrofon için).
 - pm2'yi **tek örnek** (fork) çalıştırın: oda rölesi belleği süreçler arasında paylaşılmaz. Ayrıntı: [`docs/ROOM.md`](docs/ROOM.md).
 - Canlı yayın (`/live`) için sunucuya `ffmpeg` kurun ve ortama gizli bir `LIVE_ADMIN_TOKEN` (≥16 karakter) verin; reverse proxy gövde limiti ≥ 8 MB olmalı. Güvenlik modeli ve kurulum: [`docs/LIVE.md`](docs/LIVE.md).
+- Marka/meta: sunucu ortamına `BRAND_JSON` ya da `BRAND_*` değişkenleri verin (en az `BRAND_SITE_URL=https://alan.adı`); pm2'yi `--update-env` ile başlatın. Ayrıntı: [`docs/BRANDING.md`](docs/BRANDING.md).
 - Gerçek cihaz test rehberi: [`docs/DEVICE-TESTING.md`](docs/DEVICE-TESTING.md).
