@@ -16,6 +16,7 @@ import { ProjectMenu } from "@/studio/ui/project-menu";
 import { PrototypePanel } from "@/studio/ui/prototype-panel";
 import { RecordBar } from "@/studio/ui/record-bar";
 import { ScenePanel } from "@/studio/ui/scene-panel";
+import { SponsorPanel } from "@/studio/ui/sponsor-panel";
 import { SourceBar } from "@/studio/ui/source-bar";
 import { Stage } from "@/studio/ui/stage";
 
@@ -138,6 +139,7 @@ function StudioApp() {
           <ScenePanel />
           <LayerPanel selectedId={selected} onSelect={setSelected} />
           <MediaLibrary onSelect={setSelected} />
+          <SponsorPanel onSelect={setSelected} />
         </div>
 
         <main className="order-1 space-y-3 xl:order-2">

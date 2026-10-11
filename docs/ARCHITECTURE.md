@@ -17,6 +17,8 @@ protocol messages, compositor hook contracts). Never redefine them elsewhere.
 | `project/` | project store (scenes/layers CRUD, undo), `.pptdz` export/import, migrations | `types`, `AssetStore` |
 | `templates/` | Declarative broadcast frame templates (`catalog.ts`), pure `buildTemplateScene` (-> normal Scene of existing layer kinds), canvas-generated dotted backdrop stored as an image asset | `types`, `defaults` |
 | `live/` | `/live` page logic: platform presets, API client, sequential chunk uploader, `LiveStreamer` (MediaRecorder → server ffmpeg bridge → RTMP(S)); server half in `src/server/live*.ts`, see `docs/LIVE.md` | `types` |
+| `sponsors/` | On-air sponsor layer drawing (`draw.ts`, tier-weighted rotation), screen-time accounting (`exposure.ts`) and the CSV report; sponsor records live in `ProjectState.sponsors` (carried by `.pptdz`) | `types`, `room/chat-draw` |
+| `community/` | Validated channel links (`channels.ts`/`links.ts`), share-intent URLs and announcement text (`share.ts`), project supporters wall + application kit (`supporters.ts`) | `credits` |
 | `runtime/` | glue: owns media sources, wires compositor + audio + recorder + prompter + p2p + project | all of the above |
 | `ui/` | React panels, using the runtime | `runtime` |
 | `routes/` | `/` (prompter), `/studio`, `/join` (viewer/guest), `/remote` (phone control) | `ui` |

@@ -321,6 +321,13 @@ export async function importPptdz(
 
   const project: ProjectState = {
     ...parsed.project,
+    sponsors: parsed.project.sponsors.map((sp) => {
+      if (!sp.logoAssetId) return sp;
+      const mapped = idMap.get(sp.logoAssetId);
+      if (mapped) return { ...sp, logoAssetId: mapped };
+      warnings.push(`"${sp.name}" sponsorunun logosu pakette yok`);
+      return { ...sp, logoAssetId: "" };
+    }),
     scenes: parsed.project.scenes.map((s) => ({
       ...s,
       layers: s.layers.map((l) => {

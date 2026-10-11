@@ -17,6 +17,7 @@ import {
   type PrompterSettings,
   type ProjectState,
   type Scene,
+  type Sponsor,
 } from "../types";
 import { ProjectSchemaError } from "./errors";
 
@@ -166,6 +167,14 @@ export const layerSchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     ...layerBase,
+    kind: z.literal("sponsor"),
+    mode: z.enum(["rotate", "strip"]),
+    dwellMs: num(1500, 60_000),
+    heading: z.string().max(60),
+    showTagline: z.boolean(),
+  }),
+  z.object({
+    ...layerBase,
     kind: z.literal("chat"),
     mode: z.enum(["spotlight", "feed"]),
     fontSize: num(8, 400),
@@ -173,6 +182,33 @@ export const layerSchema = z.discriminatedUnion("kind", [
     maxMessages: num(1, 8),
   }),
 ]);
+
+export const MAX_SPONSORS = 40;
+
+function httpUrlOrEmpty(v: string): boolean {
+  if (v === "") return true;
+  try {
+    const u = new URL(v);
+    return (
+      (u.protocol === "https:" || u.protocol === "http:") &&
+      !u.username &&
+      !u.password
+    );
+  } catch {
+    return false;
+  }
+}
+
+export const sponsorSchema = z.object({
+  id: z.string().min(1).max(128),
+  name: z.string().trim().min(1).max(80),
+  kind: z.enum(["sponsor", "partner", "collaborator", "investor"]),
+  tier: z.enum(["title", "gold", "silver", "supporter"]),
+  url: z.string().max(300).refine(httpUrlOrEmpty, "bad url"),
+  tagline: z.string().max(140),
+  logoAssetId: z.string().max(128),
+  onAir: z.boolean(),
+});
 
 const sceneSchema = z.object({
   id: z.string().min(1).max(128),
@@ -336,6 +372,29 @@ export function parseProject(input: unknown): ParseProjectResult {
         settings: repairPrompterSettings(rawPrompter["settings"]),
       },
       settings: parseSettings(raw["settings"]),
+      sponsors: parseSponsors(raw["sponsors"], warnings),
     },
   };
+}
+
+/** Per-item repair: invalid sponsors are dropped, ids made unique, count capped. */
+function parseSponsors(raw: unknown, warnings: string[]): Sponsor[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Sponsor[] = [];
+  const ids = new Set<string>();
+  for (const item of raw) {
+    if (out.length >= MAX_SPONSORS) {
+      warnings.push(`Sponsor sayısı ${MAX_SPONSORS} ile sınırlandı`);
+      break;
+    }
+    const r = sponsorSchema.safeParse(item);
+    if (!r.success) {
+      warnings.push("Geçersiz bir sponsor kaydı atlandı");
+      continue;
+    }
+    const id = ids.has(r.data.id) ? uid("sp") : r.data.id;
+    ids.add(id);
+    out.push({ ...r.data, id });
+  }
+  return out;
 }

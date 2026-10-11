@@ -23,6 +23,7 @@ import {
   type VoiceFollower,
 } from "../prompter";
 import {
+  assetIdsInProject,
   createProjectStore,
   getActiveScene,
   type ProjectStore,
@@ -52,6 +53,9 @@ import { getTemplate } from "../templates/catalog";
 import type { TemplateMode, TemplateOptions } from "../templates/types";
 import { roomBadge } from "../room/badge";
 import { LiveStreamer } from "../live/streamer";
+import { drawSponsors, sortForAir, type SponsorItem } from "../sponsors/draw";
+import { SponsorExposure } from "../sponsors/exposure";
+import { sponsorReportCsv } from "../sponsors/report";
 import { drawChat, type ChatLine } from "../room/chat-draw";
 import { RoomHostSession } from "../room/host-session";
 import type {
@@ -66,9 +70,12 @@ import type {
   RemoteCommand,
   RemoteState,
   Scene,
+  SponsorLayer,
   WebLayer,
 } from "../types";
 import { SourceManager } from "./sources";
+
+const EXPOSURE_KEY = "sponsors:exposure:v1";
 
 export interface RuntimeSnapshot {
   readonly recorder: RecorderSnapshot | null;
@@ -127,6 +134,10 @@ export class StudioRuntime {
   private remoteTimer: ReturnType<typeof setInterval> | null = null;
   private roomSession: RoomHostSession | null = null;
   private liveStreamer: LiveStreamer | null = null;
+  /** screen time of on-air sponsors (recording or live), see sponsors/exposure.ts */
+  readonly sponsorExposure = new SponsorExposure();
+  private exposureKv = createKvStore();
+  private exposureTimer: ReturnType<typeof setInterval> | null = null;
   private roomUnsub: (() => void) | null = null;
   private disposed = false;
 
@@ -148,6 +159,36 @@ export class StudioRuntime {
     this.model = parseScript(this.modelScript);
     this.unsubProject = this.project.subscribe(() => this.onProjectChange());
     this.initCompositor();
+    // persist sponsor screen time (only when it changed)
+    this.exposureTimer = setInterval(() => void this.flushExposure(), 15_000);
+  }
+
+  private async flushExposure(): Promise<void> {
+    if (!this.sponsorExposure.takeDirty()) return;
+    try {
+      await this.exposureKv.set(EXPOSURE_KEY, this.sponsorExposure.snapshot());
+    } catch {
+      // storage blocked: the numbers stay in memory
+    }
+  }
+
+  private syncOnAir(): void {
+    const rec = this.snap.recorder?.status === "recording";
+    const live = this.liveStreamer?.getSnapshot().phase === "live";
+    this.sponsorExposure.setOnAir(rec || live);
+  }
+
+  /** CSV of sponsor screen time (this on-air session and all time). */
+  sponsorReport(): string {
+    return sponsorReportCsv(
+      this.project.getState().sponsors,
+      this.sponsorExposure.snapshot(),
+    );
+  }
+
+  clearSponsorExposure(): void {
+    this.sponsorExposure.clear();
+    void this.flushExposure();
   }
 
   /* ---------------------------- snapshot store ---------------------------- */
@@ -159,6 +200,7 @@ export class StudioRuntime {
   getSnapshot = (): RuntimeSnapshot => this.snap;
   private patch(p: Partial<RuntimeSnapshot>): void {
     this.snap = { ...this.snap, ...p };
+    this.syncOnAir();
     for (const l of [...this.listeners]) l();
   }
 
@@ -166,6 +208,11 @@ export class StudioRuntime {
 
   /** Restore the autosaved project (validated + repaired). Safe to call once after creation. */
   async restore(): Promise<boolean> {
+    try {
+      this.sponsorExposure.restore(await this.exposureKv.get(EXPOSURE_KEY));
+    } catch {
+      // no stored report
+    }
     try {
       const raw = await this.autosaver.loadLatest();
       if (raw === undefined || this.disposed) return false;
@@ -227,6 +274,29 @@ export class StudioRuntime {
 
   private hooks: CompositorHooks = {
     resolveSource: (layer: Layer) => this.sources.resolve(layer),
+    drawSponsors: (ctx, layer: SponsorLayer, box, now) => {
+      const items: SponsorItem[] = sortForAir(
+        this.project.getState().sponsors.filter((s) => s.onAir),
+      ).map((s) => {
+        const f = s.logoAssetId
+          ? this.sources.getAssetImage(s.logoAssetId)
+          : null;
+        return {
+          id: s.id,
+          name: s.name,
+          tagline: s.tagline,
+          kind: s.kind,
+          tier: s.tier,
+          logo: f
+            ? { source: f.source, width: f.width, height: f.height }
+            : null,
+        };
+      });
+      this.sponsorExposure.record(
+        drawSponsors(ctx, layer, box, now, items),
+        now,
+      );
+    },
     drawChat: (ctx, layer: ChatLayer, box) => {
       const chat = this.roomSession?.chat.getSnapshot();
       if (!chat || chat.status === "idle") return;
@@ -298,14 +368,9 @@ export class StudioRuntime {
 
     // free per-layer resources of removed layers
     const layerIds = new Set<string>();
-    const assetIds = new Set<string>();
-    for (const s of state.scenes)
-      for (const l of s.layers) {
-        layerIds.add(l.id);
-        if ((l.kind === "image" || l.kind === "video") && l.assetId)
-          assetIds.add(l.assetId);
-      }
-    this.sources.gc(layerIds, assetIds);
+    for (const s of state.scenes) for (const l of s.layers) layerIds.add(l.id);
+    this.sources.gc(layerIds, new Set(assetIdsInProject(state)));
+    this.sponsorExposure.prune(new Set(state.sponsors.map((s) => s.id)));
     for (const id of [...this.webBoxes.keys()])
       if (!layerIds.has(id)) {
         this.webBoxes.delete(id);
@@ -616,13 +681,15 @@ export class StudioRuntime {
   /** RTMP(S) live broadcast controller (server-side ffmpeg bridge), created on first use. */
   get live(): LiveStreamer {
     if (!this.liveStreamer) {
-      this.liveStreamer = new LiveStreamer({
+      const streamer = new LiveStreamer({
         getCanvas: () => this.canvas,
         getAudioStream: () => this.audio.getMixStream(),
         ensureAudio: async () => {
           await this.audio.ensureRunning();
         },
       });
+      streamer.subscribe(() => this.syncOnAir());
+      this.liveStreamer = streamer;
     }
     return this.liveStreamer;
   }
@@ -916,6 +983,8 @@ export class StudioRuntime {
     if (this.disposed) return;
     this.disposed = true;
     this.unsubProject();
+    if (this.exposureTimer) clearInterval(this.exposureTimer);
+    await this.flushExposure();
     this.voice?.stop();
     if (this.recorder) await this.stopRecording();
     await this.autosaver.flush();

@@ -735,6 +735,9 @@ export class Compositor {
       case "chat":
         if (!this.hooks.drawChat) return;
         break;
+      case "sponsor":
+        if (!this.hooks.drawSponsors) return;
+        break;
       default:
         break;
     }
@@ -784,6 +787,11 @@ export class Compositor {
         case "chat":
           this.callHook(ctx, () =>
             this.hooks.drawChat?.(ctx, layer, box, nowMs),
+          );
+          break;
+        case "sponsor":
+          this.callHook(ctx, () =>
+            this.hooks.drawSponsors?.(ctx, layer, box, nowMs),
           );
           break;
       }

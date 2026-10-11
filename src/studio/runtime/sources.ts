@@ -409,6 +409,12 @@ export class SourceManager {
     };
   }
 
+  /** Decoded asset image for overlays (starts loading on first call, null until ready). */
+  getAssetImage(assetId: string): FrameSource | null {
+    const f = this.fromImage(assetId);
+    return f && f.ready ? f : null;
+  }
+
   private fromImage(assetId: string): FrameSource | null {
     if (!assetId) return null;
     const cur = this.images.get(assetId);

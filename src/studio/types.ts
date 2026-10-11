@@ -22,7 +22,8 @@ export type LayerKind =
   | "shape"
   | "text"
   | "prompter"
-  | "chat";
+  | "chat"
+  | "sponsor";
 
 export type BlendMode =
   | "source-over"
@@ -161,6 +162,21 @@ export interface ChatLayer extends LayerBase {
   maxMessages: number;
 }
 
+/**
+ * Sponsors / partners on the program output, taken from `ProjectState.sponsors` (those marked
+ * `onAir`). `rotate` shows one at a time (weighted by tier), `strip` shows all logos together.
+ */
+export type SponsorLayerMode = "rotate" | "strip";
+export interface SponsorLayer extends LayerBase {
+  kind: "sponsor";
+  mode: SponsorLayerMode;
+  /** how long one weight unit is shown in `rotate` mode, ms */
+  dwellMs: number;
+  /** small caption above the logos, e.g. "Sponsorlarımız" */
+  heading: string;
+  showTagline: boolean;
+}
+
 export type Layer =
   | WebcamLayer
   | ScreenLayer
@@ -171,7 +187,8 @@ export type Layer =
   | ShapeLayer
   | TextLayer
   | PrompterLayer
-  | ChatLayer;
+  | ChatLayer
+  | SponsorLayer;
 
 /* ------------------------------------------------------------------ */
 /* Scenes                                                              */
@@ -261,9 +278,28 @@ export interface AppSettings {
 /* Project (the .pptdz payload)                                        */
 /* ------------------------------------------------------------------ */
 
+/** Who supports the broadcast: shown on air (optional) and listed in the exposure report. */
+export type SupporterKind = "sponsor" | "partner" | "collaborator" | "investor";
+export type SponsorTier = "title" | "gold" | "silver" | "supporter";
+export interface Sponsor {
+  id: string;
+  name: string;
+  kind: SupporterKind;
+  tier: SponsorTier;
+  /** https website, "" when none */
+  url: string;
+  tagline: string;
+  /** image asset id of the logo, "" when none */
+  logoAssetId: string;
+  /** include in the on-air sponsor layer */
+  onAir: boolean;
+}
+
 export interface ProjectState {
   version: typeof PROJECT_VERSION;
   name: string;
+  /** sponsors / partners of this broadcast (optional in old files, defaults to []) */
+  sponsors: Sponsor[];
   scenes: Scene[];
   activeSceneId: string;
   prompter: PrompterState;
@@ -427,6 +463,13 @@ export interface CompositorHooks {
   drawPrompter?(
     ctx: CanvasRenderingContext2D,
     layer: PrompterLayer,
+    box: Rect,
+    nowMs: number,
+  ): void;
+  /** Sponsor overlay (see `SponsorLayer`). `box` is the layer transform in output px. */
+  drawSponsors?(
+    ctx: CanvasRenderingContext2D,
+    layer: SponsorLayer,
     box: Rect,
     nowMs: number,
   ): void;

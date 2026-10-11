@@ -12,8 +12,9 @@ import type {
   Scene,
   Transform,
   Transition,
+  Sponsor,
 } from "../types";
-import { layerSchema, LIMITS } from "./schema";
+import { layerSchema, LIMITS, MAX_SPONSORS, sponsorSchema } from "./schema";
 
 /** Patch for a layer: `id`/`kind` are never patchable; transform/chroma merge one level deep. */
 type PatchOf<L> = L extends Layer
@@ -433,6 +434,39 @@ export function createProjectStore(
         "prompter-settings",
       );
     },
+    /* ---- sponsors / partners ---- */
+    addSponsor(input: Omit<Sponsor, "id">): string | undefined {
+      if (state.sponsors.length >= MAX_SPONSORS) return undefined;
+      const sp: Sponsor = { ...input, id: uid("sp") };
+      if (!sponsorSchema.safeParse(sp).success) return undefined;
+      commit({ ...state, sponsors: [...state.sponsors, sp] });
+      return sp.id;
+    },
+    /** Merge a patch into a sponsor; rejected (false) when the result would be invalid. */
+    updateSponsor(id: string, patch: Partial<Omit<Sponsor, "id">>): boolean {
+      const cur = state.sponsors.find((s) => s.id === id);
+      if (!cur) return false;
+      const next = { ...cur, ...patch, id };
+      const ok = sponsorSchema.safeParse(next);
+      if (!ok.success) return false;
+      return commit(
+        {
+          ...state,
+          sponsors: state.sponsors.map((s) => (s.id === id ? next : s)),
+        },
+        `sponsor:${id}`,
+      );
+    },
+    removeSponsor(id: string): boolean {
+      if (!state.sponsors.some((s) => s.id === id)) return false;
+      return commit({
+        ...state,
+        sponsors: state.sponsors.filter((s) => s.id !== id),
+      });
+    },
+    moveSponsor(from: number, to: number): void {
+      commit({ ...state, sponsors: move(state.sponsors, from, to) });
+    },
     updateSettings(patch: Partial<AppSettings>) {
       commit(
         { ...state, settings: { ...state.settings, ...patch } },
@@ -462,12 +496,17 @@ export function findLayer(
   return undefined;
 }
 
-/** All asset ids referenced by image/video layers (deduplicated, empty ids skipped). */
+/**
+ * All asset ids the project references: image/video layers and sponsor logos
+ * (deduplicated, empty ids skipped).
+ */
 export function assetIdsInProject(state: ProjectState): string[] {
   const ids = new Set<string>();
   for (const s of state.scenes)
     for (const l of s.layers)
       if ((l.kind === "image" || l.kind === "video") && l.assetId)
         ids.add(l.assetId);
+  for (const sp of state.sponsors ?? [])
+    if (sp.logoAssetId) ids.add(sp.logoAssetId);
   return [...ids];
 }

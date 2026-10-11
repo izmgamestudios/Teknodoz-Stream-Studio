@@ -278,6 +278,55 @@ export function KindFields({
           </p>
         </div>
       );
+    case "sponsor":
+      return (
+        <div className="space-y-2">
+          <Field label="Gösterim">
+            <SelectInput
+              value={layer.mode}
+              options={[
+                {
+                  value: "rotate",
+                  label: "Sırayla tek tek (seviyeye göre süre)",
+                },
+                { value: "strip", label: "Tüm logolar yan yana" },
+              ]}
+              onChange={(mode) => patch({ mode })}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-2">
+            {layer.mode === "rotate" && (
+              <Field label="Birim süre (ms)">
+                <NumInput
+                  value={layer.dwellMs}
+                  min={1500}
+                  max={60000}
+                  step={500}
+                  onChange={(dwellMs) => patch({ dwellMs })}
+                />
+              </Field>
+            )}
+            <Field label="Başlık">
+              <input
+                className={INPUT}
+                maxLength={60}
+                value={layer.heading}
+                onChange={(e) => patch({ heading: e.target.value })}
+              />
+            </Field>
+          </div>
+          <Check
+            checked={layer.showTagline}
+            onChange={(showTagline) => patch({ showTagline })}
+          >
+            Slogan / açıklama göster
+          </Check>
+          <p className="text-xs text-muted-foreground">
+            Gösterilecek sponsorlar “Sponsorlar” panelinde “Yayında göster”
+            işaretli olanlardır. Ana sponsor, altına göre 3 kat uzun kalır.
+          </p>
+        </div>
+      );
     case "chat":
       return (
         <div className="space-y-2">

@@ -7,6 +7,7 @@ import { COMMUNITY_LINKS } from "@/studio/community/links";
 import { CREDITS } from "@/studio/credits";
 import { AnnounceCard } from "@/studio/ui/announce-card";
 import { CreditsFooter } from "@/studio/ui/credits";
+import { SupportersSection } from "@/studio/ui/supporters";
 import { BTN, BTN_ACCENT, PANEL, PanelTitle } from "@/studio/ui/fields";
 
 export const Route = createFileRoute("/community")({
@@ -93,6 +94,8 @@ function CommunityPage() {
         </section>
 
         <AnnounceCard />
+
+        <SupportersSection />
 
         <details className={`${PANEL} lg:col-span-2`} id="kurulum">
           <summary className="cursor-pointer text-sm font-semibold">

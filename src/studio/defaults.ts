@@ -99,6 +99,7 @@ const NAMES: Record<LayerKind, string> = {
   text: "Yazı",
   prompter: "Prompter (burn-in)",
   chat: "Sohbet",
+  sponsor: "Sponsorlar",
 };
 
 /**
@@ -213,6 +214,17 @@ export function createLayer<K extends LayerKind>(
         maxMessages: 4,
       };
       break;
+    case "sponsor":
+      layer = {
+        ...base,
+        kind: "sponsor",
+        transform: box(1320, 880, 560, 150),
+        mode: "rotate",
+        dwellMs: 6000,
+        heading: "Sponsorlarımız",
+        showTagline: true,
+      };
+      break;
     default:
       throw new Error(`Unknown layer kind: ${String(kind)}`);
   }
@@ -256,6 +268,7 @@ export function defaultProject(): ProjectState {
   return {
     version: PROJECT_VERSION,
     name: "Adsız Proje",
+    sponsors: [],
     scenes: [solo, mobile, desktop],
     activeSceneId: solo.id,
     prompter: { script: "", settings: defaultPrompterSettings() },
