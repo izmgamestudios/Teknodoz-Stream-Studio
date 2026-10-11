@@ -160,6 +160,37 @@ export function createProjectStore(
       commit({ ...state, scenes: [...state.scenes, s], activeSceneId: s.id });
       return s.id;
     },
+    /** Insert a fully built scene (e.g. from a template) after the active one and activate it. */
+    insertScene(scene: Scene): string | undefined {
+      if (
+        state.scenes.length >= LIMITS.scenes ||
+        scene.layers.length > LIMITS.layersPerScene
+      )
+        return undefined;
+      const fresh: Scene = {
+        ...scene,
+        id: uid("sc"),
+        name: scene.name.slice(0, LIMITS.nameChars),
+        layers: scene.layers.map(cloneLayerFresh),
+      };
+      delete fresh.hotkey;
+      const at = state.scenes.findIndex((s) => s.id === state.activeSceneId);
+      const scenes = [...state.scenes];
+      scenes.splice(at < 0 ? scenes.length : at + 1, 0, fresh);
+      commit({ ...state, scenes, activeSceneId: fresh.id });
+      return fresh.id;
+    },
+    /** Replace the layers (and optionally the name) of a scene, keeping its id/hotkey/transition. */
+    replaceSceneLayers(id: string, layers: Layer[], name?: string): boolean {
+      if (layers.length > LIMITS.layersPerScene) return false;
+      return commit(
+        mapScene(id, (s) => ({
+          ...s,
+          name: name ? name.slice(0, LIMITS.nameChars) : s.name,
+          layers: layers.map(cloneLayerFresh),
+        })),
+      );
+    },
     duplicateScene(id: string): string | undefined {
       const src = state.scenes.find((s) => s.id === id);
       if (!src || state.scenes.length >= LIMITS.scenes) return undefined;

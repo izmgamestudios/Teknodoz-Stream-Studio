@@ -4,6 +4,7 @@ import { useState } from "react";
 import { getActiveScene } from "../project/store";
 import { useProject, useStudio } from "../runtime/use-studio";
 import type { TransitionType } from "../types";
+import { TemplateDialog } from "./template-dialog";
 import {
   BTN,
   Field,
@@ -30,13 +31,16 @@ export function ScenePanel() {
     <section className={PANEL} aria-label="Sahneler">
       <PanelTitle
         aside={
-          <button
-            className={BTN}
-            onClick={() => rt.project.addScene()}
-            title="Yeni sahne"
-          >
-            + Sahne
-          </button>
+          <span className="flex gap-1.5">
+            <TemplateDialog />
+            <button
+              className={BTN}
+              onClick={() => rt.project.addScene()}
+              title="Yeni sahne"
+            >
+              + Sahne
+            </button>
+          </span>
         }
       >
         Sahneler

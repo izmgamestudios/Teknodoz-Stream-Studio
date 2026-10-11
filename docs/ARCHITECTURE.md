@@ -15,6 +15,7 @@ protocol messages, compositor hook contracts). Never redefine them elsewhere.
 | `proto/` | device frames (mobile 390x844, desktop 16:9), touch ripples, tab-capture bridge | `types` |
 | `p2p/` | serverless WebRTC: signaling codec, host (green room), guest/viewer, remote control, QR encoder | `types` |
 | `project/` | project store (scenes/layers CRUD, undo), `.pptdz` export/import, migrations | `types`, `AssetStore` |
+| `templates/` | Declarative broadcast frame templates (`catalog.ts`), pure `buildTemplateScene` (-> normal Scene of existing layer kinds), canvas-generated dotted backdrop stored as an image asset | `types`, `defaults` |
 | `runtime/` | glue: owns media sources, wires compositor + audio + recorder + prompter + p2p + project | all of the above |
 | `ui/` | React panels, using the runtime | `runtime` |
 | `routes/` | `/` (prompter), `/studio`, `/join` (viewer/guest), `/remote` (phone control) | `ui` |

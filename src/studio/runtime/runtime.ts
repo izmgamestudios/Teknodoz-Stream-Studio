@@ -46,6 +46,10 @@ import {
 } from "../storage";
 import { createLayer, defaultProject } from "../defaults";
 import { StudioHost, type InviteResult } from "../p2p";
+import { ensureBackdrop } from "../templates/backdrop";
+import { buildTemplateScene, resolveOptions } from "../templates/build";
+import { getTemplate } from "../templates/catalog";
+import type { TemplateMode, TemplateOptions } from "../templates/types";
 import { roomBadge } from "../room/badge";
 import { RoomHostSession } from "../room/host-session";
 import type {
@@ -495,22 +499,57 @@ export class StudioRuntime {
     if (!ok) return false;
     const st = this.project.getState();
     const scene = getActiveScene(st);
-    const exists = scene.layers.some(
-      (l) => l.kind === "guest" && l.peerId === peerId,
+    const guests = scene.layers.filter(
+      (l): l is Extract<Layer, { kind: "guest" }> => l.kind === "guest",
     );
-    if (!exists) {
-      const info = host.getPeer(peerId);
-      this.project.addLayer(
-        scene.id,
-        createLayer("guest", {
-          peerId,
-          label: info?.name ?? "Konuk",
-          name: info?.name ?? "Konuk",
-        }),
-      );
+    if (guests.some((l) => l.peerId === peerId)) return true;
+    const info = host.getPeer(peerId);
+    const label = info?.name ?? "Konuk";
+    // Template slots: take the first empty guest panel, or one whose guest left.
+    const free = guests.find((l) => {
+      if (l.peerId === "") return true;
+      const p = host.getPeer(l.peerId);
+      return !p || p.status === "disconnected";
+    });
+    if (free) {
+      this.project.updateLayer(scene.id, free.id, { peerId, label });
+      return true;
     }
+    this.project.addLayer(
+      scene.id,
+      createLayer("guest", { peerId, label, name: label }),
+    );
     return true;
   }
+  /**
+   * Build a broadcast-frame template and add it as a new scene (or replace the active
+   * scene's layers). Returns the id of the affected scene.
+   */
+  async applyTemplate(
+    templateId: string,
+    options: Partial<TemplateOptions>,
+    mode: TemplateMode,
+  ): Promise<string | undefined> {
+    const def = getTemplate(templateId);
+    if (!def) return undefined;
+    const resolved = resolveOptions(def, options);
+    const bg = def.backdrop
+      ? await ensureBackdrop(this.assets, resolved.accent)
+      : undefined;
+    const scene = buildTemplateScene(def, resolved, bg);
+    if (mode === "replace-active") {
+      const active = getActiveScene(this.project.getState());
+      return this.project.replaceSceneLayers(
+        active.id,
+        scene.layers,
+        scene.name,
+      )
+        ? active.id
+        : undefined;
+    }
+    return this.project.insertScene(scene);
+  }
+
   takeGuestOffAir(peerId: string): boolean {
     return this.ensureHost().takeOffAir(peerId);
   }
