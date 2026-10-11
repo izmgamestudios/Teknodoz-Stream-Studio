@@ -762,7 +762,9 @@ export class Compositor {
               layer,
               frame,
               box,
-              layer.kind === "image" ? "contain" : "cover",
+              layer.kind === "image" && layer.fit !== "cover"
+                ? "contain"
+                : "cover",
             );
           break;
         case "web":

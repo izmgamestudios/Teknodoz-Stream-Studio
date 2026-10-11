@@ -122,7 +122,12 @@ export const layerSchema = z.discriminatedUnion("kind", [
     peerId: z.string().max(128),
     label: name,
   }),
-  z.object({ ...layerBase, kind: z.literal("image"), assetId }),
+  z.object({
+    ...layerBase,
+    kind: z.literal("image"),
+    assetId,
+    fit: z.enum(["contain", "cover"]).optional(),
+  }),
   z.object({
     ...layerBase,
     kind: z.literal("video"),

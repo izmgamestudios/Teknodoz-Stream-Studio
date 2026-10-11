@@ -558,9 +558,11 @@ export class StudioRuntime {
     const def = getTemplate(templateId);
     if (!def) return undefined;
     const resolved = resolveOptions(def, options);
-    const bg = def.backdrop
-      ? await ensureBackdrop(this.assets, resolved.accent)
-      : undefined;
+    // an uploaded background replaces the generated dotted one
+    const bg =
+      def.backdrop && !resolved.backgroundAssetId
+        ? await ensureBackdrop(this.assets, resolved.accent)
+        : undefined;
     const scene = buildTemplateScene(def, resolved, bg);
     if (mode === "replace-active") {
       const active = getActiveScene(this.project.getState());

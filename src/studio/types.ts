@@ -104,6 +104,8 @@ export interface GuestLayer extends LayerBase {
 export interface ImageLayer extends LayerBase {
   kind: "image";
   assetId: string;
+  /** `contain` (default) keeps the whole image, `cover` fills the box and crops the overflow */
+  fit?: "contain" | "cover";
 }
 export interface VideoLayer extends LayerBase {
   kind: "video";

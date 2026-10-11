@@ -1,6 +1,6 @@
 // src/studio/ui/template-dialog.tsx
 // Picker for the broadcast frame templates (news, 2-up/4-up talk, tutorial, dual screen…).
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Dialog,
@@ -14,10 +14,96 @@ import {
 import { useStudio } from "../runtime/use-studio";
 import { TEMPLATES, TEMPLATE_GROUPS, getTemplate } from "../templates/catalog";
 import type { TemplateMode, TemplateOptions } from "../templates/types";
+import {
+  TEMPLATE_IMAGE_TYPES,
+  TemplateUploadError,
+  importTemplateImage,
+  loadRemembered,
+  saveRemembered,
+  type UploadedImage,
+} from "../templates/uploads";
 import { BTN, BTN_PRIMARY, ColorInput, Field, INPUT } from "./fields";
 import { TemplatePreview } from "./template-preview";
 
 const FIRST = TEMPLATES[0];
+
+const UPLOAD_ERROR: Record<string, string> = {
+  type: "Yalnızca PNG, JPEG, WebP, GIF veya AVIF yüklenebilir (SVG'yi PNG'ye çevirin).",
+  size: "Görsel çok büyük (en çok 12 MB, en çok 8192 px) ya da çok küçük.",
+  decode: "Görsel okunamadı.",
+  store: "Görsel tarayıcı deposuna kaydedilemedi.",
+};
+
+/** One upload slot: pick a file, see it, remove it. */
+function ImageSlot({
+  label,
+  hint,
+  image,
+  disabled,
+  onPick,
+  onClear,
+}: {
+  label: string;
+  hint: string;
+  image: UploadedImage | null;
+  disabled?: boolean;
+  onPick: (file: File) => void;
+  onClear: () => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div className="rounded-md border p-2">
+      <div className="flex items-center gap-2">
+        <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded bg-secondary">
+          {image ? (
+            <img
+              src={image.url}
+              alt=""
+              className="max-h-full max-w-full object-contain"
+            />
+          ) : (
+            <span aria-hidden="true" className="text-lg opacity-50">
+              🖼
+            </span>
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs font-semibold">{label}</span>
+          <span className="block text-[11px] text-muted-foreground">
+            {disabled ? "Bu şablonda arka plan görünmez." : hint}
+          </span>
+        </span>
+        <span className="flex flex-col gap-1">
+          <button
+            type="button"
+            className={BTN}
+            disabled={disabled}
+            onClick={() => ref.current?.click()}
+          >
+            {image ? "Değiştir" : "Yükle"}
+          </button>
+          {image && (
+            <button type="button" className={BTN} onClick={onClear}>
+              Kaldır
+            </button>
+          )}
+        </span>
+      </div>
+      <input
+        ref={ref}
+        type="file"
+        hidden
+        accept={TEMPLATE_IMAGE_TYPES.join(",")}
+        aria-label={label}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) onPick(f);
+        }}
+      />
+    </div>
+  );
+}
 
 export function TemplateDialog() {
   const rt = useStudio();
@@ -29,7 +115,80 @@ export function TemplateDialog() {
   const [mode, setMode] = useState<TemplateMode>("new-scene");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [logo, setLogo] = useState<UploadedImage | null>(null);
+  const [bg, setBg] = useState<UploadedImage | null>(null);
   const def = getTemplate(id);
+
+  // options + the uploaded images, as the builder wants them
+  const effective = useMemo<TemplateOptions>(
+    () => ({
+      ...opts,
+      ...(logo ? { logoAssetId: logo.id } : {}),
+      ...(bg ? { backgroundAssetId: bg.id } : {}),
+    }),
+    [opts, logo, bg],
+  );
+  const assetUrls = useMemo<Record<string, string>>(() => {
+    const m: Record<string, string> = {};
+    if (logo) m[logo.id] = logo.url;
+    if (bg) m[bg.id] = bg.url;
+    return m;
+  }, [logo, bg]);
+
+  // bring back the logo / background used last time (when the files are still stored)
+  useEffect(() => {
+    if (!open) return;
+    let off = false;
+    void (async () => {
+      const r = loadRemembered();
+      const restore = async (assetId: string | undefined) => {
+        if (!assetId || !(await rt.assets.get(assetId))) return null;
+        const url = await rt.assets.getUrl(assetId);
+        return url ? { id: assetId, url } : null;
+      };
+      const [l, b] = await Promise.all([
+        restore(r.logoAssetId),
+        restore(r.backgroundAssetId),
+      ]);
+      if (!off) {
+        setLogo((cur) => cur ?? l);
+        setBg((cur) => cur ?? b);
+      }
+    })();
+    return () => {
+      off = true;
+    };
+  }, [open, rt]);
+
+  const upload = async (file: File, kind: "logo" | "background") => {
+    setError(null);
+    try {
+      const img = await importTemplateImage(rt.assets, file, kind);
+      if (kind === "logo") setLogo(img);
+      else setBg(img);
+      const r = loadRemembered();
+      saveRemembered({
+        ...r,
+        ...(kind === "logo"
+          ? { logoAssetId: img.id }
+          : { backgroundAssetId: img.id }),
+      });
+    } catch (e) {
+      setError(
+        UPLOAD_ERROR[e instanceof TemplateUploadError ? e.code : "decode"] ??
+          "Yüklenemedi.",
+      );
+    }
+  };
+
+  const clear = (kind: "logo" | "background") => {
+    if (kind === "logo") setLogo(null);
+    else setBg(null);
+    const r = loadRemembered();
+    if (kind === "logo") delete r.logoAssetId;
+    else delete r.backgroundAssetId;
+    saveRemembered(r);
+  };
 
   const pick = (nextId: string) => {
     const d = getTemplate(nextId);
@@ -43,7 +202,7 @@ export function TemplateDialog() {
     if (!def) return;
     setBusy(true);
     setError(null);
-    const sceneId = await rt.applyTemplate(def.id, opts, mode);
+    const sceneId = await rt.applyTemplate(def.id, effective, mode);
     setBusy(false);
     if (sceneId) setOpen(false);
     else setError("Şablon uygulanamadı (sahne/katman sınırı?).");
@@ -108,7 +267,11 @@ export function TemplateDialog() {
 
           {def && (
             <aside className="space-y-3 lg:sticky lg:top-0 lg:self-start">
-              <TemplatePreview def={def} options={opts} />
+              <TemplatePreview
+                def={def}
+                options={effective}
+                assetUrls={assetUrls}
+              />
               <Field label="Tema rengi">
                 <ColorInput
                   value={opts.accent}
@@ -145,6 +308,21 @@ export function TemplateDialog() {
                   />
                 </Field>
               )}
+              <ImageSlot
+                label="Logo"
+                hint="Şablonun logo alanına yerleşir (en-boy oranı korunur; şeffaf PNG önerilir)."
+                image={logo}
+                onPick={(f) => void upload(f, "logo")}
+                onClear={() => clear("logo")}
+              />
+              <ImageSlot
+                label="Arka plan görseli"
+                hint="Üretilen noktalı arka planın yerine ekranı doldurur (16:9 önerilir)."
+                image={bg}
+                disabled={!def.backdrop}
+                onPick={(f) => void upload(f, "background")}
+                onClear={() => clear("background")}
+              />
               <fieldset className="space-y-1 text-sm">
                 <legend className="mb-1 text-xs font-semibold text-muted-foreground">
                   Nereye uygulansın?

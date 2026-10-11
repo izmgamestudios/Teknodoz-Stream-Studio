@@ -46,10 +46,28 @@ function backdropStyle(accent: string): CSSProperties {
   };
 }
 
-function PreviewLayer({ layer }: { layer: Layer }) {
+function PreviewLayer({
+  layer,
+  urls,
+}: {
+  layer: Layer;
+  urls?: Readonly<Record<string, string>>;
+}) {
   switch (layer.kind) {
-    case "image":
-      return null;
+    case "image": {
+      const url = urls?.[layer.assetId];
+      if (!url) return null; // generated backdrop is drawn with CSS
+      return (
+        <img
+          src={url}
+          alt=""
+          style={{
+            ...boxStyle(layer),
+            objectFit: layer.fit === "cover" ? "cover" : "contain",
+          }}
+        />
+      );
+    }
     case "webcam":
     case "guest":
     case "screen":
@@ -112,17 +130,28 @@ function PreviewLayer({ layer }: { layer: Layer }) {
 export function TemplatePreview({
   def,
   options,
+  assetUrls,
   className = "",
 }: {
   def: TemplateDef;
   options?: Partial<TemplateOptions>;
+  /** asset id -> object URL of uploaded images (logo / background) */
+  assetUrls?: Readonly<Record<string, string>>;
   className?: string;
 }) {
   const opts = options ?? {};
   const layers = useMemo(
     () => buildTemplateScene(def, opts, "preview").layers,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [def, opts.accent, opts.title, opts.tag, opts.ticker],
+    [
+      def,
+      opts.accent,
+      opts.title,
+      opts.tag,
+      opts.ticker,
+      opts.logoAssetId,
+      opts.backgroundAssetId,
+    ],
   );
   const accent = opts.accent ?? def.defaults.accent;
   return (
@@ -131,11 +160,18 @@ export function TemplatePreview({
       className={`relative aspect-video w-full overflow-hidden rounded-md border ${className}`}
       style={{
         containerType: "inline-size",
-        ...(def.backdrop ? backdropStyle(accent) : { background: "#111827" }),
+        ...(def.backdrop &&
+        !(opts.backgroundAssetId && assetUrls?.[opts.backgroundAssetId])
+          ? backdropStyle(accent)
+          : { background: "#111827" }),
       }}
     >
       {layers.map((l) => (
-        <PreviewLayer key={l.id} layer={l} />
+        <PreviewLayer
+          key={l.id}
+          layer={l}
+          {...(assetUrls ? { urls: assetUrls } : {})}
+        />
       ))}
     </div>
   );

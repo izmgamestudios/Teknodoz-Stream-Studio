@@ -40,6 +40,10 @@ export interface TemplateOptions {
   tag: string;
   /** Scrolling ticker text (only when the template has a ticker). */
   ticker: string;
+  /** Uploaded logo (image asset id), drawn in the template's logo slot. */
+  logoAssetId?: string;
+  /** Uploaded full-frame background (image asset id) replacing the generated one. */
+  backgroundAssetId?: string;
 }
 
 export type TemplateGroup = "news" | "talk" | "demo" | "learn";
@@ -59,6 +63,8 @@ export interface TemplateDef {
   /** Full-width title strip at the very top. */
   topTitle: boolean;
   lowerThird?: LowerThirdSpec;
+  /** Where an uploaded logo goes (image is contained, aspect preserved). */
+  logo: Rect;
   ticker: boolean;
   defaults: TemplateOptions;
 }

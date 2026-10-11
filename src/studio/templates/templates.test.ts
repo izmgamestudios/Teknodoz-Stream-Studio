@@ -8,6 +8,12 @@ import type { AssetStore } from "../types";
 import { LOGICAL_H, LOGICAL_W } from "../types";
 import { backdropAssetId, ensureBackdrop, glowAt } from "./backdrop";
 import {
+  TEMPLATE_IMAGE_MAX_BYTES,
+  checkTemplateImage,
+  loadRemembered,
+  saveRemembered,
+} from "./uploads";
+import {
   buildTemplateScene,
   cleanText,
   emptyGuestSlots,
@@ -228,5 +234,132 @@ describe("backdrop", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
     expect(await ensureBackdrop(assets, "#bbbbbb")).toBeUndefined();
     expect(puts).toEqual([]);
+  });
+});
+
+describe("logo and custom background", () => {
+  const overlap = (
+    a: { x: number; y: number; w: number; h: number },
+    b: { x: number; y: number; w: number; h: number },
+  ) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+  it.each(TEMPLATES.map((t) => [t.id, t] as const))(
+    "%s: the logo slot is on stage and does not cover text bars",
+    (id, def) => {
+      const r = def.logo;
+      expect(r.x).toBeGreaterThanOrEqual(0);
+      expect(r.y).toBeGreaterThanOrEqual(0);
+      expect(r.x + r.w).toBeLessThanOrEqual(LOGICAL_W);
+      expect(r.y + r.h).toBeLessThanOrEqual(LOGICAL_H);
+      if (def.lowerThird)
+        expect(overlap(r, { ...def.lowerThird, h: 164 }), "lower third").toBe(
+          false,
+        );
+      if (def.ticker)
+        expect(
+          overlap(r, { x: 0, y: 990, w: LOGICAL_W, h: 90 }),
+          "ticker",
+        ).toBe(false);
+      // only the full-bleed layouts (solo, quad) may put the logo over video
+      if (!["solo", "quad"].includes(id))
+        for (const p of def.panels)
+          expect(overlap(r, p.rect), p.id).toBe(false);
+    },
+  );
+
+  it("adds the logo layer just below the ticker and a cover background", () => {
+    const def = getTemplate("news")!;
+    const scene = buildTemplateScene(def, {
+      logoAssetId: "logo_abc",
+      backgroundAssetId: "bg_xyz",
+    });
+    const names = scene.layers.map((l) => l.name);
+    const logo = scene.layers.find((l) => l.name === "Logo");
+    expect(logo).toMatchObject({
+      kind: "image",
+      assetId: "logo_abc",
+      fit: "contain",
+    });
+    expect(logo?.transform).toMatchObject({
+      x: def.logo.x,
+      y: def.logo.y,
+      w: def.logo.w,
+      h: def.logo.h,
+    });
+    expect(names.indexOf("Logo")).toBeLessThan(names.indexOf("Kayan yazı"));
+    const bg = scene.layers[0];
+    expect(bg).toMatchObject({
+      kind: "image",
+      assetId: "bg_xyz",
+      fit: "cover",
+      name: "Arka plan (özel)",
+    });
+    for (const l of scene.layers)
+      expect(layerSchema.safeParse(l).success, l.name).toBe(true);
+    // a custom background wins over the generated one
+    const both = buildTemplateScene(
+      def,
+      { backgroundAssetId: "bg_xyz" },
+      "tpl-bg-1d4ed8",
+    );
+    expect(
+      both.layers.filter(
+        (l) => l.kind === "image" && l.assetId === "tpl-bg-1d4ed8",
+      ),
+    ).toHaveLength(0);
+  });
+
+  it("ignores malformed asset ids and templates without backdrop keep the camera full-bleed", () => {
+    const def = getTemplate("news")!;
+    const o = resolveOptions(def, {
+      logoAssetId: "../../etc",
+      backgroundAssetId: "a b",
+    });
+    expect(o.logoAssetId).toBeUndefined();
+    expect(o.backgroundAssetId).toBeUndefined();
+    const solo = buildTemplateScene(getTemplate("solo")!, {
+      backgroundAssetId: "bg_xyz",
+    });
+    expect(
+      solo.layers.some((l) => l.kind === "image" && l.assetId === "bg_xyz"),
+    ).toBe(false);
+  });
+
+  it("validates upload types and sizes", () => {
+    expect(checkTemplateImage({ type: "image/png", size: 1000 })).toBeNull();
+    expect(checkTemplateImage({ type: "image/svg+xml", size: 1000 })).toBe(
+      "type",
+    );
+    expect(checkTemplateImage({ type: "application/pdf", size: 1000 })).toBe(
+      "type",
+    );
+    expect(checkTemplateImage({ type: "image/jpeg", size: 0 })).toBe("size");
+    expect(
+      checkTemplateImage({
+        type: "image/jpeg",
+        size: TEMPLATE_IMAGE_MAX_BYTES + 1,
+      }),
+    ).toBe("size");
+  });
+
+  it("remembers only well-formed asset ids", () => {
+    const m = new Map<string, string>();
+    const st = {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => void m.set(k, v),
+    };
+    expect(loadRemembered(st)).toEqual({});
+    saveRemembered({ logoAssetId: "ly_ab12", backgroundAssetId: "bg-1" }, st);
+    expect(loadRemembered(st)).toEqual({
+      logoAssetId: "ly_ab12",
+      backgroundAssetId: "bg-1",
+    });
+    m.set(
+      "tkz.templates.images.v1",
+      JSON.stringify({ logoAssetId: "x/../y", backgroundAssetId: 5 }),
+    );
+    expect(loadRemembered(st)).toEqual({});
+    m.set("tkz.templates.images.v1", "{not json");
+    expect(loadRemembered(st)).toEqual({});
   });
 });

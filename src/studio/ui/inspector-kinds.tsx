@@ -84,7 +84,18 @@ export function KindFields({
         </div>
       );
     case "image":
-      return null;
+      return (
+        <Field label="Yerleşim">
+          <SelectInput
+            value={layer.fit ?? "contain"}
+            options={[
+              { value: "contain", label: "Sığdır (tamamı görünür)" },
+              { value: "cover", label: "Doldur (kenarlar kırpılır)" },
+            ]}
+            onChange={(fit) => patch({ fit })}
+          />
+        </Field>
+      );
     case "video":
       return (
         <div className="space-y-2">
