@@ -56,15 +56,6 @@ function PrompterApp() {
   const rt = useStudio();
   const project = useProject();
   const [full, setFull] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // A hidden program canvas lets the fullscreen mode record the camera like the studio does.
-  useEffect(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    rt.attachCanvas(c);
-    return () => rt.detachCanvas();
-  }, [rt]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -77,7 +68,6 @@ function PrompterApp() {
 
   return (
     <div className="min-h-screen p-3 md:p-6">
-      <canvas ref={canvasRef} className="hidden" />
       <header className="mx-auto mb-4 flex max-w-5xl flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-speaker-b">

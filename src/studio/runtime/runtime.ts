@@ -134,6 +134,7 @@ export class StudioRuntime {
     this.modelScript = st.prompter.script;
     this.model = parseScript(this.modelScript);
     this.unsubProject = this.project.subscribe(() => this.onProjectChange());
+    this.initCompositor();
   }
 
   /* ---------------------------- snapshot store ---------------------------- */
@@ -165,12 +166,16 @@ export class StudioRuntime {
     }
   }
 
-  /** Bind the preview/program canvas and start the render loop. */
-  attachCanvas(canvas: HTMLCanvasElement): void {
-    if (this.compositor) this.detachCanvas();
+  /**
+   * The runtime owns ONE program canvas for its whole life (it keeps rendering, recording and
+   * feeding P2P viewers even while no page shows it). Pages display it with `mountCanvas`.
+   */
+  private initCompositor(): void {
     const out = this.project.getState().settings.output;
+    const canvas = document.createElement("canvas");
     canvas.width = out.width;
     canvas.height = out.height;
+    canvas.className = "absolute inset-0 h-full w-full";
     this.canvas = canvas;
     this.compositor = new Compositor(canvas, this.hooks, {
       width: out.width,
@@ -181,13 +186,26 @@ export class StudioRuntime {
     this.lastActiveId = scene.id;
     this.compositor.setScene(scene);
     this.compositor.start();
-    this.updateProgramStream();
   }
 
-  detachCanvas(): void {
-    this.compositor?.dispose();
-    this.compositor = null;
-    this.canvas = null;
+  /** Show the program canvas inside `container` (moves it if it was mounted elsewhere). */
+  mountCanvas(container: HTMLElement): void {
+    if (this.canvas && this.canvas.parentElement !== container) {
+      container.appendChild(this.canvas);
+    }
+  }
+
+  /** Remove the canvas from the DOM; rendering and recording continue. */
+  unmountCanvas(container?: HTMLElement): void {
+    const c = this.canvas;
+    if (c && c.parentElement && (!container || c.parentElement === container)) {
+      c.parentElement.removeChild(c);
+    }
+  }
+
+  /** Persist the project right now (used on `pagehide`). */
+  flushAutosave(): Promise<void> {
+    return this.autosaver.flush();
   }
 
   getCompositor(): Compositor | null {
@@ -745,7 +763,10 @@ export class StudioRuntime {
     this.voice?.stop();
     if (this.recorder) await this.stopRecording();
     await this.autosaver.flush();
-    this.detachCanvas();
+    this.unmountCanvas();
+    this.compositor?.dispose();
+    this.compositor = null;
+    this.canvas = null;
     if (this.remoteTimer) clearInterval(this.remoteTimer);
     for (const u of this.hostUnsubs) u();
     this.hostUnsubs = [];

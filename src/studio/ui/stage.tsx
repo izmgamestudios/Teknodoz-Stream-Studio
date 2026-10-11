@@ -42,17 +42,17 @@ export function Stage({
   const rt = useStudio();
   const project = useProject();
   const scene = getActiveScene(project);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<SVGSVGElement>(null);
   const drag = useRef<Drag | null>(null);
   const [guides, setGuides] = useState<Guide[]>([]);
   const [cursor, setCursor] = useState("default");
 
   useEffect(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    rt.attachCanvas(c);
-    return () => rt.detachCanvas();
+    const host = hostRef.current;
+    if (!host) return;
+    rt.mountCanvas(host);
+    return () => rt.unmountCanvas(host);
   }, [rt]);
 
   const selected = scene.layers.find((l) => l.id === selectedId) ?? null;
@@ -146,7 +146,7 @@ export function Stage({
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-black">
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+      <div ref={hostRef} className="absolute inset-0" />
       <svg
         ref={overlayRef}
         viewBox={`0 0 ${LOGICAL_W} ${LOGICAL_H}`}

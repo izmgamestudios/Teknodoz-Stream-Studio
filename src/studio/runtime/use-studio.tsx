@@ -18,6 +18,30 @@ import type { SourcesSnapshot } from "./sources";
 
 const Ctx = createContext<StudioRuntime | null>(null);
 
+/**
+ * ONE runtime per page load, shared by every route (prompter, studio, room...). Navigating
+ * between routes therefore keeps the camera, recording and P2P connections alive.
+ */
+let singleton: {
+  runtime: StudioRuntime;
+  ready: Promise<StudioRuntime>;
+} | null = null;
+
+export function acquireRuntime(): Promise<StudioRuntime> {
+  if (!singleton) {
+    const runtime = new StudioRuntime();
+    singleton = { runtime, ready: runtime.restore().then(() => runtime) };
+    window.addEventListener("pagehide", () => void runtime.flushAutosave());
+    if (import.meta.hot) {
+      import.meta.hot.dispose(() => {
+        void runtime.dispose();
+        singleton = null;
+      });
+    }
+  }
+  return singleton.ready;
+}
+
 export function StudioProvider({
   children,
   fallback = null,
@@ -29,14 +53,11 @@ export function StudioProvider({
 
   useEffect(() => {
     let cancelled = false;
-    const rt = new StudioRuntime();
-    void rt.restore().finally(() => {
+    void acquireRuntime().then((rt) => {
       if (!cancelled) setRuntime(rt);
     });
     return () => {
       cancelled = true;
-      setRuntime((cur) => (cur === rt ? null : cur));
-      void rt.dispose();
     };
   }, []);
 
