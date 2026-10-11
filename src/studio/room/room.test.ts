@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createRoomsApi, type RoomsApi } from "../../server/rooms";
+import type { StudioClient } from "../p2p";
 import { createMemoryKvStore } from "../storage";
 import type { PeerInfo } from "../types";
 import {
@@ -132,11 +133,10 @@ function makeGuest(code: string, client = fakeClient()) {
     fetch: relayFetch,
     storage: memStorage(),
     waitSec: 0.2,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     acceptOffer: (async (offer: string) => {
       answers.push(offer);
       return { client, answerCode: ANSWER };
-    }) as any,
+    }) as unknown as typeof StudioClient.acceptOffer,
   });
   return { g, client, answers };
 }
