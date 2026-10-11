@@ -3,6 +3,7 @@
 // fragment (never sent anywhere). Prefer the short room links (/r/<code>) when the relay exists.
 import { createFileRoute } from "@tanstack/react-router";
 
+import { useT } from "@/studio/i18n/use-t";
 import { ConnectCard } from "@/studio/ui/connect-card";
 import { CreditsFooter } from "@/studio/ui/credits";
 import { ViewerGuestView } from "@/studio/ui/guest-views";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/join")({
 });
 
 function JoinPage() {
+  const t = useT();
   const conn = useClientConnection();
   const { client, status } = conn;
   const connected = conn.phase === "answer" && status !== "connecting";
@@ -30,7 +32,7 @@ function JoinPage() {
         <p className="text-xs uppercase tracking-[0.3em] text-speaker-b">
           Teknodoz Studio
         </p>
-        <h1 className="mt-1 text-2xl font-bold">Yayına katıl</h1>
+        <h1 className="mt-1 text-2xl font-bold">{t("join.title")}</h1>
       </header>
 
       <ConnectCard

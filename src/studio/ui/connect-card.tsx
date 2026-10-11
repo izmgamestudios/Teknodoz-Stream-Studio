@@ -1,7 +1,8 @@
 // src/studio/ui/connect-card.tsx
-// "Paste/confirm the invite -> get the answer code" card shared by /join and /remote.
+// "Paste/confirm the invite -> get the answer code" card for the manual (serverless) flow.
 import { useEffect, useState } from "react";
 
+import { useT } from "../i18n/use-t";
 import type { ClientStatus } from "../p2p";
 import { BTN_ACCENT, Check, INPUT } from "./fields";
 import { QrImage } from "./qr-image";
@@ -22,6 +23,7 @@ export function ConnectCard({
   askName: boolean;
   onConnect: (code: string, name: string, usePublicStun: boolean) => void;
 }) {
+  const t = useT();
   const fragment = useFragmentCode();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -34,19 +36,16 @@ export function ConnectCard({
   if (phase === "answer" && status === "connecting") {
     return (
       <div className="space-y-3 rounded-xl border bg-card p-4">
-        <h2 className="font-semibold">
-          2. adım — yanıt kodunu yayıncıya gönderin
-        </h2>
+        <h2 className="font-semibold">{t("connect.step2")}</h2>
         <p className="text-sm text-muted-foreground">
-          Aşağıdaki kodu kopyalayıp yayıncıya iletin; yayıncı “Yanıt kodu”
-          kutusuna yapıştırınca bağlantı otomatik kurulur.
+          {t("connect.step2.body")}
         </p>
         <textarea
           readOnly
           className={`${INPUT} h-28 resize-y font-mono`}
           value={answer}
           onFocus={(e) => e.currentTarget.select()}
-          aria-label="Yanıt kodu"
+          aria-label={t("connect.answerLabel")}
         />
         <div className="flex flex-wrap items-start gap-4">
           <button
@@ -61,12 +60,12 @@ export function ConnectCard({
               }
             }}
           >
-            {copied ? "✓ Kopyalandı" : "Kodu kopyala"}
+            {copied ? t("common.copied") : t("connect.copyCode")}
           </button>
           <QrImage text={answer} size={180} />
         </div>
         <p className="text-xs text-muted-foreground" role="status">
-          Yayıncının kodu girmesi bekleniyor…
+          {t("connect.waitingHost")}
         </p>
       </div>
     );
@@ -82,20 +81,20 @@ export function ConnectCard({
         onConnect(code, name, stun);
       }}
     >
-      <h2 className="font-semibold">1. adım — daveti doğrulayın</h2>
+      <h2 className="font-semibold">{t("connect.step1")}</h2>
       <label className="block text-xs text-muted-foreground">
-        Davet bağlantısı veya kodu
+        {t("connect.inviteLabel")}
         <textarea
           className={`${INPUT} mt-1 h-24 resize-y font-mono`}
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="Bağlantı otomatik gelmediyse buraya yapıştırın"
+          placeholder={t("connect.invitePlaceholder")}
           spellCheck={false}
         />
       </label>
       {askName && (
         <label className="block text-xs text-muted-foreground">
-          Adınız (yayıncı görür)
+          {t("connect.name")}
           <input
             className={`${INPUT} mt-1`}
             value={name}
@@ -105,8 +104,7 @@ export function ConnectCard({
         </label>
       )}
       <Check checked={stun} onChange={setStun}>
-        Genel STUN kullan (internet üzerinden bağlanmak için; yalnızca IP
-        adresiniz STUN sağlayıcısına görünür)
+        {t("connect.stun")}
       </Check>
       {error && (
         <p role="alert" className="text-sm text-destructive">
@@ -118,11 +116,12 @@ export function ConnectCard({
         type="submit"
         disabled={phase === "connecting" || code.trim() === ""}
       >
-        {phase === "connecting" ? "Hazırlanıyor…" : "Devam"}
+        {phase === "connecting"
+          ? t("connect.preparing")
+          : t("connect.continue")}
       </button>
       <p className="text-[11px] text-muted-foreground">
-        Kamera, mikrofon veya ekran görüntünüz hiçbir sunucuya gitmez; yalnızca
-        yayıncının tarayıcısıyla doğrudan (P2P) paylaşılır.
+        {t("connect.privacy")}
       </p>
     </form>
   );

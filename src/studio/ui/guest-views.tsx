@@ -3,6 +3,8 @@
 // Shared by /join, /remote (manual codes) and /r/<code> (rooms).
 import { useEffect, useRef, useState } from "react";
 
+import type { MessageKey } from "../i18n/messages";
+import { useT } from "../i18n/use-t";
 import {
   createLevelMeter,
   isP2PError,
@@ -15,16 +17,6 @@ import {
 } from "../p2p";
 import type { RemoteCommand, RemoteState } from "../types";
 import { BTN, BTN_ACCENT, INPUT, formatMs } from "./fields";
-
-const STATUS_TEXT: Record<ClientStatus, string> = {
-  connecting: "Bağlanıyor…",
-  connected: "Bağlandı — yayını izliyorsunuz",
-  requesting: "Katılma isteği gönderiliyor…",
-  waiting: "Kulistesiniz. Yayıncı sizi yayına alınca görüntünüz yayınlanır.",
-  "on-air": "● Yayındasınız — kulaklık takmanız önerilir",
-  rejected: "Yayıncı isteğinizi reddetti.",
-  disconnected: "Bağlantı koptu.",
-};
 
 export function useClientStatus(client: StudioClient | null): ClientStatus {
   const [status, setStatus] = useState<ClientStatus>(
@@ -39,6 +31,7 @@ export function useClientStatus(client: StudioClient | null): ClientStatus {
 }
 
 export function ViewerGuestView({ client }: { client: StudioClient }) {
+  const t = useT();
   const status = useClientStatus(client);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(client.stream);
@@ -64,7 +57,9 @@ export function ViewerGuestView({ client }: { client: StudioClient }) {
       className="space-y-3 rounded-xl border bg-card p-4"
       aria-live="polite"
     >
-      <p className="text-sm font-medium">{STATUS_TEXT[status]}</p>
+      <p className="text-sm font-medium">
+        {t(`view.status.${status}` as MessageKey)}
+      </p>
       <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
         <video
           ref={videoRef}
@@ -82,7 +77,7 @@ export function ViewerGuestView({ client }: { client: StudioClient }) {
             setNeedSound(false);
           }}
         >
-          🔊 Sesi aç
+          {t("view.sound")}
         </button>
       )}
       {client.role === "guest" && status !== "disconnected" && (
@@ -99,6 +94,7 @@ function GuestControls({
   client: StudioClient;
   status: ClientStatus;
 }) {
+  const t = useT();
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [name, setName] = useState(client.name);
   const [err, setErr] = useState("");
@@ -139,7 +135,7 @@ function GuestControls({
       setStream(r.stream);
     } catch (e) {
       setErr(
-        isP2PError(e) ? p2pErrorMessage(e.code) : "Kamera/mikrofon açılamadı.",
+        isP2PError(e) ? p2pErrorMessage(e.code) : t("view.guest.err.media"),
       );
     }
   }
@@ -150,16 +146,18 @@ function GuestControls({
     try {
       await client.startGuest(stream, name);
     } catch (e) {
-      setErr(isP2PError(e) ? p2pErrorMessage(e.code) : "İstek gönderilemedi.");
+      setErr(
+        isP2PError(e) ? p2pErrorMessage(e.code) : t("view.guest.err.send"),
+      );
     }
   }
 
   return (
     <div className="space-y-3 border-t pt-3">
-      <h2 className="text-sm font-semibold">Konuk olarak yayına çık</h2>
+      <h2 className="text-sm font-semibold">{t("view.guest.title")}</h2>
       {!stream ? (
         <button className={BTN_ACCENT} onClick={() => void test()}>
-          🎥 Kamera ve mikrofonu test et
+          {t("view.guest.test")}
         </button>
       ) : (
         <>
@@ -174,7 +172,7 @@ function GuestControls({
             />
             <div className="min-w-0 flex-1 space-y-2">
               <label className="block text-xs text-muted-foreground">
-                Adınız
+                {t("view.guest.name")}
                 <input
                   className={`${INPUT} mt-1`}
                   value={name}
@@ -184,7 +182,7 @@ function GuestControls({
               </label>
               <div>
                 <p className="mb-1 text-xs text-muted-foreground">
-                  Mikrofon seviyesi
+                  {t("view.guest.mic")}
                 </p>
                 <div
                   className="h-2 overflow-hidden rounded-full bg-secondary"
@@ -201,11 +199,11 @@ function GuestControls({
           <div className="flex flex-wrap gap-2">
             {!joined ? (
               <button className={BTN_ACCENT} onClick={() => void join()}>
-                Kulise gir (istek gönder)
+                {t("view.guest.join")}
               </button>
             ) : (
               <button className={BTN} onClick={() => void client.leaveGuest()}>
-                Ayrıl (izleyiciye dön)
+                {t("view.guest.leave")}
               </button>
             )}
             <button
@@ -215,7 +213,7 @@ function GuestControls({
                 setStream(null);
               }}
             >
-              Kamerayı kapat
+              {t("view.guest.cameraOff")}
             </button>
           </div>
         </>
@@ -230,6 +228,7 @@ function GuestControls({
 }
 
 export function RemoteView({ client }: { client: StudioClient }) {
+  const t = useT();
   const [state, setState] = useState<RemoteState | null>(client.remoteState);
   useEffect(() => client.onRemoteState(setState), [client]);
 
@@ -248,21 +247,24 @@ export function RemoteView({ client }: { client: StudioClient }) {
   return (
     <div className="space-y-4">
       <header className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">📱 Kumanda</h2>
+        <h2 className="text-lg font-bold">{t("remote.heading")}</h2>
         <span
           className={`font-mono text-sm ${state?.recording ? "text-primary" : "text-muted-foreground"}`}
         >
-          {state?.recording ? `● ${formatMs(state.recordingMs)}` : "hazır"}
+          {state?.recording
+            ? `● ${formatMs(state.recordingMs)}`
+            : t("remote.ready")}
         </span>
       </header>
 
       {!state && (
-        <p className="text-sm text-muted-foreground">
-          Stüdyodan durum bekleniyor…
-        </p>
+        <p className="text-sm text-muted-foreground">{t("remote.waitState")}</p>
       )}
 
-      <section aria-label="Sahneler" className="grid grid-cols-2 gap-2">
+      <section
+        aria-label={t("remote.scenes")}
+        className="grid grid-cols-2 gap-2"
+      >
         {(state?.scenes ?? []).slice(0, 9).map((s, i) => (
           <button
             key={s.id}
@@ -275,23 +277,26 @@ export function RemoteView({ client }: { client: StudioClient }) {
         ))}
       </section>
 
-      <section aria-label="Prompter" className="grid grid-cols-4 gap-2">
+      <section
+        aria-label={t("remote.prompter")}
+        className="grid grid-cols-4 gap-2"
+      >
         <button
           className={`${big} col-span-2 bg-speaker-a text-background`}
           onClick={() => send({ kind: "prompter", action: "toggle" })}
         >
-          {state?.prompterPlaying ? "❚❚ Durdur" : "▶ Kaydır"}
+          {state?.prompterPlaying ? t("remote.pause") : t("remote.play")}
         </button>
         <button
           className={`${big} bg-secondary`}
-          aria-label="Yavaşlat"
+          aria-label={t("remote.slower")}
           onClick={() => send({ kind: "prompter", action: "speedDown" })}
         >
           −
         </button>
         <button
           className={`${big} bg-secondary`}
-          aria-label="Hızlandır"
+          aria-label={t("remote.faster")}
           onClick={() => send({ kind: "prompter", action: "speedUp" })}
         >
           +
@@ -300,33 +305,36 @@ export function RemoteView({ client }: { client: StudioClient }) {
           className={`${big} col-span-2 bg-secondary text-base`}
           onClick={() => send({ kind: "prompter", action: "rewind" })}
         >
-          ⏮ Başa dön
+          {t("remote.rewind")}
         </button>
         <p className="col-span-2 self-center text-center text-sm text-muted-foreground">
-          Hız: {Math.round(state?.prompterSpeed ?? 0)} px/sn
+          {t("remote.speed", { n: Math.round(state?.prompterSpeed ?? 0) })}
         </p>
       </section>
 
-      <section aria-label="Kayıt ve ses" className="grid grid-cols-2 gap-2">
+      <section
+        aria-label={t("remote.recordGroup")}
+        className="grid grid-cols-2 gap-2"
+      >
         <button
           className={`${big} ${state?.recording ? "animate-pulse bg-destructive text-primary-foreground" : "bg-primary text-primary-foreground"}`}
           onClick={() => send({ kind: "record", action: "toggle" })}
         >
-          {state?.recording ? "■ Kaydı bitir" : "● Kayda başla"}
+          {state?.recording ? t("remote.stop") : t("remote.rec")}
         </button>
         <button
           className={`${big} bg-secondary`}
           disabled={!state?.recording}
           onClick={() => send({ kind: "marker" })}
         >
-          🔖 İşaret
+          {t("remote.marker")}
         </button>
         <button
           className={`${big} col-span-2 ${state?.micMuted ? "bg-destructive text-primary-foreground" : "bg-secondary"}`}
           aria-pressed={state?.micMuted ?? false}
           onClick={() => send({ kind: "mute" })}
         >
-          {state?.micMuted ? "🔇 Mikrofon kapalı" : "🎙 Mikrofon açık"}
+          {state?.micMuted ? t("remote.micOff") : t("remote.micOn")}
         </button>
       </section>
     </div>

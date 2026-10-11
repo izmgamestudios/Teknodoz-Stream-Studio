@@ -2,6 +2,7 @@
 // Manual (serverless) phone remote. Prefer /r/<code>?as=remote when the relay exists.
 import { createFileRoute } from "@tanstack/react-router";
 
+import { useT } from "@/studio/i18n/use-t";
 import { ConnectCard } from "@/studio/ui/connect-card";
 import { RemoteView } from "@/studio/ui/guest-views";
 import { useClientConnection } from "@/studio/ui/use-client";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/remote")({
 });
 
 function RemotePage() {
+  const t = useT();
   const conn = useClientConnection();
   const { client, status } = conn;
   const online =
@@ -36,7 +38,7 @@ function RemotePage() {
           <p className="text-xs uppercase tracking-[0.3em] text-speaker-b">
             Teknodoz Studio
           </p>
-          <h1 className="mt-1 text-2xl font-bold">📱 Telefon kumandası</h1>
+          <h1 className="mt-1 text-2xl font-bold">📱 {t("remote.title")}</h1>
         </header>
         <ConnectCard
           phase={conn.phase}
@@ -48,7 +50,7 @@ function RemotePage() {
         />
         {status === "disconnected" && conn.phase === "answer" && (
           <p role="alert" className="text-sm text-destructive">
-            Bağlantı koptu. Sayfayı yenileyip yeni bir davet isteyin.
+            {t("connect.lost")}
           </p>
         )}
       </div>

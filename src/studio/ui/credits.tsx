@@ -1,6 +1,7 @@
 // src/studio/ui/credits.tsx
 // Compact credits footer + "Hakkında / Künye" dialog.
 import { CREDITS } from "../credits";
+import { useT } from "../i18n/use-t";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ const LINK =
   "underline decoration-dotted underline-offset-2 hover:text-foreground";
 
 export function CreditsFooter({ className = "" }: { className?: string }) {
+  const t = useT();
   return (
     <footer
       className={`text-[11px] leading-relaxed text-muted-foreground ${className}`}
@@ -23,7 +25,7 @@ export function CreditsFooter({ className = "" }: { className?: string }) {
         <span className="font-semibold text-foreground">{CREDITS.project}</span>
       </p>
       <p>
-        Geliştirici: {CREDITS.developer} ·{" "}
+        {t("credits.developer")}: {CREDITS.developer} ·{" "}
         <a className={LINK} href={`mailto:${CREDITS.email}`}>
           {CREDITS.email}
         </a>{" "}
@@ -46,10 +48,11 @@ export function CreditsFooter({ className = "" }: { className?: string }) {
 }
 
 export function AboutDialog() {
+  const t = useT();
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button className={BTN}>ⓘ Hakkında / Künye</button>
+        <button className={BTN}>ⓘ {t("credits.about")}</button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -57,9 +60,9 @@ export function AboutDialog() {
           <DialogDescription>{CREDITS.project}</DialogDescription>
         </DialogHeader>
         <dl className="space-y-2 text-sm">
-          <Row k="Geliştirici" v={CREDITS.developer} />
+          <Row k={t("credits.developer")} v={CREDITS.developer} />
           <Row
-            k="E-posta"
+            k={t("credits.email")}
             v={
               <a className={LINK} href={`mailto:${CREDITS.email}`}>
                 {CREDITS.email}
@@ -67,7 +70,7 @@ export function AboutDialog() {
             }
           />
           <Row
-            k="Telefon"
+            k={t("credits.phone")}
             v={
               <a className={LINK} href={CREDITS.phoneHref}>
                 {CREDITS.phone}
@@ -88,7 +91,7 @@ export function AboutDialog() {
             }
           />
           <Row
-            k="Kaynak kod"
+            k={t("credits.source")}
             v={
               <a
                 className={LINK}
@@ -100,12 +103,10 @@ export function AboutDialog() {
               </a>
             }
           />
-          <Row k="Lisans" v={CREDITS.license} />
+          <Row k={t("credits.license")} v={CREDITS.license} />
         </dl>
         <p className="rounded-md bg-secondary p-3 text-xs text-muted-foreground">
-          Sunucu yok, veritabanı yok, giriş yok. Kamera, mikrofon ve ekran
-          görüntüsü cihazınızdan çıkmaz; ayarlar ve medya dosyaları yalnızca bu
-          tarayıcıda (localStorage / IndexedDB) saklanır.
+          {t("credits.privacy")}
         </p>
       </DialogContent>
     </Dialog>

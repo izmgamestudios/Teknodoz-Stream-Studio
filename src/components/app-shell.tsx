@@ -2,17 +2,30 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useSyncExternalStore, type ReactNode } from "react";
 
+import { TeknodozLogo } from "@/components/teknodoz-logo";
+import { useT } from "@/studio/i18n/use-t";
+import type { MessageKey } from "@/studio/i18n/messages";
 import { roomBadge } from "@/studio/room/badge";
 
-import { TeknodozLogo } from "@/components/teknodoz-logo";
-
-const NAV = [
-  { to: "/", label: "Prompter", hint: "Metin, kamera, kayıt", icon: "📜" },
-  { to: "/studio", label: "Stüdyo", hint: "Logo, müzik, efekt", icon: "🎬" },
-  { to: "/room", label: "Oda", hint: "Konuk, telefon, onaylar", icon: "🚪" },
-] as const;
+const NAV: readonly {
+  to: "/" | "/studio" | "/room" | "/settings";
+  label: MessageKey;
+  hint: MessageKey;
+  icon: string;
+}[] = [
+  { to: "/", label: "nav.prompter", hint: "nav.prompter.hint", icon: "📜" },
+  { to: "/studio", label: "nav.studio", hint: "nav.studio.hint", icon: "🎬" },
+  { to: "/room", label: "nav.room", hint: "nav.room.hint", icon: "🚪" },
+  {
+    to: "/settings",
+    label: "nav.settings",
+    hint: "nav.settings.hint",
+    icon: "⚙️",
+  },
+];
 
 function NavLinks({ compact = false }: { compact?: boolean }) {
+  const t = useT();
   const waiting = useSyncExternalStore(
     roomBadge.subscribe,
     roomBadge.get,
@@ -39,11 +52,11 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
           <span aria-hidden="true">{n.icon}</span>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="font-semibold">
-              {n.label}
+              {t(n.label)}
               {n.to === "/room" && waiting > 0 && (
                 <span
                   className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
-                  aria-label={`${waiting} bekleyen istek`}
+                  aria-label={t("shell.pending", { n: waiting })}
                 >
                   {waiting}
                 </span>
@@ -51,7 +64,7 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
             </span>
             {!compact && (
               <span className="truncate text-xs text-muted-foreground">
-                {n.hint}
+                {t(n.hint)}
               </span>
             )}
           </span>
@@ -71,6 +84,7 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
 const BARE_PREFIXES = ["/join", "/remote", "/r"];
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const t = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (
     BARE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
@@ -90,27 +104,28 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex-1 space-y-6 overflow-y-auto px-4 py-6">
           <div>
             <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-speaker-b">
-              <span className="size-1.5 rounded-full bg-speaker-b" /> Yayıncı
-              çalışma alanı
+              <span className="size-1.5 rounded-full bg-speaker-b" />{" "}
+              {t("shell.workspace")}
             </p>
             <h2 className="text-2xl font-bold leading-tight">
-              Yayını <span className="text-speaker-b">sahnede kur.</span>
+              {t("shell.headline.a")}{" "}
+              <span className="text-speaker-b">{t("shell.headline.b")}</span>
             </h2>
             <p className="mt-2 text-xs text-muted-foreground">
-              Prompter, kayıt ve stüdyo tek yerde. Her şey tarayıcında kalır.
+              {t("shell.tagline")}
             </p>
           </div>
 
-          <nav className="space-y-1.5" aria-label="Ana menü">
+          <nav className="space-y-1.5" aria-label={t("nav.menu")}>
             <p className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
-              Modüller
+              {t("shell.modules")}
             </p>
             <NavLinks />
           </nav>
         </div>
 
         <div className="border-t px-5 py-4 text-[11px] leading-relaxed text-muted-foreground">
-          <p>100% client-side · gizlilik odaklı</p>
+          <p>{t("shell.local")}</p>
           <p className="mt-1">© Teknodoz · IZM Game Studios</p>
         </div>
       </aside>
@@ -123,7 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <nav
           className="flex gap-1 overflow-x-auto px-3 pb-2"
-          aria-label="Ana menü"
+          aria-label={t("nav.menu")}
         >
           <NavLinks compact />
         </nav>

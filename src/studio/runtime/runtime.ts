@@ -114,6 +114,7 @@ export class StudioRuntime {
   private host: StudioHost | null = null;
   private hostUnsubs: Array<() => void> = [];
   private programStream: MediaStream | null = null;
+  private hostStun: boolean | null = null;
   private peers: readonly PeerInfo[] = EMPTY_PEERS;
   private peerListeners = new Set<() => void>();
   private remoteTimer: ReturnType<typeof setInterval> | null = null;
@@ -404,11 +405,33 @@ export class StudioRuntime {
   };
   getPeersSnapshot = (): readonly PeerInfo[] => this.peers;
 
+  /** Drop the P2P host (and its timers/subscriptions). Connected peers are closed. */
+  private teardownHost(): void {
+    if (this.remoteTimer) clearInterval(this.remoteTimer);
+    this.remoteTimer = null;
+    for (const u of this.hostUnsubs) u();
+    this.hostUnsubs = [];
+    this.host?.dispose();
+    this.host = null;
+    this.programStream = null;
+    this.peers = EMPTY_PEERS;
+    for (const l of [...this.peerListeners]) l();
+  }
+
   private ensureHost(): StudioHost {
+    const wantStun = this.project.getState().settings.output.usePublicStun;
+    // The STUN choice is baked into each connection: apply a changed setting to NEW invites by
+    // rebuilding the host, but only while nobody is connected (never drop a live guest).
+    if (
+      this.host &&
+      this.hostStun !== wantStun &&
+      this.host.getPeers().length === 0
+    ) {
+      this.teardownHost();
+    }
     if (this.host) return this.host;
-    const host = new StudioHost({
-      usePublicStun: this.project.getState().settings.output.usePublicStun,
-    });
+    const host = new StudioHost({ usePublicStun: wantStun });
+    this.hostStun = wantStun;
     this.host = host;
     this.hostUnsubs.push(
       host.subscribe((peers) => {
@@ -815,11 +838,7 @@ export class StudioRuntime {
     this.roomUnsub?.();
     this.roomSession?.dispose();
     this.roomSession = null;
-    if (this.remoteTimer) clearInterval(this.remoteTimer);
-    for (const u of this.hostUnsubs) u();
-    this.hostUnsubs = [];
-    this.host?.dispose();
-    this.host = null;
+    this.teardownHost();
     for (const el of this.music.values()) el.pause();
     this.music.clear();
     this.sources.dispose();
