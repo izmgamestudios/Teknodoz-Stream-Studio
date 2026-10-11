@@ -2,6 +2,8 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { createLiveApi } from "./server/live";
+import { liveConfigFromEnv, tokenTooShort } from "./server/live-policy";
 import { createRoomsApi } from "./server/rooms";
 
 type ServerEntry = {
@@ -16,6 +18,16 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 // In-memory signaling relay for "room" links (see src/server/rooms.ts).
 const rooms = createRoomsApi();
+
+// RTMP(S) live bridge (see src/server/live.ts). Off unless LIVE_ADMIN_TOKEN is set; the env is
+// only readable on Node-like runtimes, elsewhere the bridge stays disabled.
+const liveEnv: Record<string, string | undefined> =
+  typeof process !== "undefined" && process.env ? process.env : {};
+if (tokenTooShort(liveEnv))
+  console.warn(
+    "[live] LIVE_ADMIN_TOKEN is shorter than 16 characters: live bridge disabled",
+  );
+const live = createLiveApi({ config: liveConfigFromEnv(liveEnv) });
 
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
@@ -64,6 +76,8 @@ export default {
     try {
       const roomResponse = await rooms.handle(request);
       if (roomResponse) return roomResponse;
+      const liveResponse = await live.handle(request);
+      if (liveResponse) return liveResponse;
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
