@@ -22,6 +22,7 @@ import {
   RangeInput,
 } from "./fields";
 import { QrImage } from "./qr-image";
+import { QrScanner, isQrScanSupported } from "./qr-scanner";
 import { RoomLinks, RoomPool } from "./room-panels";
 
 interface Invite {
@@ -217,6 +218,7 @@ function InviteCard({
   const [msg, setMsg] = useState("");
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   async function copy() {
     try {
@@ -228,11 +230,11 @@ function InviteCard({
     }
   }
 
-  async function connect() {
+  async function connect(override?: string) {
     setBusy(true);
     setMsg("");
     try {
-      await rt.acceptAnswer(invite.peerId, extractCode(answer));
+      await rt.acceptAnswer(invite.peerId, extractCode(override ?? answer));
       setMsg("Yanıt alındı, bağlanılıyor…");
     } catch (e) {
       setMsg(errText(e));
@@ -289,12 +291,42 @@ function InviteCard({
         >
           Bağlan
         </button>
+        <button
+          className={BTN}
+          disabled={busy}
+          title={
+            isQrScanSupported()
+              ? "Karşı tarafın yanıt QR'ını kamerayla tara"
+              : "Bu tarayıcı QR taramayı desteklemiyor"
+          }
+          onClick={() => setScanning((v) => !v)}
+        >
+          📷 Yanıt QR'ını tara
+        </button>
         {msg && (
           <span role="status" className="text-xs text-muted-foreground">
             {msg}
           </span>
         )}
       </div>
+      {scanning && (
+        <QrScanner
+          labels={{
+            title: "Yanıt QR'ını tara",
+            hint: "Konuğun ekranındaki QR kodunu kameraya tutun; okununca otomatik bağlanır.",
+            close: "Kapat",
+            denied: "Kamera açılamadı. İzin verin veya kodu yapıştırın.",
+            unsupported:
+              "Bu tarayıcı QR taramayı desteklemiyor (Android/macOS Chrome gerekir). Yanıt kodunu yapıştırın.",
+          }}
+          onClose={() => setScanning(false)}
+          onResult={(text) => {
+            setScanning(false);
+            setAnswer(text);
+            void connect(text);
+          }}
+        />
+      )}
     </div>
   );
 }
