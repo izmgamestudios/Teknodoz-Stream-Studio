@@ -23,6 +23,7 @@ import {
   PANEL,
   PanelTitle,
 } from "./fields";
+import { AnnounceCard } from "./announce-card";
 import { DestinationsCard } from "./live-destinations";
 import { LiveStatusCard } from "./live-status";
 
@@ -368,6 +369,9 @@ export function LiveApp() {
               )}
           </section>
           <LiveStatusCard snap={snap} />
+          {(snap.phase === "live" || snap.phase === "ended") && (
+            <AnnounceCard live />
+          )}
         </div>
       </div>
     </div>
