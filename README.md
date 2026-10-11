@@ -29,12 +29,14 @@ Tüm ses ve video işleme süreçleri doğrudan kullanıcının bilgisayarında 
 | **DozScene** — sınırsız sahne, `1-9` kısayol, kesme/fade/slide, katmanlar (z-sıra, göz, kilit, opaklık, karışım modu), taşı/boyutlandır/döndür tutamaçları | ✅ | Hizalama kılavuzları (Shift: oran/15°, Alt: merkezden) |
 | Yeşil perde (chroma key) | ✅ | WebGL2, yoksa CPU |
 | **DozGreenRoom** — P2P konuk, kulis, "Yayına al", konuk katmanı, ses (0–150 %, mute, VU) | ✅ | Manuel imzalama (bkz. aşağı) |
-| **DozDeck** — telefon kumandası (`/remote`) | ✅ | Sahne, prompter, mute, kayıt, işaret |
+| **Oda modu** — kısa link/QR (`/r/KOD`), bekleme havuzu, onayla → otomatik bağlan, günlük (`/room`) | ✅ | Kod kopyalama yok; küçük bir bellek-içi röle gerekir, bkz. [`docs/ROOM.md`](docs/ROOM.md) |
+| **DozDeck** — telefon kumandası (`/r/KOD?as=remote`, manuel: `/remote`) | ✅ | Sahne, prompter, mute, kayıt, işaret |
+| Ayarlar (`/settings`) — çözünürlük/fps/bit hızı, STUN, kısayol düzenleme, dil (TR/EN) | ✅ | Arayüz çevirisi: menü, ayarlar, konuk/kumanda sayfaları. Stüdyo panelleri henüz Türkçe |
+| Manuel (sunucusuz) bağlantı + QR tarama (`BarcodeDetector`) | ✅ | Röle yoksa yedek; QR tarama yalnızca Chromium (Android/macOS) |
 | Bölüm işaretleri → `chapters.txt` + `.srt` | ✅ | `M` tuşu; kayıt bitince video ile iner |
 | `.pptdz` proje paketi | ✅ | Sahneler, katmanlar, prompter, kısayollar ve IndexedDB görselleri/videoları |
 | 1080p 60 fps tuval + Web Audio karışımı → MP4/WebM | ✅ | MP4 desteklenirse MP4, yoksa WebM |
 | Video/ses efektleri, müzik | ✅ | Medya kütüphanesi (IndexedDB) |
-| Kısayol eşlemesini arayüzden düzenleme, İngilizce arayüz | ⏳ | Ayar katmanı hazır (`storage/`), arayüz yok |
 
 ### ⚠️ Teknik sınırlar (dürüst liste)
 
@@ -43,8 +45,8 @@ Tüm ses ve video işleme süreçleri doğrudan kullanıcının bilgisayarında 
   "Başka sekmeyi yakala" kullanılır.
 - **Başka alan adındaki sayfaya yapılan tıklamalar görünmez.** Dokunma efekti için "Demo overlay"
   (tıklama yakalanır, sayfa tıklanamaz) ya da aynı alan adındaki *güvenilir* sayfa seçeneği vardır.
-- **Sunucu olmadığı için bağlantı kurulumu manuel ve iki adımlıdır:** davet bağlantısı/QR → karşı tarafın
-  *yanıt kodu* → yayıncıya yapıştırılır. Her katılımcı için ayrı davet gerekir.
+- **Oda modu bir röle ister:** sunucu tarafında tek, uzun ömürlü bir Node süreci (`node-server`) gerekir; Cloudflare/serverless
+  gibi ortamlarda röle yoktur ve arayüz otomatik olarak **manuel kod değişimine** (davet → yanıt kodu) düşer.
 - **TURN yok.** Simetrik NAT / katı kurumsal güvenlik duvarı arkasındaki bağlantılar kurulamayabilir.
   Yayıncı her katılımcıya ayrı kodlama yaptığı için pratik üst sınır ≈ 8 kişidir.
 - Konuk sesi yayın karışımına girer; geri besleme olmaması için **kulaklık** önerilir (mix-minus yok).
@@ -52,7 +54,7 @@ Tüm ses ve video işleme süreçleri doğrudan kullanıcının bilgisayarında 
 
 ## 🔒 Güvenlik & Gizlilik İlkeleri / Privacy & Security
 
-- ❌ **Sıfır Veritabanı:** Supabase, Firebase veya SQL kullanılmaz.
+- ❌ **Sıfır Veritabanı:** Supabase, Firebase veya SQL kullanılmaz. (Oda rölesi yalnızca bellekte tutar, diske yazmaz.)
 - ❌ **Sıfır Kayıt/Giriş:** Hesap oluşturma veya e-posta doğrulama yoktur.
 - ✅ **Tamamen Yerel:** Tüm ayarlar `localStorage` ve `IndexedDB` üzerinde tutulur.
 - ✅ **Sıfır Veri Sızıntısı:** Video ve ses akışları hiçbir sunucuya gitmez; yalnızca sizin açtığınız P2P bağlantılarında doğrudan karşı tarafa iletilir.
@@ -63,9 +65,9 @@ Tüm ses ve video işleme süreçleri doğrudan kullanıcının bilgisayarında 
 |---|---|---|
 | Genel STUN (`stun.l.google.com`) | Yalnızca IP adresiniz; medya/kod gitmez | Ayarlarda `usePublicStun` kapatılır (yalnızca yerel ağ) |
 | Sesle takip (Web Speech API) | Chrome'da mikrofon sesi Google'a gidebilir | Varsayılan **kapalı**, açarken uyarı gösterilir |
-| Google Fonts (Space Grotesk) | Sayfayı açan ziyaretçinin IP adresi | `src/routes/__root.tsx` içindeki font bağlantısı kaldırılarak yerel yazı tipi kullanılabilir |
+| Oda rölesi (`/api/room`) | Takma adlar, istenen rol, SDP kodları (IP içerir), istemci IP’si (yalnızca hız sınırı için); bellekte, en fazla birkaç saat | Röle kullanılmazsa manuel bağlantı |
 
-Davet/yanıt kodları URL'nin `#` kısmında taşınır; tarayıcılar bunu sunucuya göndermez. İçe aktarılan `.pptdz`,
+Manuel modda davet/yanıt kodları URL'nin `#` kısmında taşınır; tarayıcılar bunu sunucuya göndermez. Yazı tipi (Space Grotesk, OFL) kendi sunucundan sunulur; üçüncü taraf istek yoktur. İçe aktarılan `.pptdz`,
 P2P mesajları ve otomatik kayıt `zod` ile doğrulanır; `innerHTML` kullanılmaz.
 
 ---
@@ -108,3 +110,20 @@ npm run build      # üretim derlemesi (varsayılan hedef Cloudflare; Node için
 Ayrıntılar: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Kısaca: `src/studio/` altında saf mantık modülleri
 (`storage`, `engine`, `prompter`, `proto`, `p2p`, `project`), onları birleştiren `runtime/StudioRuntime` ve
 React arayüzü `ui/` bulunur. Sayfalar: `/` (prompter), `/studio`, `/join` (izleyici/konuk), `/remote` (telefon).
+
+---
+
+## 🚀 CloudPanel (Node.js) ile yayına alma
+
+```bash
+cd ~/htdocs/ALANADI.COM && git fetch origin && git reset --hard origin/main \
+  && rm -f bun.lock && ~/.bun/bin/bun install \
+  && NITRO_PRESET=node-server ~/.bun/bin/bun run build \
+  && (pm2 delete teknodoz-studio 2>/dev/null || true) \
+  && NITRO_PORT=3011 NITRO_HOST=127.0.0.1 pm2 start .output/server/index.mjs --name teknodoz-studio && pm2 save
+```
+
+- `bun.lock` Lovable'ın özel registry adreslerini içerir ve dışarıdan 403 verir; bu yüzden sunucuda silinip yeniden çözülür.
+- CloudPanel sitesi `127.0.0.1:3011`'e reverse proxy olmalı, **HTTPS** şarttır (kamera/mikrofon için).
+- pm2'yi **tek örnek** (fork) çalıştırın: oda rölesi belleği süreçler arasında paylaşılmaz. Ayrıntı: [`docs/ROOM.md`](docs/ROOM.md).
+- Gerçek cihaz test rehberi: [`docs/DEVICE-TESTING.md`](docs/DEVICE-TESTING.md).

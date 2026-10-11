@@ -53,3 +53,7 @@ Signaling is manual (copy/paste/QR/link fragment) because there is no server by 
   RTCPeerConnection per peer (mesh), default cap 8, no TURN.
 - Smoke-tested in headless Chromium (fake media devices): camera -> canvas, scene hotkeys, MP4 + chapters/SRT,
   two-page P2P with green room, phone remote, `.pptdz` export. Unit tests: `npm run test`.
+- Room mode (`src/server/rooms.ts` relay + `src/studio/room/*`): see `docs/ROOM.md`. The runtime is a per-page-load
+  singleton (`acquireRuntime`) shared by all routes, and owns its program canvas, so connections, camera and
+  recording survive navigation (e.g. Studio -> Room).
+- i18n: `src/studio/i18n` (tr/en) covers the shell, settings and guest/remote/room pages; studio panels are Turkish.
