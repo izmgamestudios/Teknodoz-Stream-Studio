@@ -18,45 +18,81 @@ Tüm ses ve video işleme süreçleri doğrudan kullanıcının bilgisayarında 
 
 ---
 
-## 🚀 Öne Çıkan Özellikler / Key Features
+## 🚀 Özellikler ve Durum / Features & Status
 
-### 🎙️ 1. DozPrompt (Akıllı Teleprompter)
-- **Gizli HUD Modu:** Metin yalnızca yayıncının ekranında akar; kaydedilen videoya veya tuvale kesinlikle basılmaz.
-- **Yayına Aktarma (Burn-in) Modu:** Tek anahtarla kayan yazı alt bant (ticker) veya altyazı olarak tuvale eklenir.
-- **Sesle Takip (Voice Auto-Follow):** Yerleşik Web Speech API ile konuşma hızınızı analiz eder; siz konuştukça metin akar, durduğunuzda bekler.
-- **Göz Teması (Eyeline Notch) Modu:** Kameranın hemen altına yerleşen kompakt görünüm ile izleyiciyle doğrudan göz teması sağlar.
+| Modül | Durum | Not |
+|---|---|---|
+| **DozPrompt** — HUD (kayda girmez), kamera altı *notch*, hız/boyut/satır aralığı/kontrast/ayna, `Boşluk`·`↑↓`·`R`, `.txt/.md/.srt/.docx` + pano | ✅ | `/` ve `/studio` |
+| Burn-in (altyazı / kayan şerit / notch) | ✅ | Tek anahtar + sahnedeki "Prompter (burn-in)" katmanı |
+| Sesle takip (Web Speech API) | ✅ | Chrome/Edge. Ses Google'a gidebilir; arayüzde uyarı vardır |
+| **DozProto** — mobil (390x844) ve masaüstü çerçeve, dokunma efekti | ✅ | Görüntü ekran/sekme yakalamayla girer, bkz. *Teknik sınırlar* |
+| **DozScene** — sınırsız sahne, `1-9` kısayol, kesme/fade/slide, katmanlar (z-sıra, göz, kilit, opaklık, karışım modu), taşı/boyutlandır/döndür tutamaçları | ✅ | Hizalama kılavuzları (Shift: oran/15°, Alt: merkezden) |
+| **Yayın çerçevesi şablonları** — Haber/Breaking News, solo yakın plan, mobil test, masaüstü prototip, 2'li / 4'lü / 3'lü (podcast) konuşma, eğitim videosu, çift ekran paylaşımı, sunum+konuşmacı | ✅ | Sahne panelinde **▦ Şablon**: tema rengi, başlık, etiket, kayan yazı; sıradan katmanlardan kurulur (sonradan düzenlenir). Konuk panelleri boş gelir, "Yayına al" ilk boş panele yerleştirir. **Logo** ve **özel arka plan görseli** yüklenebilir (PNG/JPEG/WebP/GIF/AVIF, ≤12 MB; `.pptdz`'ye girer) |
+| Yeşil perde (chroma key) | ✅ | WebGL2, yoksa CPU |
+| **DozGreenRoom** — P2P konuk, kulis, "Yayına al", konuk katmanı, ses (0–150 %, mute, VU) | ✅ | Manuel imzalama (bkz. aşağı) |
+| **Oda modu** — kısa link/QR (`/r/KOD`), bekleme havuzu, onayla → otomatik bağlan, günlük (`/room`) | ✅ | Kod kopyalama yok; küçük bir bellek-içi röle gerekir, bkz. [`docs/ROOM.md`](docs/ROOM.md) |
+| **Moderasyonlu oda sohbeti** — katılımcı mesajı → editör/reji onayı → yayına al (overlay katmanı) | ✅ | Reji (`/room`) ve editör (`/chat/KOD#k=…`, ayrı cihaz) masaları; modlar: onaylı / serbest / kapalı. Bkz. [`docs/ROOM.md`](docs/ROOM.md) |
+| **Canlı yayın** (`/live`) — YouTube, Facebook, Twitch, Kick, Instagram, TikTok veya özel RTMP(S) hedefi; yayın anahtarı + sunucu adresi, çoklu hedef | ✅ | Tarayıcı → **kendi sunucunuzdaki ffmpeg köprüsü** → RTMPS. Varsayılan **kapalı**: `LIVE_ADMIN_TOKEN` + ffmpeg gerekir. Yerelde RTMP'ye uçtan uca doğrulandı; gerçek platform/RTMPS denenmedi. Bkz. [`docs/LIVE.md`](docs/LIVE.md) |
+| **Topluluk merkezi** (`/community`) — WhatsApp kanalı, Telegram, Slack, Discord, Facebook grubu, LinkedIn sayfası bağlantıları (doğrulamalı) + **yayın duyurusu** paylaşımı (WhatsApp/Telegram/LinkedIn/Facebook/X/e-posta, API anahtarı yok) | ✅ | Kanalları sahibi açar; adresler `src/studio/community/links.ts`'e yazılır. Rehber ve hazır metinler: [`docs/COMMUNITY.md`](docs/COMMUNITY.md) |
+| **Sponsor / ortak / yatırımcı sistemi** — Stüdyo → *Sponsorlar* paneli (logo, seviye, yayında göster), dönüşümlü **Sponsorlar** yayın katmanı, ekranda kalma süresi raporu (CSV); `/community` destekçi duvarı, paket taslakları ve başvuru kiti (e-posta/WhatsApp taslağı, sunucuya veri gitmez) | ✅ | Süre = ekranda kalma, izleyici sayısı değil. Strateji, fiyat hipotezleri ve 90 günlük plan: [`docs/STRATEGY.md`](docs/STRATEGY.md) |
+| **Marka sistemi** — ad, logo, slogan, logo altı **"Erken erişim"** etiketi, tema renkleri, köşe/ölçek, simgeler, paylaşım (Open Graph/X) ve arama meta verisi özelleştirilebilir | ✅ | Ayarlar'da düzenleyici (bu tarayıcı + site için dışa/içe aktarma), `config.ts` ve `BRAND_*` ortam değişkenleri; tüm değerler doğrulanır. Bkz. [`docs/BRANDING.md`](docs/BRANDING.md) |
+| **İndir** (`/download`) — Windows, macOS, Linux, Android, iOS: **uygulama olarak yükle (PWA)**, platforma özel adımlar, QR; yerel kurulum dosyası/mağaza bağlantıları yapılandırılabilir | ✅ PWA · ⏳ yerel yükleyiciler | Yerel yükleyiciler henüz **üretilmedi** (sayfada "Henüz yok"); yol haritası ve bağlantı ekleme: [`docs/DOWNLOADS.md`](docs/DOWNLOADS.md) |
+| **Kılavuz** (`/guide`) — adım adım kullanım, **Drive PDF** ve **YouTube video** gömme (tıklayınca yüklenir), kısayollar, SSS; aynı içerik GitHub'da | ✅ | PDF/video adresleri `src/studio/guide/resources-config.ts`'e yazılır. [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) · [`docs/USER-GUIDE.en.md`](docs/USER-GUIDE.en.md) |
+| **DozDeck** — telefon kumandası (`/r/KOD?as=remote`, manuel: `/remote`) | ✅ | Sahne, prompter, mute, kayıt, işaret |
+| Ayarlar (`/settings`) — çözünürlük/fps/bit hızı, STUN, kısayol düzenleme, dil (TR/EN) | ✅ | Arayüz çevirisi: menü, ayarlar, konuk/kumanda sayfaları. Stüdyo panelleri henüz Türkçe |
+| Manuel (sunucusuz) bağlantı + QR tarama (`BarcodeDetector`) | ✅ | Röle yoksa yedek; QR tarama yalnızca Chromium (Android/macOS) |
+| Bölüm işaretleri → `chapters.txt` + `.srt` | ✅ | `M` tuşu; kayıt bitince video ile iner |
+| `.pptdz` proje paketi | ✅ | Sahneler, katmanlar, prompter, kısayollar ve IndexedDB görselleri/videoları |
+| 1080p 60 fps tuval + Web Audio karışımı → MP4/WebM | ✅ | MP4 desteklenirse MP4, yoksa WebM |
+| Video/ses efektleri, müzik | ✅ | Medya kütüphanesi (IndexedDB) |
 
-### 📱 2. DozProto (URL Prototip Test Yayıncılığı)
-- **Canlı Web Kaynağı:** Herhangi bir web URL'sini doğrudan tuvale ekleme.
-- **Cihaz Çerçeveleri:** iPhone / Android dikey mobil çerçeve (9:16) ve masaüstü tarayıcı çerçevesi (16:9).
-- **Tıklama Efektleri (Touch Ripples):** Prototip test edilirken ekranda animasyonlu dokunma halkaları gösterir.
-- **Ekran Yakalama Köprüsü:** CSP/iframe kısıtlaması olan siteleri doğrudan sekme paylaşımıyla çerçeveye entegre etme.
+### ⚠️ Teknik sınırlar (dürüst liste)
 
-### 🎛️ 3. DozScene (Sahneler & Katman Motoru)
-- **OBS Mantığında Çoklu Sahne:** Sınırsız sahne oluşturma ve klavyeden `1-9` kısayollarıyla anında/yumuşak geçiş.
-- **Photoshop Tarzı Katmanlar:** Z-index sıralama, sürükle-bırak serbest boyutlandırma, şeffaflık (%0-100) ve kilitleme.
-- **Yeşil Perde (Chroma Key):** Harici yazılıma gerek duymadan tarayıcı içi arka plan temizleme.
+- **Prototip görüntüsü canvas'a doğrudan çizilemez.** `<iframe>` içeriği ancak ekran/sekme yakalamayla
+  (Chrome/Edge'de bölge kırpma ile) sahneye girer. CSP / `X-Frame-Options` yasaklayan siteler için
+  "Başka sekmeyi yakala" kullanılır.
+- **Başka alan adındaki sayfaya yapılan tıklamalar görünmez.** Dokunma efekti için "Demo overlay"
+  (tıklama yakalanır, sayfa tıklanamaz) ya da aynı alan adındaki *güvenilir* sayfa seçeneği vardır.
+- **Oda modu bir röle ister:** sunucu tarafında tek, uzun ömürlü bir Node süreci (`node-server`) gerekir; Cloudflare/serverless
+  gibi ortamlarda röle yoktur ve arayüz otomatik olarak **manuel kod değişimine** (davet → yanıt kodu) düşer.
+- **TURN yok.** Simetrik NAT / katı kurumsal güvenlik duvarı arkasındaki bağlantılar kurulamayabilir.
+  Yayıncı her katılımcıya ayrı kodlama yaptığı için pratik üst sınır ≈ 8 kişidir.
+- Konuk sesi yayın karışımına girer; geri besleme olmaması için **kulaklık** önerilir (mix-minus yok).
+- Ses/efekt dosyaları `.pptdz` paketine girmez (yalnızca sahnelerde kullanılan görsel ve videolar).
 
-### 👥 4. DozGreenRoom (Sunucusuz P2P Konuk Sistemi)
-- **Kulis & Bekleme Odası:** Veritabanı olmadan, WebRTC eşler arası (P2P) bağlantıyla konuk davet etme.
-- **Dinamik Konuk Katmanı:** Konuğun görüntüsünü serbestçe boyutlandırıp tuvalde istenen yere koyma.
-- **Bağımsız Ses Mikseri:** Her konuk için ayrı kazanç (gain slider), susturma (mute) ve canlı VU metre.
+## 🌐 Topluluk ve kanallar
 
-### 📲 5. DozDeck (Mobil Uzaktan Kumanda)
-- Ekranda beliren QR kodu telefonla okutarak, telefonu anında sahne ve prompter kontrolleri için büyük butonlu bir kablosuz el kumandasına dönüştürme.
+| Kanal | Bağlantı |
+|---|---|
+| WhatsApp Kanalı | [whatsapp.com/channel/…](https://whatsapp.com/channel/0029VbE4O60FnSz2cQgj9U0A) |
+| LinkedIn (Showcase) | [linkedin.com/showcase/teknodoz](https://www.linkedin.com/showcase/teknodoz) |
+| Instagram | [instagram.com/teknodoz](https://www.instagram.com/teknodoz) |
+| YouTube | [youtube.com/@teknodoz](https://www.youtube.com/@teknodoz) |
+| X | [x.com/infoteknodoz](https://x.com/infoteknodoz) |
+| Slack | çalışma alanı üyelerine özel (`teknodozproje-dfg7355.slack.com`) |
+| GitHub | [Issues / Discussions](https://github.com/izmgamestudios/Teknodoz-Stream-Studio) |
 
-### 📦 6. .pptdz Proje Paketi & YouTube Bölümleme
-- **Yerel Yedekleme:** Tüm sahne, katman ve ayarları tek tıkla `.pptdz` dosyası olarak indirme ve geri yükleme.
-- **Chapters (Bölümler):** Kayıt sırasında `M` tuşuyla atılan işaretleri YouTube uyumlu `chapters.txt` ve `.srt` olarak dışa aktarma.
-
----
+Uygulamada `/community` sayfası aynı bağlantıları doğrulayarak gösterir. Kurulum ve kurallar: [`docs/COMMUNITY.md`](docs/COMMUNITY.md).
 
 ## 🔒 Güvenlik & Gizlilik İlkeleri / Privacy & Security
 
-- ❌ **Sıfır Veritabanı:** Supabase, Firebase veya SQL kullanılmaz.
+- ❌ **Sıfır Veritabanı:** Supabase, Firebase veya SQL kullanılmaz. (Oda rölesi yalnızca bellekte tutar, diske yazmaz.)
 - ❌ **Sıfır Kayıt/Giriş:** Hesap oluşturma veya e-posta doğrulama yoktur.
 - ✅ **Tamamen Yerel:** Tüm ayarlar `localStorage` ve `IndexedDB` üzerinde tutulur.
-- ✅ **Sıfır Veri Sızıntısı:** Video ve ses akışları cihazınızdan dışarı çıkmaz.
+- ✅ **Sıfır Veri Sızıntısı:** Video ve ses akışları varsayılan olarak hiçbir sunucuya gitmez; yalnızca sizin açtığınız P2P bağlantılarında doğrudan karşı tarafa iletilir. **Tek istisna:** siz kendiniz `/live` ile canlı yayın başlatırsanız program çıkışı *kendi sunucunuza* (ffmpeg köprüsü) ve oradan seçtiğiniz platforma gider.
+
+**Dürüst istisnalar:**
+
+| Ne | Kime ne görünür | Nasıl kapatılır |
+|---|---|---|
+| Genel STUN (`stun.l.google.com`) | Yalnızca IP adresiniz; medya/kod gitmez | Ayarlarda `usePublicStun` kapatılır (yalnızca yerel ağ) |
+| Sesle takip (Web Speech API) | Chrome'da mikrofon sesi Google'a gidebilir | Varsayılan **kapalı**, açarken uyarı gösterilir |
+| Oda rölesi (`/api/room`) | Takma adlar, istenen rol, SDP kodları (IP içerir), istemci IP’si (yalnızca hız sınırı için); bellekte, en fazla birkaç saat | Röle kullanılmazsa manuel bağlantı |
+| Oda sohbeti | Mesaj metni ve takma ad (onay bekleyenler dahil); röle belleğinde, oda kapanınca silinir | Sohbet modunu *Kapalı* yapın |
+| Canlı yayın köprüsü (`/api/live`) | Program görüntüsü/sesi + yayın anahtarı kendi sunucunuza ve oradan platforma gider; anahtar günlüğe yazılmaz, yanıtlarda dönmez | Varsayılan **kapalı** (`LIVE_ADMIN_TOKEN` yoksa çalışmaz) |
+
+Manuel modda davet/yanıt kodları URL'nin `#` kısmında taşınır; tarayıcılar bunu sunucuya göndermez. Yazı tipi (Space Grotesk, OFL) kendi sunucundan sunulur; üçüncü taraf istek yoktur. İçe aktarılan `.pptdz`,
+P2P mesajları ve otomatik kayıt `zod` ile doğrulanır; `innerHTML` kullanılmaz.
 
 ---
 
@@ -77,15 +113,60 @@ Projeyi yerel ortamınızda çalıştırmak için:
 
 ```bash
 # Depoyu klonlayın
-git clone https://github.com/KULLANICI_ADINIZ/teknodoz-studio.git
+git clone https://github.com/izmgamestudios/Teknodoz-Stream-Studio.git
 
 # Proje dizinine gidin
-cd teknodoz-studio
+cd Teknodoz-Stream-Studio
 
 # Bağımlılıkları yükleyin (npm, pnpm veya bun)
 npm install
 
 # Geliştirici sunucusunu başlatın
-npm run dev
+npm run dev        # http://localhost:5173
+npm run test       # vitest (1800+ birim testi)
+npm run build      # üretim derlemesi (varsayılan hedef Cloudflare; Node için NITRO_PRESET=node-server)
+```
 
+---
 
+## 🧱 Mimari / Architecture
+
+Ayrıntılar: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Kısaca: `src/studio/` altında saf mantık modülleri
+(`storage`, `engine`, `prompter`, `proto`, `p2p`, `project`, `branding`, `pwa`, `guide`), onları birleştiren `runtime/StudioRuntime` ve
+React arayüzü `ui/` bulunur. Sayfalar: `/` (prompter), `/studio`, `/room`, `/live`, `/community`, `/guide`, `/download`, `/settings`,
+`/join` (izleyici/konuk), `/remote` (telefon).
+
+---
+
+## 📚 Dokümantasyon
+
+Tüm belgelerin dizini: [`docs/README.md`](docs/README.md).
+
+| Belge | İçerik |
+|---|---|
+| [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) · [EN](docs/USER-GUIDE.en.md) | kullanım kılavuzu |
+| [`docs/BRANDING.md`](docs/BRANDING.md) | marka, tema, meta/paylaşım, simgeler |
+| [`docs/DOWNLOADS.md`](docs/DOWNLOADS.md) | PWA kurulumu, yerel yükleyici yol haritası |
+| [`docs/COMMUNITY.md`](docs/COMMUNITY.md) · [`docs/STRATEGY.md`](docs/STRATEGY.md) | topluluk kanalları, sponsor stratejisi |
+| [`docs/ROOM.md`](docs/ROOM.md) · [`docs/LIVE.md`](docs/LIVE.md) | oda rölesi/sohbet, canlı yayın köprüsü |
+| [`docs/KAYNAKCA.md`](docs/KAYNAKCA.md) | kaynakça |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`SECURITY.md`](SECURITY.md) · [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) · [`CITATION.cff`](CITATION.cff) | katkı, güvenlik, davranış, alıntı |
+
+---
+
+## 🚀 CloudPanel (Node.js) ile yayına alma
+
+```bash
+cd ~/htdocs/ALANADI.COM && git fetch origin && git reset --hard origin/main \
+  && rm -f bun.lock && ~/.bun/bin/bun install \
+  && NITRO_PRESET=node-server ~/.bun/bin/bun run build \
+  && (pm2 delete teknodoz-studio 2>/dev/null || true) \
+  && NITRO_PORT=3011 NITRO_HOST=127.0.0.1 pm2 start .output/server/index.mjs --name teknodoz-studio && pm2 save
+```
+
+- `bun.lock` Lovable'ın özel registry adreslerini içerir ve dışarıdan 403 verir; bu yüzden sunucuda silinip yeniden çözülür.
+- CloudPanel sitesi `127.0.0.1:3011`'e reverse proxy olmalı, **HTTPS** şarttır (kamera/mikrofon için).
+- pm2'yi **tek örnek** (fork) çalıştırın: oda rölesi belleği süreçler arasında paylaşılmaz. Ayrıntı: [`docs/ROOM.md`](docs/ROOM.md).
+- Canlı yayın (`/live`) için sunucuya `ffmpeg` kurun ve ortama gizli bir `LIVE_ADMIN_TOKEN` (≥16 karakter) verin; reverse proxy gövde limiti ≥ 8 MB olmalı. Güvenlik modeli ve kurulum: [`docs/LIVE.md`](docs/LIVE.md).
+- Marka/meta: sunucu ortamına `BRAND_JSON` ya da `BRAND_*` değişkenleri verin (en az `BRAND_SITE_URL=https://alan.adı`); pm2'yi `--update-env` ile başlatın. Ayrıntı: [`docs/BRANDING.md`](docs/BRANDING.md).
+- Gerçek cihaz test rehberi: [`docs/DEVICE-TESTING.md`](docs/DEVICE-TESTING.md).

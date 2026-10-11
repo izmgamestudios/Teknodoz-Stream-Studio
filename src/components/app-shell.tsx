@@ -1,15 +1,63 @@
 // src/components/app-shell.tsx
-import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { useSyncExternalStore, type ReactNode } from "react";
 
-import { TeknodozLogo } from "@/components/teknodoz-logo";
+import { BrandBadge, BrandLogo, useBrand } from "@/studio/ui/brand-context";
+import { useT } from "@/studio/i18n/use-t";
+import type { MessageKey } from "@/studio/i18n/messages";
+import { roomBadge } from "@/studio/room/badge";
 
-const NAV = [
-  { to: "/", label: "Prompter", hint: "Metin, kamera, kayıt", icon: "📜" },
-  { to: "/studio", label: "Stüdyo", hint: "Logo, müzik, efekt", icon: "🎬" },
-] as const;
+const NAV: readonly {
+  to:
+    | "/"
+    | "/studio"
+    | "/room"
+    | "/live"
+    | "/community"
+    | "/guide"
+    | "/download"
+    | "/settings";
+  label: MessageKey;
+  hint: MessageKey;
+  icon: string;
+}[] = [
+  { to: "/", label: "nav.prompter", hint: "nav.prompter.hint", icon: "📜" },
+  { to: "/studio", label: "nav.studio", hint: "nav.studio.hint", icon: "🎬" },
+  { to: "/room", label: "nav.room", hint: "nav.room.hint", icon: "🚪" },
+  { to: "/live", label: "nav.live", hint: "nav.live.hint", icon: "📡" },
+  {
+    to: "/community",
+    label: "nav.community",
+    hint: "nav.community.hint",
+    icon: "🤝",
+  },
+  {
+    to: "/guide",
+    label: "nav.guide",
+    hint: "nav.guide.hint",
+    icon: "📖",
+  },
+  {
+    to: "/download",
+    label: "nav.download",
+    hint: "nav.download.hint",
+    icon: "⬇️",
+  },
+  {
+    to: "/settings",
+    label: "nav.settings",
+    hint: "nav.settings.hint",
+    icon: "⚙️",
+  },
+];
 
 function NavLinks({ compact = false }: { compact?: boolean }) {
+  const t = useT();
+  const badge = useSyncExternalStore(
+    roomBadge.subscribe,
+    roomBadge.get,
+    roomBadge.getServer,
+  );
   return (
     <>
       {NAV.map((n, i) => (
@@ -30,12 +78,35 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
         >
           <span aria-hidden="true">{n.icon}</span>
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="font-semibold">{n.label}</span>
-            {!compact && <span className="truncate text-xs text-muted-foreground">{n.hint}</span>}
+            <span className="font-semibold">
+              {t(n.label)}
+              {n.to === "/room" && badge.waiting > 0 && (
+                <span
+                  className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
+                  aria-label={t("shell.pending", { n: badge.waiting })}
+                >
+                  {badge.waiting}
+                </span>
+              )}
+              {n.to === "/room" && badge.chat > 0 && (
+                <span
+                  className="ml-1.5 rounded-full bg-speaker-b px-1.5 py-0.5 text-[10px] font-bold text-background"
+                  aria-label={t("shell.pendingChat", { n: badge.chat })}
+                >
+                  💬 {badge.chat}
+                </span>
+              )}
+            </span>
+            {!compact && (
+              <span className="truncate text-xs text-muted-foreground">
+                {t(n.hint)}
+              </span>
+            )}
           </span>
           {!compact && (
             <span className="text-[10px] tracking-widest text-muted-foreground">
-              {String(i + 1).padStart(2, "0")} / {String(NAV.length).padStart(2, "0")}
+              {String(i + 1).padStart(2, "0")} /{" "}
+              {String(NAV.length).padStart(2, "0")}
             </span>
           )}
         </Link>
@@ -44,51 +115,92 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/** Pages opened by guests / phones: no studio navigation around them. */
+const BARE_PREFIXES = ["/join", "/remote", "/r", "/chat"];
+
+/** Slogan with its last word highlighted (the translated default when no slogan is set). */
+function useHeadline(): { a: string; b: string } {
+  const t = useT();
+  const { slogan } = useBrand();
+  if (!slogan) return { a: t("shell.headline.a"), b: t("shell.headline.b") };
+  const i = slogan.lastIndexOf(" ");
+  return i < 0
+    ? { a: "", b: slogan }
+    : { a: slogan.slice(0, i), b: slogan.slice(i + 1) };
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
+  const t = useT();
+  const brand = useBrand();
+  const head = useHeadline();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (
+    BARE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  ) {
+    return <>{children}</>;
+  }
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* desktop sidebar */}
       <aside className="sticky top-0 z-30 hidden h-screen w-72 shrink-0 flex-col border-r bg-card md:flex">
-        <div className="flex items-center gap-3 border-b px-5 py-5">
-          <TeknodozLogo className="text-xl" />
-          <span className="h-5 w-px bg-border" />
-          <span className="text-sm font-bold tracking-wide">STUDIO</span>
+        <div className="space-y-2 border-b px-5 py-5">
+          <div className="flex items-center gap-3">
+            <BrandLogo className="text-xl" />
+            {brand.productLabel && (
+              <>
+                <span className="h-5 w-px bg-border" />
+                <span className="text-sm font-bold tracking-wide">
+                  {brand.productLabel}
+                </span>
+              </>
+            )}
+          </div>
+          <BrandBadge />
         </div>
 
         <div className="flex-1 space-y-6 overflow-y-auto px-4 py-6">
           <div>
             <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-speaker-b">
-              <span className="size-1.5 rounded-full bg-speaker-b" /> Yayıncı çalışma alanı
+              <span className="size-1.5 rounded-full bg-speaker-b" />{" "}
+              {t("shell.workspace")}
             </p>
             <h2 className="text-2xl font-bold leading-tight">
-              Yayını <span className="text-speaker-b">sahnede kur.</span>
+              {head.a} <span className="text-speaker-b">{head.b}</span>
             </h2>
             <p className="mt-2 text-xs text-muted-foreground">
-              Prompter, kayıt ve stüdyo tek yerde. Her şey tarayıcında kalır.
+              {brand.tagline || t("shell.tagline")}
             </p>
           </div>
 
-          <nav className="space-y-1.5" aria-label="Ana menü">
+          <nav className="space-y-1.5" aria-label={t("nav.menu")}>
             <p className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
-              Modüller
+              {t("shell.modules")}
             </p>
             <NavLinks />
           </nav>
         </div>
 
         <div className="border-t px-5 py-4 text-[11px] leading-relaxed text-muted-foreground">
-          <p>100% client-side · gizlilik odaklı</p>
+          <p>{t("shell.local")}</p>
           <p className="mt-1">© Teknodoz · IZM Game Studios</p>
         </div>
       </aside>
 
       {/* mobile top bar */}
       <header className="sticky top-0 z-30 border-b bg-card md:hidden">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <TeknodozLogo className="text-lg" />
-          <span className="text-xs font-bold tracking-wide">STUDIO</span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3">
+          <BrandLogo className="text-lg" />
+          {brand.productLabel && (
+            <span className="text-xs font-bold tracking-wide">
+              {brand.productLabel}
+            </span>
+          )}
+          <BrandBadge />
         </div>
-        <nav className="flex gap-1 overflow-x-auto px-3 pb-2" aria-label="Ana menü">
+        <nav
+          className="flex gap-1 overflow-x-auto px-3 pb-2"
+          aria-label={t("nav.menu")}
+        >
           <NavLinks compact />
         </nav>
       </header>
