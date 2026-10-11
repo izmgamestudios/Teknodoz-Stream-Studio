@@ -73,7 +73,13 @@ export function defaultPrompterSettings(): PrompterSettings {
 }
 
 export function defaultChroma(): ChromaKey {
-  return { enabled: false, key: "green", similarity: 0.4, smoothness: 0.08, spill: 0.1 };
+  return {
+    enabled: false,
+    key: "green",
+    similarity: 0.4,
+    smoothness: 0.08,
+    spill: 0.1,
+  };
 }
 
 const FULL: Transform = { x: 0, y: 0, w: LOGICAL_W, h: LOGICAL_H, rotation: 0 };
@@ -140,7 +146,12 @@ export function createLayer<K extends LayerKind>(
       };
       break;
     case "image":
-      layer = { ...base, kind: "image", transform: box(60, 60, 320, 180), assetId: "" };
+      layer = {
+        ...base,
+        kind: "image",
+        transform: box(60, 60, 320, 180),
+        assetId: "",
+      };
       break;
     case "video":
       layer = {

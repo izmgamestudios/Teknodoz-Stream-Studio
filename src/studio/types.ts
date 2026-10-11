@@ -268,7 +268,11 @@ export interface AssetRecord extends AssetMeta {
 }
 /** Implemented by src/studio/storage/idb.ts, consumed by pptdz + runtime. */
 export interface AssetStore {
-  put(blob: Blob, meta: { name: string; type: AssetType }, id?: string): Promise<AssetMeta>;
+  put(
+    blob: Blob,
+    meta: { name: string; type: AssetType },
+    id?: string,
+  ): Promise<AssetMeta>;
   get(id: string): Promise<AssetRecord | undefined>;
   getUrl(id: string): Promise<string | undefined>; // object URL, cached; revoke on delete/dispose
   list(): Promise<AssetMeta[]>;
@@ -327,14 +331,28 @@ export type HostToPeer =
   | { type: "remote-state"; state: RemoteState }
   /** optional in-band renegotiation (the ctl channel is the only signaling path once connected) */
   | { type: "sdp"; description: { type: "offer" | "answer"; sdp: string } }
-  | { type: "ice"; candidate: { candidate: string; sdpMid?: string | null; sdpMLineIndex?: number | null } };
+  | {
+      type: "ice";
+      candidate: {
+        candidate: string;
+        sdpMid?: string | null;
+        sdpMLineIndex?: number | null;
+      };
+    };
 
 export type PeerToHost =
   | { type: "role"; role: PeerRole; name: string }
   | { type: "join-request"; name: string }
   | { type: "remote-cmd"; cmd: RemoteCommand }
   | { type: "sdp"; description: { type: "offer" | "answer"; sdp: string } }
-  | { type: "ice"; candidate: { candidate: string; sdpMid?: string | null; sdpMLineIndex?: number | null } };
+  | {
+      type: "ice";
+      candidate: {
+        candidate: string;
+        sdpMid?: string | null;
+        sdpMLineIndex?: number | null;
+      };
+    };
 
 export interface RemoteState {
   scenes: { id: string; name: string; hotkey?: string }[];
@@ -386,12 +404,27 @@ export interface FrameSource {
 export interface CompositorHooks {
   resolveSource(layer: Layer): FrameSource | null;
   /** Burn-in prompter text. `box` is the layer transform in output px. */
-  drawPrompter?(ctx: CanvasRenderingContext2D, layer: PrompterLayer, box: Rect, nowMs: number): void;
+  drawPrompter?(
+    ctx: CanvasRenderingContext2D,
+    layer: PrompterLayer,
+    box: Rect,
+    nowMs: number,
+  ): void;
   /**
    * Web (prototype) layers: draw the device frame chrome for `layer.frame` and return the
    * inner "screen" rect where the captured source will be drawn. Return `box` for "none".
    */
-  drawWebChrome?(ctx: CanvasRenderingContext2D, layer: WebLayer, box: Rect, nowMs: number): Rect;
+  drawWebChrome?(
+    ctx: CanvasRenderingContext2D,
+    layer: WebLayer,
+    box: Rect,
+    nowMs: number,
+  ): Rect;
   /** Web layers: touch/click ripples drawn over the screen rect. */
-  drawWebOverlay?(ctx: CanvasRenderingContext2D, layer: WebLayer, screen: Rect, nowMs: number): void;
+  drawWebOverlay?(
+    ctx: CanvasRenderingContext2D,
+    layer: WebLayer,
+    screen: Rect,
+    nowMs: number,
+  ): void;
 }
