@@ -12,6 +12,7 @@ import {
 
 import type { AudioBusState } from "../engine/audio-bus";
 import type { PrompterSnapshot } from "../prompter";
+import type { LiveSnapshot } from "../live/streamer";
 import type { RoomSnapshot } from "../room/host-session";
 import type { PeerInfo, ProjectState } from "../types";
 import { StudioRuntime, type RuntimeSnapshot } from "./runtime";
@@ -138,5 +139,15 @@ export function useRoom(): RoomSnapshot {
     rt.room.subscribe,
     rt.room.getSnapshot,
     rt.room.getSnapshot,
+  );
+}
+
+/** RTMP(S) live broadcast state (see `/live`). */
+export function useLive(): LiveSnapshot {
+  const rt = useStudio();
+  return useSyncExternalStore(
+    rt.live.subscribe,
+    rt.live.getSnapshot,
+    rt.live.getSnapshot,
   );
 }

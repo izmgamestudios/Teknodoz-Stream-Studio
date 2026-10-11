@@ -8,7 +8,7 @@ import type { MessageKey } from "@/studio/i18n/messages";
 import { roomBadge } from "@/studio/room/badge";
 
 const NAV: readonly {
-  to: "/" | "/studio" | "/room" | "/settings";
+  to: "/" | "/studio" | "/room" | "/live" | "/settings";
   label: MessageKey;
   hint: MessageKey;
   icon: string;
@@ -16,6 +16,7 @@ const NAV: readonly {
   { to: "/", label: "nav.prompter", hint: "nav.prompter.hint", icon: "📜" },
   { to: "/studio", label: "nav.studio", hint: "nav.studio.hint", icon: "🎬" },
   { to: "/room", label: "nav.room", hint: "nav.room.hint", icon: "🚪" },
+  { to: "/live", label: "nav.live", hint: "nav.live.hint", icon: "📡" },
   {
     to: "/settings",
     label: "nav.settings",

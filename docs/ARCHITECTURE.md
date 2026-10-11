@@ -16,6 +16,7 @@ protocol messages, compositor hook contracts). Never redefine them elsewhere.
 | `p2p/` | serverless WebRTC: signaling codec, host (green room), guest/viewer, remote control, QR encoder | `types` |
 | `project/` | project store (scenes/layers CRUD, undo), `.pptdz` export/import, migrations | `types`, `AssetStore` |
 | `templates/` | Declarative broadcast frame templates (`catalog.ts`), pure `buildTemplateScene` (-> normal Scene of existing layer kinds), canvas-generated dotted backdrop stored as an image asset | `types`, `defaults` |
+| `live/` | `/live` page logic: platform presets, API client, sequential chunk uploader, `LiveStreamer` (MediaRecorder → server ffmpeg bridge → RTMP(S)); server half in `src/server/live*.ts`, see `docs/LIVE.md` | `types` |
 | `runtime/` | glue: owns media sources, wires compositor + audio + recorder + prompter + p2p + project | all of the above |
 | `ui/` | React panels, using the runtime | `runtime` |
 | `routes/` | `/` (prompter), `/studio`, `/join` (viewer/guest), `/remote` (phone control) | `ui` |
@@ -54,6 +55,7 @@ Signaling is manual (copy/paste/QR/link fragment) because there is no server by 
   RTCPeerConnection per peer (mesh), default cap 8, no TURN.
 - Smoke-tested in headless Chromium (fake media devices): camera -> canvas, scene hotkeys, MP4 + chapters/SRT,
   two-page P2P with green room, phone remote, `.pptdz` export. Unit tests: `npm run test`.
+- Optional server pieces (both off/unused on static hosting): the room relay and the RTMP(S) live bridge (`src/server/live.ts`, token-gated, needs ffmpeg).
 - Room mode (`src/server/rooms.ts` relay + `src/studio/room/*`): see `docs/ROOM.md`. The runtime is a per-page-load
   singleton (`acquireRuntime`) shared by all routes, and owns its program canvas, so connections, camera and
   recording survive navigation (e.g. Studio -> Room).

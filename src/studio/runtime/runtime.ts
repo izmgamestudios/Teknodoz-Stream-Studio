@@ -51,6 +51,7 @@ import { buildTemplateScene, resolveOptions } from "../templates/build";
 import { getTemplate } from "../templates/catalog";
 import type { TemplateMode, TemplateOptions } from "../templates/types";
 import { roomBadge } from "../room/badge";
+import { LiveStreamer } from "../live/streamer";
 import { drawChat, type ChatLine } from "../room/chat-draw";
 import { RoomHostSession } from "../room/host-session";
 import type {
@@ -125,6 +126,7 @@ export class StudioRuntime {
   private peerListeners = new Set<() => void>();
   private remoteTimer: ReturnType<typeof setInterval> | null = null;
   private roomSession: RoomHostSession | null = null;
+  private liveStreamer: LiveStreamer | null = null;
   private roomUnsub: (() => void) | null = null;
   private disposed = false;
 
@@ -609,6 +611,20 @@ export class StudioRuntime {
    * The room (short code + waiting pool). Created lazily; it only talks to the relay once
    * `room.open()` is called (or a saved room is resumed on startup).
    */
+  /** RTMP(S) live broadcast controller (server-side ffmpeg bridge), created on first use. */
+  get live(): LiveStreamer {
+    if (!this.liveStreamer) {
+      this.liveStreamer = new LiveStreamer({
+        getCanvas: () => this.canvas,
+        getAudioStream: () => this.audio.getMixStream(),
+        ensureAudio: async () => {
+          await this.audio.ensureRunning();
+        },
+      });
+    }
+    return this.liveStreamer;
+  }
+
   get room(): RoomHostSession {
     if (!this.roomSession) {
       const session = new RoomHostSession({
@@ -900,6 +916,8 @@ export class StudioRuntime {
     this.roomUnsub?.();
     this.roomSession?.dispose();
     this.roomSession = null;
+    this.liveStreamer?.dispose();
+    this.liveStreamer = null;
     this.teardownHost();
     for (const el of this.music.values()) el.pause();
     this.music.clear();

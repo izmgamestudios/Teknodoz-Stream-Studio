@@ -151,3 +151,4 @@ vite.config.ts.timestamp-*
 # Build output
 .wrangler/
 .output/
+.tanstack/
