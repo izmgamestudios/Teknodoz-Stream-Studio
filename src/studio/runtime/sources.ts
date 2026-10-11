@@ -346,8 +346,14 @@ export class SourceManager {
         return this.fromVideo(this.webcam?.video, layer.mirror);
       case "screen":
         return this.fromVideo(this.screen?.video, false);
-      case "web":
-        return this.fromVideo(this.captures.get(layer.id)?.video, false);
+      case "web": {
+        const live = this.captures.get(layer.id)?.video;
+        return live
+          ? this.fromVideo(live, false)
+          : this.placeholder(
+              layer.frame === "mobile" ? "portrait" : "landscape",
+            );
+      }
       case "guest":
         return this.fromVideo(this.guests.get(layer.peerId)?.video, false);
       case "image":
@@ -358,6 +364,36 @@ export class SourceManager {
         return null;
     }
   };
+
+  private placeholders = new Map<string, HTMLCanvasElement>();
+
+  /** "Prototype not captured yet" card, drawn once per orientation. */
+  private placeholder(kind: "portrait" | "landscape"): FrameSource | null {
+    let c = this.placeholders.get(kind);
+    if (!c) {
+      c = document.createElement("canvas");
+      c.width = kind === "portrait" ? 390 : 1280;
+      c.height = kind === "portrait" ? 844 : 720;
+      const g = c.getContext("2d");
+      if (!g) return null;
+      g.fillStyle = "#14151c";
+      g.fillRect(0, 0, c.width, c.height);
+      g.fillStyle = "#9aa0b4";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      const base = kind === "portrait" ? 22 : 40;
+      g.font = `600 ${base}px "Space Grotesk", sans-serif`;
+      g.fillText("Prototip yakalanmadı", c.width / 2, c.height / 2 - base);
+      g.font = `400 ${Math.round(base * 0.7)}px "Space Grotesk", sans-serif`;
+      g.fillText(
+        "Özelliklerden “Sekmeyi yakala”yı seçin",
+        c.width / 2,
+        c.height / 2 + base * 0.6,
+      );
+      this.placeholders.set(kind, c);
+    }
+    return { source: c, width: c.width, height: c.height, ready: true };
+  }
 
   private fromVideo(
     v: HTMLVideoElement | undefined,
@@ -503,6 +539,7 @@ export class SourceManager {
     this.captures.clear();
     this.guests.clear();
     this.images.clear();
+    this.placeholders.clear();
     this.listeners.clear();
   }
 }

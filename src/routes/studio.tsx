@@ -9,6 +9,7 @@ import { AudioMixer } from "@/studio/ui/audio-mixer";
 import { AboutDialog, CreditsFooter } from "@/studio/ui/credits";
 import { Inspector } from "@/studio/ui/inspector";
 import { LayerPanel } from "@/studio/ui/layer-panel";
+import { LivePanel } from "@/studio/ui/live-panel";
 import { MediaLibrary } from "@/studio/ui/media-library";
 import { PrompterPanel } from "@/studio/ui/prompter-panel";
 import { ProjectMenu } from "@/studio/ui/project-menu";
@@ -143,6 +144,7 @@ function StudioApp() {
           <SourceBar />
           <Stage selectedId={selected} onSelect={setSelected} />
           <RecordBar />
+          <LivePanel />
           <PrototypePanel selectedId={selected} />
         </main>
 

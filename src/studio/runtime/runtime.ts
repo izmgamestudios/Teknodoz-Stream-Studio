@@ -44,10 +44,13 @@ import {
   saveSettings,
   type Autosaver,
 } from "../storage";
-import { defaultProject } from "../defaults";
+import { createLayer, defaultProject } from "../defaults";
+import { StudioHost, type InviteResult } from "../p2p";
 import type {
   AssetStore,
   CompositorHooks,
+  PeerInfo,
+  PeerRole,
   Layer,
   PrompterLayer,
   Rect,
@@ -70,6 +73,8 @@ export interface RuntimeSnapshot {
   /** last user-facing runtime error code (recording / compositor) */
   readonly error: string | null;
 }
+
+const EMPTY_PEERS: readonly PeerInfo[] = Object.freeze([]);
 
 const INITIAL: RuntimeSnapshot = {
   recorder: null,
@@ -104,6 +109,12 @@ export class StudioRuntime {
   private voiceWord: number | null = null;
   private webBoxes = new Map<string, Rect>();
   private music = new Map<string, HTMLAudioElement>();
+  private host: StudioHost | null = null;
+  private hostUnsubs: Array<() => void> = [];
+  private programStream: MediaStream | null = null;
+  private peers: readonly PeerInfo[] = EMPTY_PEERS;
+  private peerListeners = new Set<() => void>();
+  private remoteTimer: ReturnType<typeof setInterval> | null = null;
   private disposed = false;
 
   constructor() {
@@ -170,6 +181,7 @@ export class StudioRuntime {
     this.lastActiveId = scene.id;
     this.compositor.setScene(scene);
     this.compositor.start();
+    this.updateProgramStream();
   }
 
   detachCanvas(): void {
@@ -360,6 +372,125 @@ export class StudioRuntime {
   }
   toggleMicMuted(): void {
     this.setMicMuted(!this.snap.micMuted);
+  }
+
+  /* ------------------------------ live (P2P) ------------------------------ */
+
+  subscribePeers = (cb: () => void): (() => void) => {
+    this.peerListeners.add(cb);
+    return () => this.peerListeners.delete(cb);
+  };
+  getPeersSnapshot = (): readonly PeerInfo[] => this.peers;
+
+  private ensureHost(): StudioHost {
+    if (this.host) return this.host;
+    const host = new StudioHost({
+      usePublicStun: this.project.getState().settings.output.usePublicStun,
+    });
+    this.host = host;
+    this.hostUnsubs.push(
+      host.subscribe((peers) => {
+        this.peers = peers;
+        this.applyGuestAudio(peers);
+        for (const l of [...this.peerListeners]) l();
+      }),
+      host.onGuestStream((peerId, stream) => {
+        this.sources.setGuestStream(peerId, stream);
+        this.applyGuestAudio(host.getPeers());
+      }),
+      host.onRemoteCommand((_peerId, cmd) => this.executeRemote(cmd)),
+      this.project.subscribe(() => this.pushRemoteState()),
+      this.subscribe(() => this.pushRemoteState()),
+      this.prompter.subscribeCoarse(() => this.pushRemoteState()),
+    );
+    this.remoteTimer = setInterval(() => {
+      if (this.isRecording()) this.pushRemoteState();
+    }, 1000);
+    return host;
+  }
+
+  private pushRemoteState(): void {
+    this.host?.broadcastRemoteState(this.getRemoteState());
+  }
+
+  /** Program output (canvas video + mixed audio) that viewers/guests watch. */
+  private updateProgramStream(): void {
+    if (!this.canvas || !this.host) return;
+    try {
+      const tracks = [
+        ...this.canvas.captureStream(30).getVideoTracks(),
+        ...this.audio.getMixStream().getAudioTracks(),
+      ];
+      this.programStream = new MediaStream(tracks);
+      this.host.setProgramStream(this.programStream);
+    } catch {
+      // no audio context yet: viewers get video only until the next invite
+    }
+  }
+
+  /** Create an invite (link + code). Call from a click: it unlocks the audio context. */
+  async createInvite(role: PeerRole, name?: string): Promise<InviteResult> {
+    const host = this.ensureHost();
+    await this.audio.ensureRunning();
+    if (!this.programStream) this.updateProgramStream();
+    return host.createInvite(role, name);
+  }
+
+  async acceptAnswer(peerId: string, code: string): Promise<void> {
+    await this.ensureHost().acceptAnswer(peerId, code);
+  }
+
+  /** Host guest controls. Gain/mute are applied to the audio bus from the peer record. */
+  bringGuestOnAir(peerId: string): boolean {
+    const host = this.ensureHost();
+    const ok = host.bringOnAir(peerId);
+    if (!ok) return false;
+    const st = this.project.getState();
+    const scene = getActiveScene(st);
+    const exists = scene.layers.some(
+      (l) => l.kind === "guest" && l.peerId === peerId,
+    );
+    if (!exists) {
+      const info = host.getPeer(peerId);
+      this.project.addLayer(
+        scene.id,
+        createLayer("guest", {
+          peerId,
+          label: info?.name ?? "Konuk",
+          name: info?.name ?? "Konuk",
+        }),
+      );
+    }
+    return true;
+  }
+  takeGuestOffAir(peerId: string): boolean {
+    return this.ensureHost().takeOffAir(peerId);
+  }
+  rejectGuest(peerId: string): boolean {
+    return this.ensureHost().rejectGuest(peerId);
+  }
+  kickPeer(peerId: string): boolean {
+    return this.ensureHost().kick(peerId);
+  }
+  setGuestGain(peerId: string, gain: number): void {
+    this.ensureHost().setGuestGain(peerId, gain);
+  }
+  setGuestMuted(peerId: string, muted: boolean): void {
+    this.ensureHost().setGuestMuted(peerId, muted);
+  }
+  getGuestStream(peerId: string): MediaStream | null {
+    return this.host?.getGuestStream(peerId) ?? null;
+  }
+
+  /** The audio bus mirrors the host's peer records: only on-air, unmuted guests are heard. */
+  private applyGuestAudio(peers: readonly PeerInfo[]): void {
+    for (const p of peers) {
+      if (p.role !== "guest") continue;
+      const id = `guest:${p.id}`;
+      if (!this.audio.hasChannel(id)) continue;
+      this.audio.setMuted(id, p.status !== "on-air" || p.muted);
+      this.audio.setGain(id, p.gain);
+    }
   }
 
   /* ---------------------------- music & effects --------------------------- */
@@ -615,6 +746,11 @@ export class StudioRuntime {
     if (this.recorder) await this.stopRecording();
     await this.autosaver.flush();
     this.detachCanvas();
+    if (this.remoteTimer) clearInterval(this.remoteTimer);
+    for (const u of this.hostUnsubs) u();
+    this.hostUnsubs = [];
+    this.host?.dispose();
+    this.host = null;
     for (const el of this.music.values()) el.pause();
     this.music.clear();
     this.sources.dispose();

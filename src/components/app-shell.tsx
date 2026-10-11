@@ -1,5 +1,5 @@
 // src/components/app-shell.tsx
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { TeknodozLogo } from "@/components/teknodoz-logo";
@@ -31,11 +31,16 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
           <span aria-hidden="true">{n.icon}</span>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="font-semibold">{n.label}</span>
-            {!compact && <span className="truncate text-xs text-muted-foreground">{n.hint}</span>}
+            {!compact && (
+              <span className="truncate text-xs text-muted-foreground">
+                {n.hint}
+              </span>
+            )}
           </span>
           {!compact && (
             <span className="text-[10px] tracking-widest text-muted-foreground">
-              {String(i + 1).padStart(2, "0")} / {String(NAV.length).padStart(2, "0")}
+              {String(i + 1).padStart(2, "0")} /{" "}
+              {String(NAV.length).padStart(2, "0")}
             </span>
           )}
         </Link>
@@ -44,7 +49,16 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/** Pages opened by guests / phones: no studio navigation around them. */
+const BARE_PREFIXES = ["/join", "/remote"];
+
 export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (
+    BARE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  ) {
+    return <>{children}</>;
+  }
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* desktop sidebar */}
@@ -58,7 +72,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex-1 space-y-6 overflow-y-auto px-4 py-6">
           <div>
             <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-speaker-b">
-              <span className="size-1.5 rounded-full bg-speaker-b" /> Yayıncı çalışma alanı
+              <span className="size-1.5 rounded-full bg-speaker-b" /> Yayıncı
+              çalışma alanı
             </p>
             <h2 className="text-2xl font-bold leading-tight">
               Yayını <span className="text-speaker-b">sahnede kur.</span>
@@ -88,7 +103,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <TeknodozLogo className="text-lg" />
           <span className="text-xs font-bold tracking-wide">STUDIO</span>
         </div>
-        <nav className="flex gap-1 overflow-x-auto px-3 pb-2" aria-label="Ana menü">
+        <nav
+          className="flex gap-1 overflow-x-auto px-3 pb-2"
+          aria-label="Ana menü"
+        >
           <NavLinks compact />
         </nav>
       </header>

@@ -65,7 +65,11 @@ export function AudioMixer() {
                   }
                   aria-pressed={c.muted}
                   className={`rounded px-1.5 py-0.5 ${c.muted ? "bg-destructive text-primary-foreground" : "bg-secondary hover:bg-accent"}`}
-                  onClick={() => rt.audio.setMuted(c.id, !c.muted)}
+                  onClick={() =>
+                    c.kind === "guest"
+                      ? rt.setGuestMuted(c.id.slice("guest:".length), !c.muted)
+                      : rt.audio.setMuted(c.id, !c.muted)
+                  }
                 >
                   {c.muted ? "M" : "🔈"}
                 </button>
@@ -77,7 +81,11 @@ export function AudioMixer() {
               min={0}
               max={1.5}
               step={0.01}
-              onChange={(g) => rt.audio.setGain(c.id, g)}
+              onChange={(g) =>
+                c.kind === "guest"
+                  ? rt.setGuestGain(c.id.slice("guest:".length), g)
+                  : rt.audio.setGain(c.id, g)
+              }
             />
             <div
               className="h-1.5 overflow-hidden rounded-full bg-secondary"

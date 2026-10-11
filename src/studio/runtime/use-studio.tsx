@@ -12,7 +12,7 @@ import {
 
 import type { AudioBusState } from "../engine/audio-bus";
 import type { PrompterSnapshot } from "../prompter";
-import type { ProjectState } from "../types";
+import type { PeerInfo, ProjectState } from "../types";
 import { StudioRuntime, type RuntimeSnapshot } from "./runtime";
 import type { SourcesSnapshot } from "./sources";
 
@@ -90,5 +90,15 @@ export function usePrompterState(): PrompterSnapshot {
     rt.prompter.subscribeCoarse,
     rt.prompter.getSnapshot,
     rt.prompter.getServerSnapshot,
+  );
+}
+
+/** Connected peers (viewers, guests, remotes). Empty until the first invite is created. */
+export function usePeers(): readonly PeerInfo[] {
+  const rt = useStudio();
+  return useSyncExternalStore(
+    rt.subscribePeers,
+    rt.getPeersSnapshot,
+    rt.getPeersSnapshot,
   );
 }
