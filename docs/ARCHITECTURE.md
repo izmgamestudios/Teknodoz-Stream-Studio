@@ -40,3 +40,16 @@ protocol messages, compositor hook contracts). Never redefine them elsewhere.
 Camera/mic/screen never leave the device except via the explicit P2P connection the user opens.
 Public STUN only reveals the IP to the STUN operator; no media or SDP goes through any server.
 Signaling is manual (copy/paste/QR/link fragment) because there is no server by design.
+
+## Implementation notes (current)
+
+- `runtime/StudioRuntime` is the only place that touches media devices, the compositor, the recorder and
+  the P2P host. UI code reads state through `useSyncExternalStore` hooks in `runtime/use-studio.tsx`.
+- The compositor renders ONE program canvas; editing happens live on the active scene. Scene changes use the
+  scene's transition. Preview == program (no separate preview bus yet).
+- Hidden-tab frame pacing: the compositor falls back to a Web Worker timer when the tab is not visible.
+- Prototype pixels enter only through `getDisplayMedia`; see `src/studio/proto/README.md`.
+- P2P is manual-signaling only (offer/answer codes in the URL fragment or pasted). The host owns one
+  RTCPeerConnection per peer (mesh), default cap 8, no TURN.
+- Smoke-tested in headless Chromium (fake media devices): camera -> canvas, scene hotkeys, MP4 + chapters/SRT,
+  two-page P2P with green room, phone remote, `.pptdz` export. Unit tests: `npm run test`.

@@ -18,45 +18,55 @@ Tüm ses ve video işleme süreçleri doğrudan kullanıcının bilgisayarında 
 
 ---
 
-## 🚀 Öne Çıkan Özellikler / Key Features
+## 🚀 Özellikler ve Durum / Features & Status
 
-### 🎙️ 1. DozPrompt (Akıllı Teleprompter)
-- **Gizli HUD Modu:** Metin yalnızca yayıncının ekranında akar; kaydedilen videoya veya tuvale kesinlikle basılmaz.
-- **Yayına Aktarma (Burn-in) Modu:** Tek anahtarla kayan yazı alt bant (ticker) veya altyazı olarak tuvale eklenir.
-- **Sesle Takip (Voice Auto-Follow):** Yerleşik Web Speech API ile konuşma hızınızı analiz eder; siz konuştukça metin akar, durduğunuzda bekler.
-- **Göz Teması (Eyeline Notch) Modu:** Kameranın hemen altına yerleşen kompakt görünüm ile izleyiciyle doğrudan göz teması sağlar.
+| Modül | Durum | Not |
+|---|---|---|
+| **DozPrompt** — HUD (kayda girmez), kamera altı *notch*, hız/boyut/satır aralığı/kontrast/ayna, `Boşluk`·`↑↓`·`R`, `.txt/.md/.srt/.docx` + pano | ✅ | `/` ve `/studio` |
+| Burn-in (altyazı / kayan şerit / notch) | ✅ | Tek anahtar + sahnedeki "Prompter (burn-in)" katmanı |
+| Sesle takip (Web Speech API) | ✅ | Chrome/Edge. Ses Google'a gidebilir; arayüzde uyarı vardır |
+| **DozProto** — mobil (390x844) ve masaüstü çerçeve, dokunma efekti | ✅ | Görüntü ekran/sekme yakalamayla girer, bkz. *Teknik sınırlar* |
+| **DozScene** — sınırsız sahne, `1-9` kısayol, kesme/fade/slide, katmanlar (z-sıra, göz, kilit, opaklık, karışım modu), taşı/boyutlandır/döndür tutamaçları | ✅ | Hizalama kılavuzları (Shift: oran/15°, Alt: merkezden) |
+| Yeşil perde (chroma key) | ✅ | WebGL2, yoksa CPU |
+| **DozGreenRoom** — P2P konuk, kulis, "Yayına al", konuk katmanı, ses (0–150 %, mute, VU) | ✅ | Manuel imzalama (bkz. aşağı) |
+| **DozDeck** — telefon kumandası (`/remote`) | ✅ | Sahne, prompter, mute, kayıt, işaret |
+| Bölüm işaretleri → `chapters.txt` + `.srt` | ✅ | `M` tuşu; kayıt bitince video ile iner |
+| `.pptdz` proje paketi | ✅ | Sahneler, katmanlar, prompter, kısayollar ve IndexedDB görselleri/videoları |
+| 1080p 60 fps tuval + Web Audio karışımı → MP4/WebM | ✅ | MP4 desteklenirse MP4, yoksa WebM |
+| Video/ses efektleri, müzik | ✅ | Medya kütüphanesi (IndexedDB) |
+| Kısayol eşlemesini arayüzden düzenleme, İngilizce arayüz | ⏳ | Ayar katmanı hazır (`storage/`), arayüz yok |
 
-### 📱 2. DozProto (URL Prototip Test Yayıncılığı)
-- **Canlı Web Kaynağı:** Herhangi bir web URL'sini doğrudan tuvale ekleme.
-- **Cihaz Çerçeveleri:** iPhone / Android dikey mobil çerçeve (9:16) ve masaüstü tarayıcı çerçevesi (16:9).
-- **Tıklama Efektleri (Touch Ripples):** Prototip test edilirken ekranda animasyonlu dokunma halkaları gösterir.
-- **Ekran Yakalama Köprüsü:** CSP/iframe kısıtlaması olan siteleri doğrudan sekme paylaşımıyla çerçeveye entegre etme.
+### ⚠️ Teknik sınırlar (dürüst liste)
 
-### 🎛️ 3. DozScene (Sahneler & Katman Motoru)
-- **OBS Mantığında Çoklu Sahne:** Sınırsız sahne oluşturma ve klavyeden `1-9` kısayollarıyla anında/yumuşak geçiş.
-- **Photoshop Tarzı Katmanlar:** Z-index sıralama, sürükle-bırak serbest boyutlandırma, şeffaflık (%0-100) ve kilitleme.
-- **Yeşil Perde (Chroma Key):** Harici yazılıma gerek duymadan tarayıcı içi arka plan temizleme.
-
-### 👥 4. DozGreenRoom (Sunucusuz P2P Konuk Sistemi)
-- **Kulis & Bekleme Odası:** Veritabanı olmadan, WebRTC eşler arası (P2P) bağlantıyla konuk davet etme.
-- **Dinamik Konuk Katmanı:** Konuğun görüntüsünü serbestçe boyutlandırıp tuvalde istenen yere koyma.
-- **Bağımsız Ses Mikseri:** Her konuk için ayrı kazanç (gain slider), susturma (mute) ve canlı VU metre.
-
-### 📲 5. DozDeck (Mobil Uzaktan Kumanda)
-- Ekranda beliren QR kodu telefonla okutarak, telefonu anında sahne ve prompter kontrolleri için büyük butonlu bir kablosuz el kumandasına dönüştürme.
-
-### 📦 6. .pptdz Proje Paketi & YouTube Bölümleme
-- **Yerel Yedekleme:** Tüm sahne, katman ve ayarları tek tıkla `.pptdz` dosyası olarak indirme ve geri yükleme.
-- **Chapters (Bölümler):** Kayıt sırasında `M` tuşuyla atılan işaretleri YouTube uyumlu `chapters.txt` ve `.srt` olarak dışa aktarma.
-
----
+- **Prototip görüntüsü canvas'a doğrudan çizilemez.** `<iframe>` içeriği ancak ekran/sekme yakalamayla
+  (Chrome/Edge'de bölge kırpma ile) sahneye girer. CSP / `X-Frame-Options` yasaklayan siteler için
+  "Başka sekmeyi yakala" kullanılır.
+- **Başka alan adındaki sayfaya yapılan tıklamalar görünmez.** Dokunma efekti için "Demo overlay"
+  (tıklama yakalanır, sayfa tıklanamaz) ya da aynı alan adındaki *güvenilir* sayfa seçeneği vardır.
+- **Sunucu olmadığı için bağlantı kurulumu manuel ve iki adımlıdır:** davet bağlantısı/QR → karşı tarafın
+  *yanıt kodu* → yayıncıya yapıştırılır. Her katılımcı için ayrı davet gerekir.
+- **TURN yok.** Simetrik NAT / katı kurumsal güvenlik duvarı arkasındaki bağlantılar kurulamayabilir.
+  Yayıncı her katılımcıya ayrı kodlama yaptığı için pratik üst sınır ≈ 8 kişidir.
+- Konuk sesi yayın karışımına girer; geri besleme olmaması için **kulaklık** önerilir (mix-minus yok).
+- Ses/efekt dosyaları `.pptdz` paketine girmez (yalnızca sahnelerde kullanılan görsel ve videolar).
 
 ## 🔒 Güvenlik & Gizlilik İlkeleri / Privacy & Security
 
 - ❌ **Sıfır Veritabanı:** Supabase, Firebase veya SQL kullanılmaz.
 - ❌ **Sıfır Kayıt/Giriş:** Hesap oluşturma veya e-posta doğrulama yoktur.
 - ✅ **Tamamen Yerel:** Tüm ayarlar `localStorage` ve `IndexedDB` üzerinde tutulur.
-- ✅ **Sıfır Veri Sızıntısı:** Video ve ses akışları cihazınızdan dışarı çıkmaz.
+- ✅ **Sıfır Veri Sızıntısı:** Video ve ses akışları hiçbir sunucuya gitmez; yalnızca sizin açtığınız P2P bağlantılarında doğrudan karşı tarafa iletilir.
+
+**Dürüst istisnalar:**
+
+| Ne | Kime ne görünür | Nasıl kapatılır |
+|---|---|---|
+| Genel STUN (`stun.l.google.com`) | Yalnızca IP adresiniz; medya/kod gitmez | Ayarlarda `usePublicStun` kapatılır (yalnızca yerel ağ) |
+| Sesle takip (Web Speech API) | Chrome'da mikrofon sesi Google'a gidebilir | Varsayılan **kapalı**, açarken uyarı gösterilir |
+| Google Fonts (Space Grotesk) | Sayfayı açan ziyaretçinin IP adresi | `src/routes/__root.tsx` içindeki font bağlantısı kaldırılarak yerel yazı tipi kullanılabilir |
+
+Davet/yanıt kodları URL'nin `#` kısmında taşınır; tarayıcılar bunu sunucuya göndermez. İçe aktarılan `.pptdz`,
+P2P mesajları ve otomatik kayıt `zod` ile doğrulanır; `innerHTML` kullanılmaz.
 
 ---
 
@@ -77,15 +87,24 @@ Projeyi yerel ortamınızda çalıştırmak için:
 
 ```bash
 # Depoyu klonlayın
-git clone https://github.com/KULLANICI_ADINIZ/teknodoz-studio.git
+git clone https://github.com/izmgamestudios/Teknodoz-Stream-Studio.git
 
 # Proje dizinine gidin
-cd teknodoz-studio
+cd Teknodoz-Stream-Studio
 
 # Bağımlılıkları yükleyin (npm, pnpm veya bun)
 npm install
 
 # Geliştirici sunucusunu başlatın
-npm run dev
+npm run dev        # http://localhost:5173
+npm run test       # vitest (1400+ birim testi)
+npm run build      # üretim derlemesi (varsayılan hedef Cloudflare; Node için NITRO_PRESET=node-server)
+```
 
+---
 
+## 🧱 Mimari / Architecture
+
+Ayrıntılar: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Kısaca: `src/studio/` altında saf mantık modülleri
+(`storage`, `engine`, `prompter`, `proto`, `p2p`, `project`), onları birleştiren `runtime/StudioRuntime` ve
+React arayüzü `ui/` bulunur. Sayfalar: `/` (prompter), `/studio`, `/join` (izleyici/konuk), `/remote` (telefon).

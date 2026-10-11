@@ -27,6 +27,7 @@ export function PrototypePanel({ selectedId }: { selectedId: string | null }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [overlay, setOverlay] = useState(false);
+  const [trusted, setTrusted] = useState(false);
   const [sameOrigin, setSameOrigin] = useState(false);
 
   const web = layer?.kind === "web" ? layer : null;
@@ -70,9 +71,23 @@ export function PrototypePanel({ selectedId }: { selectedId: string | null }) {
         clientY: e.clientY + frame.getBoundingClientRect().top,
       }),
     );
-    setSameOrigin(detach !== null);
-    return () => detach?.();
-  }, [url, layerId, rippleOn, overlay]);
+    // The sandbox only changes on navigation, so probe after every load instead of trusting
+    // `detach`: a cross-origin document throws on `location`.
+    const probe = () => {
+      try {
+        const doc = frame.contentDocument;
+        setSameOrigin(!!doc && doc.location.href !== "about:blank");
+      } catch {
+        setSameOrigin(false);
+      }
+    };
+    probe();
+    frame.addEventListener("load", probe);
+    return () => {
+      frame.removeEventListener("load", probe);
+      detach?.();
+    };
+  }, [url, layerId, rippleOn, overlay, trusted]);
 
   if (!web) {
     return (
@@ -139,7 +154,16 @@ export function PrototypePanel({ selectedId }: { selectedId: string | null }) {
         <Check checked={overlay} onChange={setOverlay}>
           Demo overlay (tıklamayı yakala)
         </Check>
+        <Check checked={trusted} onChange={setTrusted}>
+          Güvenilir, aynı alan adındaki sayfa
+        </Check>
       </div>
+      {trusted && (
+        <p className="mt-2 text-xs text-primary">
+          Dikkat: “Güvenilir sayfa” gömülen sayfaya stüdyonun depolamasına
+          erişim izni verir. Yalnızca kendi sayfanız için kullanın.
+        </p>
+      )}
       {mixed && (
         <p className="mt-2 text-xs text-destructive">{EMBED_HELP.mixed.tr}</p>
       )}
@@ -150,7 +174,7 @@ export function PrototypePanel({ selectedId }: { selectedId: string | null }) {
         <p className="mt-2 text-[11px] text-muted-foreground">
           {sameOrigin
             ? "Aynı kaynaklı sayfa: dokunma efektleri otomatik."
-            : "Başka kaynaklı sayfalarda tıklamalar görünmez. Efekt için “Demo overlay”i açın (sayfa tıklanamaz)."}
+            : "Başka kaynaklı sayfalarda tıklamalar görünmez. Efekt için “Demo overlay”i açın (sayfa tıklanamaz); kendi sayfanızsa ve stüdyo ile aynı alan adındaysa “Güvenilir sayfa”yı işaretleyin."}
         </p>
       )}
 
@@ -161,10 +185,11 @@ export function PrototypePanel({ selectedId }: { selectedId: string | null }) {
         >
           {url ? (
             <iframe
+              key={`${url}|${trusted}`}
               ref={iframeRef}
               src={url}
               title="Prototip önizleme"
-              sandbox={iframeSandbox(false)}
+              sandbox={iframeSandbox(trusted)}
               referrerPolicy="no-referrer"
               className="absolute inset-0 h-full w-full border-0"
             />
