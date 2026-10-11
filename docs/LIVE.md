@@ -36,6 +36,21 @@ commands or reach private networks (unless you set `LIVE_ALLOW_PRIVATE=1`). Trea
 ## Server setup
 
 1. Install ffmpeg with libx264 + AAC (every distro build has them): `sudo apt install -y ffmpeg`.
+   **No root** (CloudPanel site users cannot `sudo`)? Put a static build in the site user's home and point
+   `LIVE_FFMPEG_PATH` at it (`~` is expanded by the app):
+
+   ```bash
+   mkdir -p ~/bin ~/ffdl && cd ~/ffdl && uname -m          # x86_64 -> "amd64", aarch64 -> "arm64" below
+   curl -fsSLO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+   curl -fsSLO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz.md5
+   md5sum -c ffmpeg-release-amd64-static.tar.xz.md5 && tar -xJf ffmpeg-release-amd64-static.tar.xz
+   find . -type f -name ffmpeg -exec cp {} ~/bin/ffmpeg \; && chmod +x ~/bin/ffmpeg && cd ~ && rm -rf ~/ffdl
+   ~/bin/ffmpeg -hide_banner -encoders | grep -E "libx264 |aac "    # both must be listed
+   ~/bin/ffmpeg -hide_banner -protocols | grep rtmps                # must list rtmps (input and output)
+   ```
+
+   It is a third-party binary and the `.md5` file comes from the same site (integrity, not authenticity): a distro
+   package installed by an administrator is the more trustworthy route when you can get one.
 2. Set the environment of the Node process (pm2 example; keep the **single** instance, state is in memory):
 
 ```bash
@@ -50,7 +65,7 @@ NITRO_PORT=3011 NITRO_HOST=127.0.0.1 pm2 start .output/server/index.mjs --name t
 | Variable | Default | Meaning |
 |---|---|---|
 | `LIVE_ADMIN_TOKEN` | – (feature off) | operator secret, ≥ 16 chars |
-| `LIVE_FFMPEG_PATH` | `ffmpeg` | binary to run |
+| `LIVE_FFMPEG_PATH` | `ffmpeg` | binary to run; `~/bin/ffmpeg` is expanded with `$HOME` |
 | `LIVE_ALLOWED_HOSTS` | – | extra hosts, comma separated, `*.example.com` allowed |
 | `LIVE_ALLOW_ANY_HOST` | off | `1` = any public host |
 | `LIVE_ALLOW_PRIVATE` | off | `1` = private/loopback targets and any port |
@@ -111,7 +126,7 @@ Several destinations share one encode (ffmpeg `tee`), so a second platform costs
 | Symptom | Cause / fix |
 |---|---|
 | "Sunucu köprüsü hazır değil" | no Node server (static hosting) or `LIVE_ADMIN_TOKEN` unset/too short |
-| "ffmpeg bulunamadı" | `apt install ffmpeg` or set `LIVE_FFMPEG_PATH` |
+| "ffmpeg bulunamadı" | `apt install ffmpeg` (root), or the no-root static build above + `LIVE_FFMPEG_PATH` |
 | 413 / upload fails immediately | proxy body limit < chunk size, raise `client_max_body_size` |
 | "Bu sunucu adresi izinli değil" | add the host to `LIVE_ALLOWED_HOSTS` |
 | session ends at once, tail shows `Connection refused` / `Input/output error` | wrong server URL or key, expired key (Facebook, TikTok), account not eligible, outbound 443/1935 blocked |

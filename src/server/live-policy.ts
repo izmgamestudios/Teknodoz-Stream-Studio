@@ -44,6 +44,12 @@ function int(
     : fallback;
 }
 
+/** `~` / `~/x` -> `$HOME/x` (spawn does no tilde expansion; avoids shell quoting pitfalls). */
+function expandHome(p: string, home: string | undefined): string {
+  if (!home || (p !== "~" && !p.startsWith("~/"))) return p;
+  return home.replace(/\/+$/, "") + p.slice(1);
+}
+
 export function liveConfigFromEnv(
   env: Record<string, string | undefined>,
 ): LiveConfig {
@@ -51,7 +57,10 @@ export function liveConfigFromEnv(
   const preset = (env["LIVE_X264_PRESET"] ?? "veryfast").trim();
   return {
     token: token.length >= MIN_TOKEN_CHARS ? token : null,
-    ffmpegPath: (env["LIVE_FFMPEG_PATH"] ?? "ffmpeg").trim() || "ffmpeg",
+    ffmpegPath: expandHome(
+      (env["LIVE_FFMPEG_PATH"] ?? "ffmpeg").trim() || "ffmpeg",
+      env["HOME"],
+    ),
     allowedHosts: (env["LIVE_ALLOWED_HOSTS"] ?? "")
       .split(",")
       .map((h) => h.trim().toLowerCase())

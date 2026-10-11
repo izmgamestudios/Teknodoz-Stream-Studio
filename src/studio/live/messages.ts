@@ -27,7 +27,8 @@ const CODE: Record<string, string> = {
   "rate-limited": "Çok fazla hatalı deneme. Biraz bekleyin.",
   busy: "Sunucuda zaten açık bir yayın var.",
   "bitrate-too-high": "Seçilen bit hızı sunucu sınırının üstünde.",
-  "ffmpeg-missing": "Sunucuda ffmpeg bulunamadı (apt install ffmpeg).",
+  "ffmpeg-missing":
+    "Sunucuda ffmpeg bulunamadı: kurun (apt install ffmpeg) ya da root gerekmeyen statik derlemeyi kullanıp LIVE_FFMPEG_PATH ile gösterin (docs/LIVE.md).",
   ended: "Yayın sunucu tarafında sonlandı.",
   unsupported:
     "Bu tarayıcı tuval kaydını (MediaRecorder) desteklemiyor. Chrome/Edge/Firefox kullanın.",

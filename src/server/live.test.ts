@@ -39,6 +39,20 @@ describe("config", () => {
     expect(tokenTooShort({})).toBe(false);
     expect(liveConfigFromEnv({ LIVE_ADMIN_TOKEN: TOKEN }).token).toBe(TOKEN);
   });
+  it("expands ~ in LIVE_FFMPEG_PATH (no root / no shell needed)", () => {
+    const at = (p: string | undefined, home = "/home/site/") =>
+      liveConfigFromEnv({
+        LIVE_ADMIN_TOKEN: TOKEN,
+        HOME: home,
+        ...(p === undefined ? {} : { LIVE_FFMPEG_PATH: p }),
+      }).ffmpegPath;
+    expect(at("~/bin/ffmpeg")).toBe("/home/site/bin/ffmpeg");
+    expect(at("~")).toBe("/home/site");
+    expect(at("/usr/local/bin/ffmpeg")).toBe("/usr/local/bin/ffmpeg");
+    expect(at("~other/ffmpeg")).toBe("~other/ffmpeg");
+    expect(at(undefined)).toBe("ffmpeg");
+    expect(at("~/bin/ffmpeg", "")).toBe("~/bin/ffmpeg"); // unknown HOME: left alone
+  });
   it("parses and clamps the optional settings", () => {
     const c = liveConfigFromEnv({
       LIVE_ADMIN_TOKEN: TOKEN,
