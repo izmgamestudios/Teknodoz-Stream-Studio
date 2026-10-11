@@ -1,7 +1,14 @@
 // src/studio/room/badge.ts
-// Tiny global store with the number of guests waiting for approval, so the sidebar (which lives
-// outside the studio runtime tree) can show a badge and the tab title can announce requests.
-let count = 0;
+// Tiny global store with what needs the director's attention (guests waiting for approval and
+// chat messages waiting for moderation), so the sidebar (which lives outside the studio runtime
+// tree) can show badges and the tab title can announce them.
+export interface RoomBadgeState {
+  readonly waiting: number;
+  readonly chat: number;
+}
+
+const ZERO: RoomBadgeState = Object.freeze({ waiting: 0, chat: 0 });
+let state: RoomBadgeState = ZERO;
 const listeners = new Set<() => void>();
 
 export const roomBadge = {
@@ -9,11 +16,13 @@ export const roomBadge = {
     listeners.add(cb);
     return () => listeners.delete(cb);
   },
-  get: (): number => count,
-  getServer: (): number => 0,
-  set(n: number): void {
-    if (n === count) return;
-    count = n;
+  /** Stable reference until a value changes (safe for useSyncExternalStore). */
+  get: (): RoomBadgeState => state,
+  getServer: (): RoomBadgeState => ZERO,
+  set(next: Partial<RoomBadgeState>): void {
+    const merged = { ...state, ...next };
+    if (merged.waiting === state.waiting && merged.chat === state.chat) return;
+    state = Object.freeze(merged);
     for (const l of [...listeners]) l();
   },
 };

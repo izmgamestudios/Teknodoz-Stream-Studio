@@ -35,10 +35,13 @@ export type PoolState =
   | "rejected"
   | "left";
 
+/** Roles that go through the waiting pool (chat-only participants never do). */
+export type PoolRole = Exclude<RoomRole, "chat">;
+
 export interface PoolEntry {
   guestId: string;
   name: string;
-  role: RoomRole;
+  role: PoolRole;
   requestedAt: number;
   state: PoolState;
   peerId?: string;
@@ -57,7 +60,7 @@ export interface RoomSnapshot {
   readonly pool: readonly PoolEntry[];
   readonly waiting: number;
   readonly log: readonly LogEntry[];
-  readonly autoApprove: Readonly<Record<RoomRole, boolean>>;
+  readonly autoApprove: Readonly<Record<PoolRole, boolean>>;
   /** secret of the chat-editor link, null until the director issues one */
   readonly editorKey: string | null;
   readonly error: string | null;
@@ -84,8 +87,8 @@ export interface HostSessionOptions {
 
 const STORE_KEY = "tkz.room.v1";
 const AUTO_KEY = "tkz.room.auto.v1";
-const ROLES: RoomRole[] = ["guest", "viewer", "remote"];
-const ROLE_LABEL: Record<RoomRole, string> = {
+const ROLES: PoolRole[] = ["guest", "viewer", "remote"];
+const ROLE_LABEL: Record<PoolRole, string> = {
   guest: "konuk",
   viewer: "izleyici",
   remote: "telefon kumandası",
@@ -129,7 +132,7 @@ export class RoomHostSession {
   private error: string | null = null;
   private pool = new Map<string, PoolEntry>();
   private log: LogEntry[] = [];
-  private auto: Record<RoomRole, boolean> = {
+  private auto: Record<PoolRole, boolean> = {
     guest: false,
     viewer: false,
     remote: false,
@@ -219,8 +222,8 @@ export class RoomHostSession {
 
   /* ----------------------------- auto approve ----------------------------- */
 
-  private readAuto(): Record<RoomRole, boolean> {
-    const out: Record<RoomRole, boolean> = {
+  private readAuto(): Record<PoolRole, boolean> {
+    const out: Record<PoolRole, boolean> = {
       guest: false,
       viewer: false,
       remote: false,
@@ -228,7 +231,7 @@ export class RoomHostSession {
     try {
       const raw = this.storage?.getItem(AUTO_KEY);
       const p = raw
-        ? (JSON.parse(raw) as Partial<Record<RoomRole, unknown>>)
+        ? (JSON.parse(raw) as Partial<Record<PoolRole, unknown>>)
         : {};
       for (const r of ROLES) out[r] = p[r] === true;
     } catch {
@@ -237,7 +240,7 @@ export class RoomHostSession {
     return out;
   }
 
-  setAutoApprove(role: RoomRole, on: boolean): void {
+  setAutoApprove(role: PoolRole, on: boolean): void {
     this.auto = { ...this.auto, [role]: on };
     try {
       this.storage?.setItem(AUTO_KEY, JSON.stringify(this.auto));
@@ -518,7 +521,9 @@ export class RoomHostSession {
   private handleEvent(ev: HostEvent): void {
     if (ev.type === "join") {
       if (this.pool.has(ev.guestId)) return;
-      const role = ev.role ?? "guest";
+      // chat-only participants skip the pool (the relay does not even announce them)
+      if (ev.role === "chat") return;
+      const role: PoolRole = ev.role ?? "guest";
       const entry: PoolEntry = {
         guestId: ev.guestId,
         name: ev.name ?? "Konuk",

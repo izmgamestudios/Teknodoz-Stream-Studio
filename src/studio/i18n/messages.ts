@@ -81,6 +81,12 @@ export const tr = {
   "room.role.viewer.hint": "Yalnızca yayını izlerim",
   "room.role.remote": "Telefon kumandası",
   "room.role.remote.hint": "Sahne, prompter ve kaydı yönetirim",
+  "room.role.chat": "Yalnızca sohbet",
+  "room.role.chat.hint": "Mesaj yazarım; görüntü ve ses göndermem",
+  "room.chatting": "Sohbetesiniz",
+  "room.chatting.body":
+    "Mesajlarınız yayından önce yöneticinin onayından geçer. Onaylananlar herkese görünür.",
+  "shell.pendingChat": "{n} onay bekleyen sohbet mesajı",
   "room.joinAs": "{role} olarak katılacaksınız.",
   "room.name": "Adınız (yayıncı görür)",
   "room.hostOffline":
@@ -289,6 +295,12 @@ export const en: Record<MessageKey, string> = {
   "room.role.viewer.hint": "I only watch the stream",
   "room.role.remote": "Phone remote",
   "room.role.remote.hint": "I control scenes, prompter and recording",
+  "room.role.chat": "Chat only",
+  "room.role.chat.hint": "I write messages; no video or audio",
+  "room.chatting": "You are in the chat",
+  "room.chatting.body":
+    "Your messages are reviewed by the host before they appear. Approved ones are visible to everyone.",
+  "shell.pendingChat": "{n} chat messages awaiting approval",
   "room.joinAs": "You will join as {role}.",
   "room.name": "Your name (the host sees it)",
   "room.hostOffline":

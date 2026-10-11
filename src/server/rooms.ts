@@ -45,6 +45,10 @@ export const LIMITS = {
   roomIdleMs: 6 * 60 * 60_000,
   closedRetainMs: 2 * 60_000,
   guestStaleMs: 90_000,
+  /** chat-only audience: separate caps (no WebRTC slot, no approval) */
+  maxChatOnlyPerRoom: 300,
+  chatOnlyIdleMs: 10 * 60_000,
+  chatJoinPer10Min: 200,
   doneRetainMs: 2 * 60_000,
   hostOnlineMs: 45_000,
   defaultWaitMs: 20_000,
@@ -54,7 +58,7 @@ export const LIMITS = {
   joinPer10Min: 30,
 } as const;
 
-export type RoomRole = "guest" | "viewer" | "remote";
+export type RoomRole = "guest" | "viewer" | "remote" | "chat";
 
 export type HostEvent =
   | {
@@ -165,6 +169,7 @@ const DEFAULT_NAME: Record<RoomRole, string> = {
   guest: "Konuk",
   viewer: "İzleyici",
   remote: "Kumanda",
+  chat: "Katılımcı",
 };
 
 const codeField = z
@@ -174,7 +179,7 @@ const codeField = z
 
 const joinBody = z.object({
   name: z.string().max(1000).optional(),
-  role: z.enum(["guest", "viewer", "remote"]),
+  role: z.enum(["guest", "viewer", "remote", "chat"]),
 });
 const offerBody = z.object({ guestId: z.string().max(40), offer: codeField });
 const rejectBody = z.object({ guestId: z.string().max(40) });
@@ -291,8 +296,9 @@ export function createRoomsApi(options: RoomsOptions = {}) {
         if (g.status === "answered" || g.status === "rejected") {
           // answered guests that keep polling (chat) stay alive via lastSeen
           const last = Math.max(g.doneAt ?? 0, g.lastSeen);
-          if (g.doneAt !== null && t - last > LIMITS.doneRetainMs)
-            room.guests.delete(gid);
+          const keep =
+            g.role === "chat" ? LIMITS.chatOnlyIdleMs : LIMITS.doneRetainMs;
+          if (g.doneAt !== null && t - last > keep) room.guests.delete(gid);
         } else if (t - g.lastSeen > LIMITS.guestStaleMs) {
           room.guests.delete(gid);
           pushHost(room, { type: "leave", guestId: gid, reason: "stale" });
@@ -430,35 +436,54 @@ export function createRoomsApi(options: RoomsOptions = {}) {
   }
 
   async function join(req: Request, room: Room): Promise<Response> {
-    rateLimit(req, "join", LIMITS.joinPer10Min, 600_000);
-    if (room.closedAt !== null) throw new HttpError(410, "closed");
     const body = await readJson(req, joinBody);
-    if (room.guests.size >= LIMITS.maxGuestsPerRoom)
-      throw new HttpError(429, "room-full");
+    const chatOnly = body.role === "chat";
+    // an event audience may sit behind one NAT: chat-only joins get a roomier bucket
+    if (chatOnly) rateLimit(req, "join-chat", LIMITS.chatJoinPer10Min, 600_000);
+    else rateLimit(req, "join", LIMITS.joinPer10Min, 600_000);
+    if (room.closedAt !== null) throw new HttpError(410, "closed");
+    let chatOnlyCount = 0;
     let waiting = 0;
-    for (const g of room.guests.values()) if (g.status === "waiting") waiting++;
-    if (waiting >= LIMITS.maxWaitingPerRoom)
-      throw new HttpError(429, "pool-full");
+    let others = 0;
+    for (const g of room.guests.values()) {
+      if (g.role === "chat") chatOnlyCount++;
+      else {
+        others++;
+        if (g.status === "waiting") waiting++;
+      }
+    }
+    if (chatOnly) {
+      if (chatOnlyCount >= LIMITS.maxChatOnlyPerRoom)
+        throw new HttpError(429, "room-full");
+    } else {
+      if (others >= LIMITS.maxGuestsPerRoom)
+        throw new HttpError(429, "room-full");
+      if (waiting >= LIMITS.maxWaitingPerRoom)
+        throw new HttpError(429, "pool-full");
+    }
+    const t = now();
     const guest: Guest = {
       id: newToken(9),
       token: newToken(24),
       name: cleanName(body.name ?? "", DEFAULT_NAME[body.role]),
       role: body.role,
-      status: "waiting",
-      lastSeen: now(),
-      doneAt: null,
+      // chat-only: no approval, no WebRTC handshake, moderation happens per message
+      status: chatOnly ? "answered" : "waiting",
+      lastSeen: t,
+      doneAt: chatOnly ? t : null,
       seq: 0,
       events: [],
       waiters: new Set(),
     };
     room.guests.set(guest.id, guest);
-    pushHost(room, {
-      type: "join",
-      guestId: guest.id,
-      name: guest.name,
-      role: guest.role,
-      at: now(),
-    });
+    if (!chatOnly)
+      pushHost(room, {
+        type: "join",
+        guestId: guest.id,
+        name: guest.name,
+        role: guest.role,
+        at: now(),
+      });
     return json(
       {
         guestId: guest.id,
@@ -592,6 +617,15 @@ export function createRoomsApi(options: RoomsOptions = {}) {
     return g;
   }
 
+  /** chat-only participants that polled recently (a rough "people in the chat" number) */
+  function audience(room: Room): number {
+    const t = now();
+    let n = 0;
+    for (const g of room.guests.values())
+      if (g.role === "chat" && t - g.lastSeen < LIMITS.guestStaleMs) n++;
+    return n;
+  }
+
   async function chatPoll(
     req: Request,
     url: URL,
@@ -610,7 +644,7 @@ export function createRoomsApi(options: RoomsOptions = {}) {
       onAir: room.chat.onAir,
       closed: room.closedAt !== null,
       ...(viewer.kind === "moderator"
-        ? { pending: room.chat.pendingCount() }
+        ? { pending: room.chat.pendingCount(), audience: audience(room) }
         : {}),
       ...extra,
     });
@@ -690,7 +724,8 @@ export function createRoomsApi(options: RoomsOptions = {}) {
       {
         id: g.id,
         name: g.name,
-        role: g.role === "viewer" ? "viewer" : "guest",
+        role:
+          g.role === "viewer" ? "viewer" : g.role === "chat" ? "chat" : "guest",
       },
       body.text,
     );

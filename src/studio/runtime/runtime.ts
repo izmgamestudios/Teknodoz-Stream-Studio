@@ -637,12 +637,20 @@ export class StudioRuntime {
         },
         kv: createKvStore(),
       });
-      this.roomUnsub = session.subscribe(() => {
-        const n = session.getSnapshot().waiting;
-        roomBadge.set(n);
+      const announce = () => {
+        const waiting = session.getSnapshot().waiting;
+        const chat = session.chat.getSnapshot().pending;
+        roomBadge.set({ waiting, chat });
+        const n = waiting + chat;
         const base = document.title.replace(/^\(\d+\)\s*/, "");
         document.title = n > 0 ? `(${n}) ${base}` : base;
-      });
+      };
+      const offRoom = session.subscribe(announce);
+      const offChat = session.chat.subscribe(announce);
+      this.roomUnsub = () => {
+        offRoom();
+        offChat();
+      };
       this.roomSession = session;
     }
     return this.roomSession;

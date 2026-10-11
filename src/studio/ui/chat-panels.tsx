@@ -59,6 +59,7 @@ const MODE_LABEL: Record<ChatMode, string> = {
 const ROLE_LABEL: Record<ChatMessage["role"], string> = {
   guest: "konuk",
   viewer: "izleyici",
+  chat: "sohbet",
   reji: "reji",
   editor: "editör",
 };
@@ -120,6 +121,11 @@ export function ModerationDesk({
       <PanelTitle
         aside={
           <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            {snap.audience > 0 && (
+              <span title="Yalnızca sohbet bağlantısıyla katılanlar">
+                👥 {snap.audience}
+              </span>
+            )}
             {snap.status === "offline" && "○ bağlantı koptu"}
             {snap.status === "denied" && "yetki yok / anahtar iptal"}
             {snap.status === "closed" && "oda kapandı"}

@@ -8,6 +8,7 @@ import { createRoomApi, RoomApiError, type FetchLike } from "./api";
 import { RoomChatClient } from "./chat-client";
 import { RoomGuestSession } from "./guest-session";
 import { RoomHostSession, type HostBridge } from "./host-session";
+import { roomBadge } from "./badge";
 
 const OFFER = "TKZ1.OFFER_abc-123";
 const ANSWER = "TKZ1.ANSWER_xyz-789";
@@ -276,5 +277,93 @@ describe("room chat through host, editor and participants", () => {
     expect(host.getSnapshot().editorKey).toBeNull();
     a.dispose();
     host.dispose();
+  });
+});
+
+describe("chat-only participants", () => {
+  function chatOnly(code: string, storage = memStorage()) {
+    return new RoomGuestSession({
+      code,
+      fetch: relayFetch,
+      storage,
+      waitSec: 0.2,
+    });
+  }
+
+  it("join without approval, skip the pool, chat and resume after a reload", async () => {
+    const { host } = setup();
+    await host.open();
+    const code = host.getSnapshot().code as string;
+    const storage = memStorage();
+    const g = chatOnly(code, storage);
+    expect(await g.join("Selin", "chat")).toBe(true);
+    expect(g.getSnapshot()).toMatchObject({
+      phase: "chatting",
+      role: "chat",
+      client: null,
+    });
+    await until(() => g.chat.getSnapshot().status === "live");
+
+    // never in the director's waiting pool, but counted as audience
+    expect(host.getSnapshot().pool).toEqual([]);
+    await until(() => host.chat.getSnapshot().audience === 1);
+
+    const m = await g.chat.post("Canlıyı nereden izleyebilirim?");
+    expect(m).toMatchObject({ status: "pending", role: "chat" });
+    await until(() => host.chat.getSnapshot().pending === 1);
+    await host.chat.moderate(m.id, "approve");
+    await until(() => g.chat.getSnapshot().messages[0]?.status === "approved");
+
+    // reload: same storage -> same seat, no new join
+    g.dispose();
+    const again = chatOnly(code, storage);
+    expect(await again.resume()).toBe(true);
+    expect(again.getSnapshot().phase).toBe("chatting");
+    await until(() => again.chat.getSnapshot().messages.length === 1);
+    again.dispose();
+    host.dispose();
+  });
+
+  it("falls back to the form when the saved seat is gone", async () => {
+    const { host } = setup();
+    await host.open();
+    const code = host.getSnapshot().code as string;
+    const storage = memStorage();
+    storage.setItem(
+      `tkz.guest.${code}`,
+      JSON.stringify({
+        guestId: "zzz",
+        token: "t".repeat(24),
+        name: "X",
+        role: "chat",
+      }),
+    );
+    const g = chatOnly(code, storage);
+    expect(await g.resume()).toBe(false);
+    expect(g.getSnapshot().phase).toBe("idle");
+    g.dispose();
+    host.dispose();
+  });
+});
+
+describe("room badge store", () => {
+  it("keeps a stable snapshot and only notifies on real changes", () => {
+    roomBadge.set({ waiting: 0, chat: 0 });
+    const calls: number[] = [];
+    const off = roomBadge.subscribe(() => calls.push(1));
+    const a = roomBadge.get();
+    roomBadge.set({ waiting: 0 }); // no change
+    expect(roomBadge.get()).toBe(a);
+    expect(calls).toHaveLength(0);
+    roomBadge.set({ chat: 3 });
+    expect(roomBadge.get()).toEqual({ waiting: 0, chat: 3 });
+    expect(roomBadge.get()).not.toBe(a);
+    roomBadge.set({ waiting: 2 });
+    expect(roomBadge.get()).toEqual({ waiting: 2, chat: 3 });
+    expect(calls).toHaveLength(2);
+    off();
+    roomBadge.set({ waiting: 0, chat: 0 });
+    expect(calls).toHaveLength(2);
+    expect(roomBadge.getServer()).toEqual({ waiting: 0, chat: 0 });
   });
 });

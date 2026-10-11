@@ -33,6 +33,8 @@ export interface ChatSnapshot {
   readonly onAir: ChatMessage | null;
   /** messages waiting for moderation (moderators only) */
   readonly pending: number;
+  /** chat-only participants currently present (moderators only) */
+  readonly audience: number;
   readonly as: "host" | "editor" | "participant" | null;
 }
 
@@ -42,6 +44,7 @@ const EMPTY: ChatSnapshot = Object.freeze({
   mode: "moderated",
   onAir: null,
   pending: 0,
+  audience: 0,
   as: null,
 });
 
@@ -67,6 +70,7 @@ export class RoomChatClient {
   private mode: ChatMode = "moderated";
   private onAirId: number | null = null;
   private pending = 0;
+  private audience = 0;
   private as: ChatSnapshot["as"] = null;
   private since = 0;
   private runId = 0;
@@ -95,6 +99,7 @@ export class RoomChatClient {
       onAir:
         this.onAirId === null ? null : (this.msgs.get(this.onAirId) ?? null),
       pending: this.pending,
+      audience: this.audience,
       as: this.as,
     };
     for (const l of [...this.listeners]) l();
@@ -116,6 +121,7 @@ export class RoomChatClient {
     this.msgs.clear();
     this.onAirId = null;
     this.pending = 0;
+    this.audience = 0;
     this.emit();
     void this.loop(++this.runId);
   }
@@ -131,6 +137,7 @@ export class RoomChatClient {
       this.msgs.clear();
       this.onAirId = null;
       this.pending = 0;
+      this.audience = 0;
       this.as = null;
       this.emit();
     }
@@ -189,6 +196,7 @@ export class RoomChatClient {
         this.mode = r.mode;
         this.onAirId = r.onAir;
         this.pending = r.pending ?? 0;
+        this.audience = r.audience ?? 0;
         if (r.as) this.as = r.as;
         this.status = r.closed ? "closed" : "live";
         this.emit();

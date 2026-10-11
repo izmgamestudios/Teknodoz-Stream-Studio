@@ -437,3 +437,94 @@ describe("chat over HTTP", () => {
     expect(poll.data["closed"]).toBe(true);
   });
 });
+
+describe("chat-only audience over HTTP", () => {
+  afterEach(() => api?.dispose());
+
+  async function joinChat(code: string, name = "Katılımcı", ip = "5.5.5.5") {
+    const j = await call(`/api/room/${code}/join`, {
+      method: "POST",
+      body: { name, role: "chat" },
+      ip,
+    });
+    return {
+      status: j.status,
+      data: j.data,
+      id: j.data["guestId"] as string,
+      token: j.data["guestToken"] as string,
+    };
+  }
+
+  it("joins without approval or host event and may chat right away", async () => {
+    const { code, host } = await setup();
+    const a = await joinChat(code, "Selin");
+    expect(a.status).toBe(201);
+    expect(a.data["role"]).toBe("chat");
+    // the director never sees a join request for it
+    const ev = await call(`/api/room/${code}/host/events?since=0&wait=0`, {
+      bearer: host,
+    });
+    expect(ev.data["events"]).toEqual([]);
+    const posted = await call(`/api/room/${code}/guest/${a.id}/chat`, {
+      method: "POST",
+      guest: a.token,
+      body: { text: "Merhaba!" },
+    });
+    expect(posted.status).toBe(201);
+    expect(posted.data["message"]).toMatchObject({
+      role: "chat",
+      author: "Selin",
+      status: "pending",
+    });
+    const mod = await call(`/api/room/${code}/chat?since=0&wait=0`, {
+      bearer: host,
+    });
+    expect(mod.data["pending"]).toBe(1);
+    expect(mod.data["audience"]).toBe(1);
+  });
+
+  it("keeps its own capacity and rate-limit bucket", async () => {
+    const { code, join } = await setup();
+    // 40 joins from one IP: far above the 30/10min guest bucket, fine for chat-only
+    for (let i = 0; i < 40; i++)
+      expect((await joinChat(code, `K${i}`, "7.7.7.7")).status).toBe(201);
+    // and they do not eat the 60-guest / 25-waiting capacity of real participants
+    const g = await join("guest", "Konuk", false);
+    expect(g.id).toBeTruthy();
+  });
+
+  it("caps the audience per room", async () => {
+    const { code } = await setup();
+    // distinct IPs so the join bucket is not what stops us
+    let last = 0;
+    for (let i = 0; i < 301; i++) {
+      last = (
+        await joinChat(code, `K${i}`, `10.1.${Math.floor(i / 200)}.${i % 200}`)
+      ).status;
+      if (last !== 201) break;
+    }
+    expect(last).toBe(429);
+  }, 20_000);
+
+  it("stays alive while polling and for ten idle minutes, then is dropped", async () => {
+    const { code } = await setup();
+    const a = await joinChat(code);
+    clock += 5 * 60_000; // longer than doneRetainMs (2 min) for approved guests
+    expect(
+      (
+        await call(`/api/room/${code}/guest/${a.id}/chat?since=0&wait=0`, {
+          guest: a.token,
+        })
+      ).status,
+    ).toBe(200);
+    clock += 11 * 60_000; // idle for 11 min
+    await call("/api/room/health");
+    expect(
+      (
+        await call(`/api/room/${code}/guest/${a.id}/chat?since=0&wait=0`, {
+          guest: a.token,
+        })
+      ).status,
+    ).toBe(403);
+  });
+});

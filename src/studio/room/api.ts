@@ -64,6 +64,7 @@ export interface ChatPollResponse {
   closed: boolean;
   /** moderators only */
   pending?: number;
+  audience?: number;
   as?: "host" | "editor";
 }
 

@@ -27,7 +27,7 @@ const NAV: readonly {
 
 function NavLinks({ compact = false }: { compact?: boolean }) {
   const t = useT();
-  const waiting = useSyncExternalStore(
+  const badge = useSyncExternalStore(
     roomBadge.subscribe,
     roomBadge.get,
     roomBadge.getServer,
@@ -54,12 +54,20 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="font-semibold">
               {t(n.label)}
-              {n.to === "/room" && waiting > 0 && (
+              {n.to === "/room" && badge.waiting > 0 && (
                 <span
                   className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
-                  aria-label={t("shell.pending", { n: waiting })}
+                  aria-label={t("shell.pending", { n: badge.waiting })}
                 >
-                  {waiting}
+                  {badge.waiting}
+                </span>
+              )}
+              {n.to === "/room" && badge.chat > 0 && (
+                <span
+                  className="ml-1.5 rounded-full bg-speaker-b px-1.5 py-0.5 text-[10px] font-bold text-background"
+                  aria-label={t("shell.pendingChat", { n: badge.chat })}
+                >
+                  💬 {badge.chat}
                 </span>
               )}
             </span>

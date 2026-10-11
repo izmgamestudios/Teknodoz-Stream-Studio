@@ -79,6 +79,13 @@ participant ──post──▶ [pending] ──editor/director approve──▶
 | **Editör / editor** | rotatable editor key in a link `/chat/<CODE>#k=<key>` (open it on another device) | approve, reject, edit, post announcements. **Cannot** put a message on air or change the mode |
 | **Participant** | its guest token | post (queue), read approved messages and its own status |
 
+**Chat-only audience** (`/r/<CODE>?as=chat`, 4th link on `/room`): for events/webinars where people watch the stream
+elsewhere (YouTube, a hall screen) and only want to write. They join **without approval and without WebRTC**
+(no pool entry, no video/audio, not limited by the 8-person mesh): every message still goes through the moderation
+queue. Caps: 300 per room (separate from the 60 guests / 25 waiting), a roomier join bucket (200 / 10 min / IP, since an
+audience often shares one NAT) and a 10-minute idle window instead of 2 minutes. The desk shows `👥 n` people in the chat.
+The sidebar "Oda" entry and the tab title show waiting requests (`n`) and chat messages awaiting moderation (`💬 n`).
+
 - **Modes:** `moderated` (default: every participant message waits for approval), `open` (auto-approved, still
   rate-limited and still hideable), `off` (participants cannot post; moderators can).
 - **Overlay:** add a **Sohbet (oda)** layer (layer panel). `spotlight` draws only the message the director put on

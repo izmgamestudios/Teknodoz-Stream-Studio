@@ -17,6 +17,8 @@ export type GuestPhase =
   | "waiting"
   | "connecting"
   | "connected"
+  /** chat-only seat: no WebRTC, just the moderated chat */
+  | "chatting"
   | "rejected"
   | "closed"
   | "error";
@@ -153,11 +155,17 @@ export class RoomGuestSession {
       if (!raw) return false;
       const s = JSON.parse(raw) as Saved;
       if (!s.guestId || !s.token) return false;
-      await this.api.guestEvents(this.code, s.guestId, s.token, 0, 0);
+      if (s.role === "chat")
+        await this.api.guestChatPoll(this.code, s.guestId, s.token, 0, 0);
+      else await this.api.guestEvents(this.code, s.guestId, s.token, 0, 0);
       this.guestId = s.guestId;
       this.token = s.token;
       this.name = s.name;
       this.role = s.role;
+      if (s.role === "chat") {
+        this.enterChat();
+        return true;
+      }
       this.set({ phase: "waiting", error: null });
       void this.loop(++this.runId);
       return true;
@@ -191,6 +199,10 @@ export class RoomGuestSession {
         // ignore
       }
       this.since = 0;
+      if (role === "chat") {
+        this.enterChat();
+        return true;
+      }
       this.set({ phase: "waiting" });
       void this.loop(++this.runId);
       return true;
@@ -201,6 +213,16 @@ export class RoomGuestSession {
       });
       return false;
     }
+  }
+
+  /** Chat-only seat: the relay already treats us as approved; just open the chat. */
+  private enterChat(): void {
+    this.chat.connect(this.code, {
+      kind: "guest",
+      guestId: this.guestId as string,
+      token: this.token as string,
+    });
+    this.set({ phase: "chatting", error: null });
   }
 
   private async loop(run: number): Promise<void> {
@@ -306,7 +328,8 @@ export class RoomGuestSession {
       !this.guestId ||
       !this.token ||
       this.phase === "connected" ||
-      this.phase === "connecting"
+      this.phase === "connecting" ||
+      this.phase === "chatting"
     )
       return;
     const id = this.guestId;

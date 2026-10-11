@@ -19,7 +19,10 @@ import { RemoteView, ViewerGuestView } from "@/studio/ui/guest-views";
 
 export const Route = createFileRoute("/r/$code")({
   validateSearch: (s: Record<string, unknown>): { as?: RoomRole } =>
-    s["as"] === "guest" || s["as"] === "viewer" || s["as"] === "remote"
+    s["as"] === "guest" ||
+    s["as"] === "viewer" ||
+    s["as"] === "remote" ||
+    s["as"] === "chat"
       ? { as: s["as"] }
       : {},
   head: () => ({
@@ -36,6 +39,7 @@ const ROLES: { role: RoomRole; icon: string }[] = [
   { role: "guest", icon: "🎥" },
   { role: "viewer", icon: "👀" },
   { role: "remote", icon: "📱" },
+  { role: "chat", icon: "💬" },
 ];
 
 const IDLE: GuestSnapshot = {
@@ -252,6 +256,25 @@ function RoomLanding() {
           >
             {t("room.giveUp")}
           </button>
+        </div>
+      )}
+
+      {snap.phase === "chatting" && session && (
+        <div className="space-y-3">
+          <div
+            className="rounded-xl border bg-card p-4"
+            role="status"
+            aria-live="polite"
+          >
+            <p className="flex items-center gap-2 font-semibold">
+              <span className="inline-block size-2 rounded-full bg-speaker-b" />
+              {t("room.chatting")}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("room.chatting.body")}
+            </p>
+          </div>
+          <ParticipantChat chat={session.chat} />
         </div>
       )}
 

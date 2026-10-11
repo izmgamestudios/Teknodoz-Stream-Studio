@@ -7,7 +7,7 @@
 
 export type ChatMode = "moderated" | "open" | "off";
 export type ChatStatus = "pending" | "approved" | "rejected";
-export type ChatAuthorRole = "guest" | "viewer" | "reji" | "editor";
+export type ChatAuthorRole = "guest" | "viewer" | "chat" | "reji" | "editor";
 export type ChatAction = "approve" | "reject" | "edit" | "onair" | "offair";
 /** Who is acting: the director (host token) or an editor (rotatable key). */
 export type Moderator = "host" | "editor";

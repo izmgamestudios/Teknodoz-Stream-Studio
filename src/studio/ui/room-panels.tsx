@@ -25,6 +25,11 @@ export const ROLE_INFO: Record<
     icon: "📱",
     hint: "Sahne, prompter, kayıt",
   },
+  chat: {
+    title: "Yalnızca sohbet",
+    icon: "💬",
+    hint: "Görüntü/ses yok; mesajı onayınıza gider (etkinlik katılımcısı)",
+  },
 };
 
 function useNow(ms = 15_000): number {
@@ -114,7 +119,7 @@ export function RoomLinks({ compact = false }: { compact?: boolean }) {
     );
   }
 
-  const roles: RoomRole[] = ["guest", "viewer", "remote"];
+  const roles: RoomRole[] = ["guest", "viewer", "remote", "chat"];
   return (
     <div className={compact ? "space-y-2" : `${PANEL} space-y-3`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -202,16 +207,23 @@ export function RoomLinks({ compact = false }: { compact?: boolean }) {
                   </p>
                 </div>
               )}
-              <div className="mt-1.5">
-                <Check
-                  checked={room.autoApprove[r]}
-                  onChange={(on) => rt.room.setAutoApprove(r, on)}
-                >
-                  <span className="text-[11px]">
-                    Bu bağlantıyla gelenleri otomatik onayla
-                  </span>
-                </Check>
-              </div>
+              {r !== "chat" ? (
+                <div className="mt-1.5">
+                  <Check
+                    checked={room.autoApprove[r]}
+                    onChange={(on) => rt.room.setAutoApprove(r, on)}
+                  >
+                    <span className="text-[11px]">
+                      Bu bağlantıyla gelenleri otomatik onayla
+                    </span>
+                  </Check>
+                </div>
+              ) : (
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  Katılım onaysızdır (görüntü/ses akışı yok); denetim her
+                  mesajda yapılır: Sohbet masasında onaylayın.
+                </p>
+              )}
             </li>
           );
         })}
