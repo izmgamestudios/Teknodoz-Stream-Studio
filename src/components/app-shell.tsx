@@ -1,15 +1,23 @@
 // src/components/app-shell.tsx
 import { Link, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
+
+import { roomBadge } from "@/studio/room/badge";
 
 import { TeknodozLogo } from "@/components/teknodoz-logo";
 
 const NAV = [
   { to: "/", label: "Prompter", hint: "Metin, kamera, kayıt", icon: "📜" },
   { to: "/studio", label: "Stüdyo", hint: "Logo, müzik, efekt", icon: "🎬" },
+  { to: "/room", label: "Oda", hint: "Konuk, telefon, onaylar", icon: "🚪" },
 ] as const;
 
 function NavLinks({ compact = false }: { compact?: boolean }) {
+  const waiting = useSyncExternalStore(
+    roomBadge.subscribe,
+    roomBadge.get,
+    roomBadge.getServer,
+  );
   return (
     <>
       {NAV.map((n, i) => (
@@ -30,7 +38,17 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
         >
           <span aria-hidden="true">{n.icon}</span>
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="font-semibold">{n.label}</span>
+            <span className="font-semibold">
+              {n.label}
+              {n.to === "/room" && waiting > 0 && (
+                <span
+                  className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
+                  aria-label={`${waiting} bekleyen istek`}
+                >
+                  {waiting}
+                </span>
+              )}
+            </span>
             {!compact && (
               <span className="truncate text-xs text-muted-foreground">
                 {n.hint}
@@ -50,7 +68,7 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
 }
 
 /** Pages opened by guests / phones: no studio navigation around them. */
-const BARE_PREFIXES = ["/join", "/remote"];
+const BARE_PREFIXES = ["/join", "/remote", "/r"];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });

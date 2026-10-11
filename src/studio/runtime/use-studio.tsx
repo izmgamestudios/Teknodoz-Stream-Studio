@@ -12,6 +12,7 @@ import {
 
 import type { AudioBusState } from "../engine/audio-bus";
 import type { PrompterSnapshot } from "../prompter";
+import type { RoomSnapshot } from "../room/host-session";
 import type { PeerInfo, ProjectState } from "../types";
 import { StudioRuntime, type RuntimeSnapshot } from "./runtime";
 import type { SourcesSnapshot } from "./sources";
@@ -30,7 +31,13 @@ let singleton: {
 export function acquireRuntime(): Promise<StudioRuntime> {
   if (!singleton) {
     const runtime = new StudioRuntime();
-    singleton = { runtime, ready: runtime.restore().then(() => runtime) };
+    singleton = {
+      runtime,
+      ready: runtime.restore().then(() => {
+        runtime.resumeSavedRoom();
+        return runtime;
+      }),
+    };
     window.addEventListener("pagehide", () => void runtime.flushAutosave());
     if (import.meta.hot) {
       import.meta.hot.dispose(() => {
@@ -121,5 +128,15 @@ export function usePeers(): readonly PeerInfo[] {
     rt.subscribePeers,
     rt.getPeersSnapshot,
     rt.getPeersSnapshot,
+  );
+}
+
+/** Room state (code, waiting pool, log). Does not open the room by itself. */
+export function useRoom(): RoomSnapshot {
+  const rt = useStudio();
+  return useSyncExternalStore(
+    rt.room.subscribe,
+    rt.room.getSnapshot,
+    rt.room.getSnapshot,
   );
 }

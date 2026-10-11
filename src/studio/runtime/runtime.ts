@@ -46,6 +46,8 @@ import {
 } from "../storage";
 import { createLayer, defaultProject } from "../defaults";
 import { StudioHost, type InviteResult } from "../p2p";
+import { roomBadge } from "../room/badge";
+import { RoomHostSession } from "../room/host-session";
 import type {
   AssetStore,
   CompositorHooks,
@@ -115,6 +117,8 @@ export class StudioRuntime {
   private peers: readonly PeerInfo[] = EMPTY_PEERS;
   private peerListeners = new Set<() => void>();
   private remoteTimer: ReturnType<typeof setInterval> | null = null;
+  private roomSession: RoomHostSession | null = null;
+  private roomUnsub: (() => void) | null = null;
   private disposed = false;
 
   constructor() {
@@ -410,6 +414,7 @@ export class StudioRuntime {
       host.subscribe((peers) => {
         this.peers = peers;
         this.applyGuestAudio(peers);
+        this.pushRemoteState();
         for (const l of [...this.peerListeners]) l();
       }),
       host.onGuestStream((peerId, stream) => {
@@ -421,6 +426,8 @@ export class StudioRuntime {
       this.subscribe(() => this.pushRemoteState()),
       this.prompter.subscribeCoarse(() => this.pushRemoteState()),
     );
+    // new remotes receive the latest state as soon as their channel opens
+    this.pushRemoteState();
     this.remoteTimer = setInterval(() => {
       if (this.isRecording()) this.pushRemoteState();
     }, 1000);
@@ -508,6 +515,44 @@ export class StudioRuntime {
       if (!this.audio.hasChannel(id)) continue;
       this.audio.setMuted(id, p.status !== "on-air" || p.muted);
       this.audio.setGain(id, p.gain);
+    }
+  }
+
+  /* --------------------------------- room --------------------------------- */
+
+  /**
+   * The room (short code + waiting pool). Created lazily; it only talks to the relay once
+   * `room.open()` is called (or a saved room is resumed on startup).
+   */
+  get room(): RoomHostSession {
+    if (!this.roomSession) {
+      const session = new RoomHostSession({
+        bridge: {
+          createInvite: (role, name) => this.createInvite(role, name),
+          acceptAnswer: (peerId, code) => this.acceptAnswer(peerId, code),
+          kickPeer: (peerId) => this.kickPeer(peerId),
+          getPeers: () => this.peers,
+          subscribePeers: this.subscribePeers,
+        },
+        kv: createKvStore(),
+      });
+      this.roomUnsub = session.subscribe(() => {
+        const n = session.getSnapshot().waiting;
+        roomBadge.set(n);
+        const base = document.title.replace(/^\(\d+\)\s*/, "");
+        document.title = n > 0 ? `(${n}) ${base}` : base;
+      });
+      this.roomSession = session;
+    }
+    return this.roomSession;
+  }
+
+  /** Reopen the saved room after a page reload (no-op when there is none). */
+  resumeSavedRoom(): void {
+    try {
+      if (localStorage.getItem("tkz.room.v1")) void this.room.open();
+    } catch {
+      // storage blocked
     }
   }
 
@@ -767,6 +812,9 @@ export class StudioRuntime {
     this.compositor?.dispose();
     this.compositor = null;
     this.canvas = null;
+    this.roomUnsub?.();
+    this.roomSession?.dispose();
+    this.roomSession = null;
     if (this.remoteTimer) clearInterval(this.remoteTimer);
     for (const u of this.hostUnsubs) u();
     this.hostUnsubs = [];

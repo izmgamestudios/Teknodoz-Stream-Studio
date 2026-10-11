@@ -1,6 +1,7 @@
 // src/studio/ui/live-panel.tsx
 // Host side of the serverless P2P layer: invites (link/QR), answer codes, peer list and the
 // green room (preview waiting guests, bring on air, gain/mute).
+import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -21,6 +22,7 @@ import {
   RangeInput,
 } from "./fields";
 import { QrImage } from "./qr-image";
+import { RoomLinks, RoomPool } from "./room-panels";
 
 interface Invite {
   peerId: string;
@@ -90,56 +92,28 @@ export function LivePanel() {
 
   return (
     <section className={PANEL} aria-label="Canlı bağlantılar">
-      <PanelTitle>Canlı bağlantılar &amp; kulis</PanelTitle>
+      <PanelTitle
+        aside={
+          <Link
+            to="/room"
+            className="text-[11px] text-speaker-b underline-offset-2 hover:underline"
+          >
+            Oda yönetimi →
+          </Link>
+        }
+      >
+        Canlı bağlantılar &amp; kulis
+      </PanelTitle>
       {!supported && (
         <p role="alert" className="mb-2 text-xs text-destructive">
           Bu tarayıcıda WebRTC kullanılamıyor.
         </p>
       )}
-      <div className="flex flex-wrap gap-1.5">
-        <button
-          className={BTN_ACCENT}
-          disabled={busy || !supported}
-          onClick={() => void create("guest")}
-        >
-          + Yayın daveti (izleyici/konuk)
-        </button>
-        <button
-          className={BTN}
-          disabled={busy || !supported}
-          onClick={() => void create("viewer")}
-        >
-          + Salt izleyici
-        </button>
-        <button
-          className={BTN}
-          disabled={busy || !supported}
-          onClick={() => void create("remote")}
-        >
-          📱 Telefon kumandası
-        </button>
-      </div>
-      {err && (
-        <p role="alert" className="mt-2 text-xs text-destructive">
-          {err}
-        </p>
-      )}
-      <p className="mt-2 text-[11px] text-muted-foreground">
-        Sunucu olmadığı için bağlantı iki adımlıdır: daveti karşı tarafa
-        gönderin, o kişinin sayfasında çıkan <b>yanıt kodunu</b> buraya
-        yapıştırın. Her kişi için ayrı davet gerekir (en fazla 8).
-      </p>
 
-      {pending.map((inv) => (
-        <InviteCard
-          key={inv.peerId}
-          invite={inv}
-          onCancel={() => {
-            rt.kickPeer(inv.peerId);
-            setInvites((cur) => cur.filter((i) => i.peerId !== inv.peerId));
-          }}
-        />
-      ))}
+      <RoomLinks compact />
+      <div className="mt-3">
+        <RoomPool compact />
+      </div>
 
       {guests.length > 0 && (
         <div className="mt-3 space-y-2 border-t pt-3">
@@ -179,6 +153,54 @@ export function LivePanel() {
           ))}
         </ul>
       )}
+
+      <details className="mt-3 border-t pt-3">
+        <summary className="cursor-pointer text-xs text-muted-foreground">
+          Manuel bağlantı (sunucusuz, kod değişimi)
+        </summary>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <button
+            className={BTN}
+            disabled={busy || !supported}
+            onClick={() => void create("guest")}
+          >
+            + Yayın daveti
+          </button>
+          <button
+            className={BTN}
+            disabled={busy || !supported}
+            onClick={() => void create("viewer")}
+          >
+            + Salt izleyici
+          </button>
+          <button
+            className={BTN}
+            disabled={busy || !supported}
+            onClick={() => void create("remote")}
+          >
+            📱 Telefon kumandası
+          </button>
+        </div>
+        {err && (
+          <p role="alert" className="mt-2 text-xs text-destructive">
+            {err}
+          </p>
+        )}
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Oda rölesi yoksa kullanın: daveti gönderin, karşı tarafın{" "}
+          <b>yanıt kodunu</b> yapıştırın (veya QR'ını tarayın).
+        </p>
+        {pending.map((inv) => (
+          <InviteCard
+            key={inv.peerId}
+            invite={inv}
+            onCancel={() => {
+              rt.kickPeer(inv.peerId);
+              setInvites((cur) => cur.filter((i) => i.peerId !== inv.peerId));
+            }}
+          />
+        ))}
+      </details>
     </section>
   );
 }
@@ -277,7 +299,7 @@ function InviteCard({
   );
 }
 
-function GuestCard({ peer }: { peer: PeerInfo }) {
+export function GuestCard({ peer }: { peer: PeerInfo }) {
   const rt = useStudio();
   const videoRef = useRef<HTMLVideoElement>(null);
   const meter = useRef<HTMLDivElement>(null);
