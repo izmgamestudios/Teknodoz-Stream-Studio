@@ -62,3 +62,26 @@
     font-family: var(--font-sans);
   }
 }
+
+/* Diğer Teknodoz Projeleri (shared sidebar block) */
+/* Inherits colors from the host page; no inline styles are used so strict CSPs (style-src 'self') keep working. */
+.tdp { margin: 1rem 0; font-size: 0.9rem; }
+.tdp-title { font-size: 0.95rem; margin: 0 0 0.5rem; }
+.tdp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.tdp-item { border: 1px solid color-mix(in srgb, currentColor 22%, transparent); border-radius: 10px; padding: 0.5rem 0.6rem; }
+.tdp-head { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; }
+.tdp-head a { font-weight: 600; color: inherit; }
+.tdp-name { font-weight: 600; }
+.tdp-tag { font-size: 0.72rem; border-radius: 999px; padding: 0.05rem 0.5rem; border: 1px solid currentColor; white-space: nowrap; }
+.tdp-open { color: #15803d; }
+.tdp-private { color: #b45309; }
+.tdp-desc { font-size: 0.8rem; opacity: 0.8; margin-top: 0.15rem; }
+.tdp-desc a { color: inherit; }
+.tdp-toggle { margin-top: 0.4rem; font: inherit; background: none; border: 1px dashed currentColor; border-radius: 8px; padding: 0.2rem 0.5rem; color: inherit; cursor: pointer; }
+.tdp-form { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+.tdp-form[hidden] { display: none; }
+.tdp-form input { flex: 1 1 8rem; min-width: 0; font: inherit; padding: 0.25rem 0.4rem; }
+.tdp-form button { font: inherit; padding: 0.25rem 0.7rem; cursor: pointer; }
+.tdp-msg { flex-basis: 100%; margin: 0; font-size: 0.8rem; color: #b91c1c; }
+.tdp, .tdp-item, .tdp-head > * { min-width: 0; overflow-wrap: anywhere; }
+.tdp-tag { overflow-wrap: normal; flex-shrink: 0; }

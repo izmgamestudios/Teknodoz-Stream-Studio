@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { TeknodozLogo } from "@/components/teknodoz-logo";
+import { TeknodozProjects } from "@/components/TeknodozProjects";
 
 const NAV = [
   { to: "/", label: "Prompter", hint: "Metin, kamera, kayıt", icon: "📜" },
@@ -74,6 +75,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </p>
             <NavLinks />
           </nav>
+
+          <TeknodozProjects current="teknodoz-stream-studio" />
         </div>
 
         <div className="border-t px-5 py-4 text-[11px] leading-relaxed text-muted-foreground">
