@@ -1,6 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { RemotePanel } from "@/components/remote-panel";
+import { RundownBar, type RundownEntry } from "@/components/rundown-bar";
+import { useRemoteHost } from "@/lib/remote/host";
+import type { Command } from "@/lib/remote/protocol";
+import { TRACKS } from "@/lib/studio/music";
 import { drawScene, itemBoxPct } from "@/lib/studio/render";
 import { buildSfxBuffer, SFX_PRESETS } from "@/lib/studio/sfx";
 import { ITEM_PRESETS, TEMPLATES } from "@/lib/studio/templates";
@@ -65,7 +70,28 @@ const SOURCES: [Base, string][] = [
   ["camera", "Kamera"],
   ["screen", "Ekran"],
   ["video", "Video"],
+  ["guest", "Konuk"],
 ];
+const RUNDOWN_KEY = "studio.rundown.v1";
+type RundownScene = RundownEntry & { scene: Scene };
+const stripImages = (sc: Scene): Scene => ({
+  ...structuredClone(sc),
+  items: sc.items.filter((i) => i.kind !== "image"),
+});
+const defaultRundown = (): RundownScene[] =>
+  ["podcast", "split", "news", "clean"].map((id, i) => {
+    const t = TEMPLATES.find((x) => x.id === id)!;
+    return { id: uid(), name: ["Açılış", "Sohbet", "Haber", "Kapanış"][i]!, scene: t.build() };
+  });
+function loadRundown(): RundownScene[] {
+  try {
+    const raw = localStorage.getItem(RUNDOWN_KEY);
+    if (raw) return JSON.parse(raw) as RundownScene[];
+  } catch {
+    /* storage blocked or corrupt */
+  }
+  return defaultRundown();
+}
 const ITEM_TILES: [string, string][] = [
   ["text", "T Yazı"],
   ["banner", "▭ Banner"],
@@ -148,6 +174,14 @@ function Studio() {
   const [confettiOnLive, setConfettiOnLive] = useState(false);
   const [liveTick, setLiveTick] = useState(0);
   const [live, setLive] = useState(false);
+  const [rundown, setRundown] = useState<RundownScene[]>([]);
+  const [rundownReady, setRundownReady] = useState(false);
+  const [liveIdx, setLiveIdx] = useState(-1);
+  const [editIdx, setEditIdx] = useState(-1);
+  const [pane, setPane] = useState<"edit" | "live">("edit");
+  const [trackId, setTrackId] = useState<string | null>(null);
+  const { register, publish, guest } = useRemoteHost();
+  const guestRef = useRef<HTMLVideoElement>(null);
 
   const dirty = useMemo(
     () => JSON.stringify(draft) !== JSON.stringify(program),
@@ -158,6 +192,8 @@ function Studio() {
   // saved templates + WebGL transition engine (client only)
   useEffect(() => {
     setSaved(loadSaved());
+    setRundown(loadRundown());
+    setRundownReady(true);
     let dead = false;
     createTransitionEngine()
       .then((eng) => {
@@ -172,6 +208,27 @@ function Studio() {
       engineRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!rundownReady) return;
+    try {
+      localStorage.setItem(
+        RUNDOWN_KEY,
+        JSON.stringify(rundown.map((r) => ({ ...r, scene: stripImages(r.scene) }))),
+      );
+    } catch {
+      /* storage blocked */
+    }
+  }, [rundown, rundownReady]);
+
+  // guest camera (from /join or phone remote) arrives as a WebRTC stream
+  useEffect(() => {
+    const el = guestRef.current;
+    if (el) el.srcObject = guest?.stream ?? null;
+    if (guest) mixer.connectStream(guest.stream, true);
+    if (!guest) setDraft((d) => (d.base === "guest" ? { ...d, base: "camera" } : d));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guest]);
 
   // camera + mic
   useEffect(() => {
@@ -211,6 +268,7 @@ function Studio() {
         cam: camRef.current,
         scr: scrRef.current,
         bgv: bgvRef.current,
+        guest: guestRef.current,
         images: images.current,
       };
 
@@ -258,7 +316,8 @@ function Studio() {
   useEffect(() => {
     if (bgaRef.current) bgaRef.current.volume = bgVol;
     if (bgvRef.current) bgvRef.current.volume = bgVol;
-  }, [bgVol]);
+    if (trackId) mixer.music().setVolume(bgVol);
+  }, [bgVol, trackId]);
 
   // ---------- scene editing ----------
   const patch = (p: Partial<Scene>) => setDraft((d) => ({ ...d, ...p }));
@@ -417,16 +476,118 @@ function Studio() {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.key === "Delete" && selected) return removeItem(selected);
       const n = Number(e.key);
-      if (n >= 1 && n <= SFX_PRESETS.length)
+      if (e.key === "n" || e.key === "N") return cmdRef.current({ cmd: "next" });
+      if (e.key === "p" || e.key === "P") return cmdRef.current({ cmd: "prev" });
+      if (n >= 1 && n <= Math.min(8, SFX_PRESETS.length))
         void playPresetRef.current(SFX_PRESETS[n - 1]!.id);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [selected]);
 
+  // ---------- rundown ----------
+  const stepScene = (dir: 1 | -1) => {
+    if (!rundown.length) return;
+    const from = liveIdx >= 0 ? liveIdx : editIdx;
+    playScene(Math.min(rundown.length - 1, Math.max(0, from < 0 ? 0 : from + dir)));
+  };
+  function playScene(i: number) {
+    const r = rundown[i];
+    if (!r) return;
+    setDraft(structuredClone(r.scene));
+    setEditIdx(i);
+    setSelected(null);
+    void goLive(r.scene, i);
+  }
+  function editScene(i: number) {
+    const r = rundown[i];
+    if (!r) return;
+    setDraft(structuredClone(r.scene));
+    setEditIdx(i);
+    setSelected(null);
+    setPane("edit");
+  }
+  function addScene() {
+    const name = window.prompt("Sahne adı?", `Sahne ${rundown.length + 1}`);
+    if (!name?.trim()) return;
+    setRundown((r) => [...r, { id: uid(), name: name.trim(), scene: structuredClone(draftRef.current) }]);
+    setEditIdx(rundown.length);
+  }
+  function updateScene() {
+    setRundown((r) => r.map((x, i) => (i === editIdx ? { ...x, scene: structuredClone(draftRef.current) } : x)));
+  }
+  function renameScene(i: number) {
+    const name = window.prompt("Sahne adı?", rundown[i]?.name);
+    if (name?.trim()) setRundown((r) => r.map((x, k) => (k === i ? { ...x, name: name.trim() } : x)));
+  }
+  function moveScene(i: number, dir: -1 | 1) {
+    const j = i + dir;
+    if (j < 0 || j >= rundown.length) return;
+    setRundown((r) => {
+      const c = [...r];
+      [c[i], c[j]] = [c[j]!, c[i]!];
+      return c;
+    });
+    const follow = (x: number) => (x === i ? j : x === j ? i : x);
+    setLiveIdx(follow);
+    setEditIdx(follow);
+  }
+  function deleteScene(i: number) {
+    if (!window.confirm(`“${rundown[i]?.name}” sahnesi silinsin mi?`)) return;
+    setRundown((r) => r.filter((_, k) => k !== i));
+    const shift = (x: number) => (x === i ? -1 : x > i ? x - 1 : x);
+    setLiveIdx(shift);
+    setEditIdx(shift);
+  }
+
+  // ---------- music ----------
+  function playTrack(id: string) {
+    prepareAudio();
+    const m = mixer.music();
+    m.setVolume(bgVol);
+    m.start(id);
+    setTrackId(id);
+  }
+  function stopMusic() {
+    mixer.stopMusic();
+    setTrackId(null);
+  }
+
+  // ---------- phone remote ----------
+  const cmdRef = useRef<(c: Command) => void>(() => {});
+  cmdRef.current = (c) => {
+    switch (c.cmd) {
+      case "next": return stepScene(1);
+      case "prev": return stepScene(-1);
+      case "golive": return void goLive();
+      case "rec": return toggleRec();
+      case "scene": return playScene(Number(c.arg));
+      case "edit": return editScene(Number(c.arg));
+      case "sfx": return void playPreset(String(c.arg));
+      case "music": return c.arg === "stop" ? stopMusic() : playTrack(String(c.arg));
+    }
+  };
+  useEffect(() => register((c) => cmdRef.current(c)), [register]);
+  useEffect(() => {
+    publish({
+      page: "studio",
+      scenes: rundown.map((r) => r.name),
+      live: liveIdx,
+      editing: editIdx,
+      isLive: live && !dirty,
+      recording,
+      recSecs,
+      music: trackId,
+      tracks: TRACKS.map((t) => ({ id: t.id, name: t.name })),
+      sfx: SFX_PRESETS.map((p) => ({ id: p.id, label: p.label, emoji: p.emoji })),
+      guest: !!guest,
+    });
+  }, [publish, rundown, liveIdx, editIdx, live, dirty, recording, recSecs, trackId, guest]);
+  useEffect(() => () => publish({ page: "idle" }), [publish]);
+
   // ---------- go live / record ----------
-  async function goLive() {
-    const next = structuredClone(draft);
+  async function goLive(scene: Scene = draftRef.current, idx = -1) {
+    const next = structuredClone(scene);
     const name = transition;
     const hadProgram = live;
     if (name !== NO_TRANSITION && engineRef.current && hadProgram) {
@@ -445,6 +606,7 @@ function Studio() {
     programRef.current = next;
     setProgram(next);
     setLive(true);
+    setLiveIdx(idx);
     setLiveTick((n) => n + 1);
     if (confettiOnLive) {
       const { default: confetti } = await import("canvas-confetti");
@@ -492,7 +654,7 @@ function Studio() {
   const on = "bg-speaker-a text-background";
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-3 pb-28 sm:p-4 xl:pb-4">
       {/* hidden media sources */}
       <video ref={camRef} autoPlay muted playsInline className="hidden" />
       <video ref={scrRef} autoPlay muted playsInline className="hidden" />
@@ -503,6 +665,7 @@ function Studio() {
         crossOrigin="anonymous"
         className="hidden"
       />
+      <video ref={guestRef} autoPlay muted playsInline className="hidden" />
       <audio ref={bgaRef} loop />
 
       <header className="mb-4 flex flex-wrap items-center gap-3">
@@ -516,9 +679,29 @@ function Studio() {
         {camErr && <span className="text-sm text-destructive">{camErr}</span>}
       </header>
 
+      <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1 text-sm font-semibold xl:hidden" role="tablist">
+        <button role="tab" aria-selected={pane === "edit"} onClick={() => setPane("edit")} className={`rounded-md py-2 ${pane === "edit" ? "bg-speaker-b text-background" : ""}`}>✎ Düzenle</button>
+        <button role="tab" aria-selected={pane === "live"} onClick={() => setPane("live")} className={`rounded-md py-2 ${pane === "live" ? "bg-primary text-primary-foreground" : ""}`}>● Canlı{recording ? ` · ${mmss}` : ""}</button>
+      </div>
+
+      <RundownBar
+        items={rundown}
+        live={liveIdx}
+        editing={editIdx}
+        onEdit={editScene}
+        onLive={playScene}
+        onAdd={addScene}
+        onUpdate={updateScene}
+        onRename={renameScene}
+        onMove={moveScene}
+        onDelete={deleteScene}
+        onNext={() => stepScene(1)}
+        onPrev={() => stepScene(-1)}
+      />
+
       <div className="grid gap-4 xl:grid-cols-2">
         {/* ============ EDIT (left) ============ */}
-        <section className="rounded-xl border bg-card p-3">
+        <section className={`rounded-xl border bg-card p-3 ${pane === "edit" ? "" : "hidden xl:block"}`}>
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="font-semibold text-speaker-b">
               ✎ DÜZENLE{" "}
@@ -555,7 +738,7 @@ function Studio() {
                 <div
                   key={it.id}
                   onPointerDown={(e) => startDrag(e, it)}
-                  className={`absolute cursor-move select-none ${selected === it.id ? "outline-2 outline-dashed outline-ring" : "hover:outline hover:outline-1 hover:outline-ring/50"}`}
+                  className={`absolute cursor-move touch-none select-none ${selected === it.id ? "outline-2 outline-dashed outline-ring" : "hover:outline hover:outline-1 hover:outline-ring/50"}`}
                   style={{
                     left: `${b.left}%`,
                     top: `${b.top}%`,
@@ -639,7 +822,7 @@ function Studio() {
             {tab === "source" && (
               <>
                 <div className="flex flex-wrap gap-2">
-                  {SOURCES.map(([b, l]) => (
+                  {SOURCES.filter(([b]) => b !== "guest" || guest).map(([b, l]) => (
                     <button
                       key={b}
                       onClick={() => patch({ base: b })}
@@ -900,7 +1083,7 @@ function Studio() {
         </section>
 
         {/* ============ LIVE (right) ============ */}
-        <section className="rounded-xl border bg-card p-3">
+        <section className={`rounded-xl border bg-card p-3 ${pane === "live" ? "" : "hidden xl:block"}`}>
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 font-semibold text-primary">
               <span
@@ -999,7 +1182,7 @@ function Studio() {
               <p className="mb-2 font-semibold">
                 Ses efektleri{" "}
                 <span className="font-normal text-muted-foreground">
-                  (klavyede 1–{SFX_PRESETS.length})
+                  (klavyede 1–8)
                 </span>
               </p>
               <div className="flex flex-wrap items-center gap-2">
@@ -1009,7 +1192,7 @@ function Studio() {
                     onClick={() => void playPreset(p.id)}
                     className="rounded bg-speaker-a px-2 py-1 font-semibold text-background hover:brightness-110"
                   >
-                    <kbd className="mr-1 opacity-60">{i + 1}</kbd>
+                    {i < 8 && <kbd className="mr-1 opacity-60">{i + 1}</kbd>}
                     {p.emoji} {p.label}
                   </button>
                 ))}
@@ -1102,12 +1285,31 @@ function Studio() {
               </label>
             </div>
           </div>
+          <div className="mt-3 space-y-2 rounded-lg bg-secondary p-3 text-sm">
+            <p className="font-semibold">🎧 Müzik listesi <span className="font-normal text-muted-foreground">(kodla üretilir, telifsiz)</span></p>
+            <div className="flex flex-wrap gap-2">
+              {TRACKS.map((t) => (
+                <button key={t.id} onClick={() => (trackId === t.id ? stopMusic() : playTrack(t.id))} title={t.mood} className={`${btn} ${trackId === t.id ? on : ""}`}>
+                  {trackId === t.id ? "■" : "♪"} {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <RemotePanel className="mt-3" />
           <p className="mt-2 text-sm text-muted-foreground">
             Kayıt bu ekranı, mikrofonu, müziği ve ses efektlerini birlikte alır;
             bitince video bilgisayarına iner. Konfeti yalnızca ekranda görünür,
             kayda girmez.
           </p>
         </section>
+      </div>
+
+      {/* mobile action bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t bg-card/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur xl:hidden">
+        <button onClick={() => stepScene(-1)} disabled={!rundown.length} aria-label="Önceki sahne" className="min-h-12 rounded-lg bg-secondary px-3 disabled:opacity-40">⏮</button>
+        <button onClick={() => void goLive()} className={`min-h-12 flex-1 rounded-lg bg-speaker-b px-3 font-bold text-background ${dirty ? "animate-pulse" : "opacity-80"}`}>Yayına al →</button>
+        <button onClick={() => stepScene(1)} disabled={!rundown.length} aria-label="Sonraki sahne" className="min-h-12 rounded-lg bg-secondary px-3 disabled:opacity-40">⏭</button>
+        <button onClick={toggleRec} aria-label={recording ? "Kaydı bitir" : "Kayda başla"} className={`min-h-12 rounded-lg px-4 font-bold text-primary-foreground ${recording ? "animate-pulse bg-destructive" : "bg-primary"}`}>{recording ? "■" : "●"}</button>
       </div>
     </div>
   );

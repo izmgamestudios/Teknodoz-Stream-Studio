@@ -2,7 +2,7 @@
 export const W = 1280;
 export const H = 720;
 
-export type Base = "camera" | "screen" | "video";
+export type Base = "camera" | "screen" | "video" | "guest";
 export type Layout = "full" | "pip" | "split";
 export type Corner = "br" | "bl" | "tr" | "tl";
 export type ItemKind =
@@ -35,6 +35,7 @@ export type Sources = {
   cam: HTMLVideoElement | null;
   scr: HTMLVideoElement | null;
   bgv: HTMLVideoElement | null;
+  guest: HTMLVideoElement | null;
   images: Record<string, HTMLImageElement>;
 };
 

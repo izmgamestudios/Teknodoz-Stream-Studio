@@ -1,5 +1,5 @@
 // src/components/app-shell.tsx
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { TeknodozLogo } from "@/components/teknodoz-logo";
@@ -45,7 +45,12 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/** Phone pages (remote, guest join) render without the desktop chrome. */
+const BARE = ["/remote", "/join"];
+
 export function AppShell({ children }: { children: ReactNode }) {
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  if (BARE.some((p) => path.startsWith(p))) return <>{children}</>;
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* desktop sidebar */}

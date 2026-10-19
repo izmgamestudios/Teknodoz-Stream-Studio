@@ -1,5 +1,7 @@
 // src/lib/studio/use-audio-mixer.ts
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+
+import { createMusicPlayer, type MusicPlayer } from "./music";
 
 /** One WebAudio graph feeding both the speakers and the recorder (MediaStreamDestination). */
 export function useAudioMixer() {
@@ -18,11 +20,13 @@ export function useAudioMixer() {
 
   /** Mic / screen audio: recorded but not monitored (avoids echo). */
   const connectStream = useCallback(
-    (s: MediaStream | null) => {
+    (s: MediaStream | null, monitor = false) => {
       if (!s || !s.getAudioTracks().length || wired.current.has(s)) return;
       const { ctx, dest } = ensure();
       wired.current.add(s);
-      ctx.createMediaStreamSource(s).connect(dest);
+      const src = ctx.createMediaStreamSource(s);
+      src.connect(dest);
+      if (monitor) src.connect(ctx.destination);
     },
     [ensure],
   );
@@ -63,5 +67,33 @@ export function useAudioMixer() {
     [ensure],
   );
 
-  return { ensure, connectStream, connectElement, playBuffer, decode };
+  const musicRef = useRef<MusicPlayer | null>(null);
+  /** Procedural music bus, routed to both the recorder and the speakers. */
+  const music = useCallback(() => {
+    if (!musicRef.current) {
+      const { ctx, dest } = ensure();
+      const bus = ctx.createGain();
+      bus.connect(dest);
+      bus.connect(ctx.destination);
+      musicRef.current = createMusicPlayer(ctx, bus);
+    }
+    return musicRef.current;
+  }, [ensure]);
+
+  const stopMusic = useCallback(() => musicRef.current?.stop(), []);
+
+  // release the AudioContext (and any playing music) when the page goes away
+  useEffect(
+    () => () => {
+      musicRef.current?.stop();
+      musicRef.current = null;
+      void ctxRef.current?.close();
+      ctxRef.current = null;
+      destRef.current = null;
+      wired.current = new WeakSet();
+    },
+    [],
+  );
+
+  return { music, stopMusic, ensure, connectStream, connectElement, playBuffer, decode };
 }
