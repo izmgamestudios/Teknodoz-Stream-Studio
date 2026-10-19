@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Topluluk kanalları / Community channels
+    url: https://github.com/izmgamestudios/Teknodoz-Stream-Studio/blob/main/docs/COMMUNITY.md
+    about: Sorular, duyurular ve sohbet için (WhatsApp, Slack, LinkedIn, Instagram, YouTube, X).
+  - name: Kullanım kılavuzu / User guide
+    url: https://github.com/izmgamestudios/Teknodoz-Stream-Studio/blob/main/docs/USER-GUIDE.md
+    about: Adım adım kullanım ve sık sorulan sorular.
+  - name: Güvenlik açığı / Security vulnerability
+    url: https://github.com/izmgamestudios/Teknodoz-Stream-Studio/security/advisories/new
+    about: Açıkları herkese açık Issue yerine özel olarak bildirin.
