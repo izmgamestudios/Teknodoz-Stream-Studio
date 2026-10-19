@@ -18,6 +18,7 @@ import { PrototypePanel } from "@/studio/ui/prototype-panel";
 import { RecordBar } from "@/studio/ui/record-bar";
 import { ScenePanel } from "@/studio/ui/scene-panel";
 import { SponsorPanel } from "@/studio/ui/sponsor-panel";
+import { HealthPanel } from "@/studio/ui/health-panel";
 import { FormatPicker } from "@/studio/ui/format-picker";
 import { VoicePanel } from "@/studio/ui/voice-panel";
 import { SoundLibrary } from "@/studio/ui/sound-library";
@@ -45,6 +46,7 @@ function StudioPage() {
     <StudioProvider
       fallback={
         <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+          <h1 className="sr-only">Stüdyo</h1>
           Stüdyo yükleniyor…
         </div>
       }
@@ -146,14 +148,15 @@ function StudioApp() {
           <SponsorPanel onSelect={setSelected} />
         </div>
 
-        <main className="order-1 space-y-3 xl:order-2">
+        <div className="order-1 space-y-3 xl:order-2">
           <SourceBar />
           <FormatPicker />
           <Stage selectedId={selected} onSelect={setSelected} />
           <RecordBar />
+          <HealthPanel />
           <LivePanel />
           <PrototypePanel selectedId={selected} />
-        </main>
+        </div>
 
         <div className="order-3 space-y-3">
           <Inspector selectedId={selected} />

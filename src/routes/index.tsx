@@ -43,6 +43,7 @@ function PrompterPage() {
     <StudioProvider
       fallback={
         <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+          <h1 className="sr-only">Prompter</h1>
           Yükleniyor…
         </div>
       }

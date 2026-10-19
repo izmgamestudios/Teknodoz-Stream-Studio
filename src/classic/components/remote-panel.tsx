@@ -142,7 +142,7 @@ export function RemotePanel({ className = "" }: { className?: string }) {
             </button>
             <button
               onClick={() => h.reject(g.id)}
-              className="rounded bg-destructive px-2 py-1 text-primary-foreground"
+              className="rounded bg-destructive px-2 py-1 text-white"
             >
               Reddet
             </button>
@@ -156,7 +156,7 @@ export function RemotePanel({ className = "" }: { className?: string }) {
           </span>
           <button
             onClick={h.kickGuest}
-            className="rounded bg-destructive px-2 py-1 text-primary-foreground"
+            className="rounded bg-destructive px-2 py-1 text-white"
           >
             Çıkar
           </button>

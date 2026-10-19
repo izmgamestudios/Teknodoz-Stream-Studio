@@ -110,7 +110,7 @@ export function RundownBar({
                 <button
                   onClick={() => onLive(i)}
                   aria-label={`${it.name} sahnesini yayına al`}
-                  className="rounded bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground"
+                  className="rounded bg-red-700 px-2 py-0.5 text-xs font-bold text-white"
                 >
                   ▶ Yayına
                 </button>

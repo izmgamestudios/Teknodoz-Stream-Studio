@@ -72,7 +72,7 @@ function Join() {
       {status === "error" || status === "lost" ? (
         <button
           onClick={retry}
-          className="w-full rounded-xl bg-destructive py-3 font-bold text-primary-foreground"
+          className="w-full rounded-xl bg-destructive py-3 font-bold text-white"
         >
           Yeniden bağlan
         </button>
@@ -86,7 +86,7 @@ function Join() {
               stopCamera();
               if (videoRef.current) videoRef.current.srcObject = null;
             }}
-            className="w-full rounded-xl bg-destructive py-3 font-bold text-primary-foreground"
+            className="w-full rounded-xl bg-destructive py-3 font-bold text-white"
           >
             Ayrıl
           </button>
@@ -104,7 +104,7 @@ function Join() {
             <button
               disabled={status !== "connected"}
               onClick={() => void join("user")}
-              className="min-h-14 flex-1 rounded-xl bg-primary font-bold text-primary-foreground disabled:opacity-40"
+              className="min-h-14 flex-1 rounded-xl bg-red-700 font-bold text-white disabled:opacity-40"
             >
               Ön kamerayla katıl
             </button>

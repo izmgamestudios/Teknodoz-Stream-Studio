@@ -277,6 +277,17 @@ export function createProjectStore(
       });
       commit({ ...state, scenes });
     },
+    /** Seconds before the next scene takes over automatically (0 = manual). */
+    setSceneAutoAdvance(id: string, seconds: number) {
+      const sec = clamp(Math.round(Number(seconds) || 0), 0, 3600);
+      commit(
+        mapScene(id, (s) => {
+          const { autoAdvanceSec: _old, ...rest } = s;
+          return sec > 0 ? { ...rest, autoAdvanceSec: sec } : rest;
+        }),
+        `scene-auto:${id}`,
+      );
+    },
     setSceneTransition(id: string, t: Transition) {
       const safe: Transition = {
         type: t.type,

@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 export const BTN =
   "inline-flex items-center justify-center gap-1.5 rounded-md bg-secondary px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40";
 export const BTN_PRIMARY =
-  "inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex items-center justify-center gap-1.5 rounded-md bg-primary-solid px-3 py-1.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40";
 export const BTN_ACCENT =
   "inline-flex items-center justify-center gap-1.5 rounded-md bg-speaker-b px-3 py-1.5 text-xs font-bold text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40";
 export const INPUT =
@@ -144,14 +144,18 @@ export function SelectInput<T extends string>({
   value,
   onChange,
   options,
+  label,
 }: {
   value: T;
   onChange: (v: T) => void;
   options: readonly { value: T; label: string }[];
+  /** accessible name when the select is not wrapped in a <Field>/<label> */
+  label?: string;
 }) {
   return (
     <select
       className={INPUT}
+      {...(label ? { "aria-label": label } : {})}
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
     >

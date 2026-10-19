@@ -7,6 +7,8 @@ export type Lang = "tr" | "en";
 export const tr = {
   // shell / navigation
   "nav.menu": "Ana menü",
+  "a11y.skip": "İçeriğe geç",
+  "a11y.sidebar": "Kenar çubuğu",
   "shell.badge": "Erken erişim",
   "nav.prompter": "Prompter",
   "nav.prompter.hint": "Metin, kamera, kayıt",
@@ -234,6 +236,8 @@ export type MessageKey = keyof typeof tr;
 
 export const en: Record<MessageKey, string> = {
   "nav.menu": "Main menu",
+  "a11y.skip": "Skip to content",
+  "a11y.sidebar": "Sidebar",
   "shell.badge": "Early access",
   "nav.prompter": "Prompter",
   "nav.prompter.hint": "Script, camera, record",

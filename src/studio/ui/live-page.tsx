@@ -57,6 +57,7 @@ function Preview() {
     <div
       ref={ref}
       className="relative aspect-video w-full overflow-hidden rounded-lg border bg-black"
+      role="img"
       aria-label="Program önizlemesi"
     />
   );

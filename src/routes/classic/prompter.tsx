@@ -126,7 +126,7 @@ function Index() {
     );
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6 pb-28 sm:px-5 sm:py-10 md:pb-10">
+    <div className="mx-auto max-w-5xl px-4 py-6 pb-28 sm:px-5 sm:py-10 md:pb-10">
       <ClassicNav className="mb-4" />
       <header className="mb-8">
         <p className="text-sm uppercase tracking-[0.3em] text-speaker-a">
@@ -221,7 +221,7 @@ function Index() {
           <button
             disabled={!lines.length}
             onClick={() => setMode("prompt")}
-            className="w-full rounded-xl bg-primary py-4 text-lg font-bold text-primary-foreground hover:opacity-90 disabled:opacity-40"
+            className="w-full rounded-xl bg-red-700 py-4 text-lg font-bold text-white hover:opacity-90 disabled:opacity-40"
           >
             ● Kamerayı aç ve başla
           </button>
@@ -231,11 +231,11 @@ function Index() {
         <button
           disabled={!lines.length}
           onClick={() => setMode("prompt")}
-          className="min-h-12 w-full rounded-xl bg-primary text-lg font-bold text-primary-foreground disabled:opacity-40"
+          className="min-h-12 w-full rounded-xl bg-red-700 text-lg font-bold text-white disabled:opacity-40"
         >
           ● Kamerayı aç ve başla
         </button>
       </div>
-    </main>
+    </div>
   );
 }

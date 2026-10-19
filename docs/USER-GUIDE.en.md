@@ -10,6 +10,7 @@
 - [📜 Prompter](#prompter)
 - [🎬 Studio: scenes and layers](#studio)
 - [▦ Templates and logo](#templates)
+- [🎬 Show flow: auto-run, your own templates and system health](#show-control)
 - [📱 Vertical format (Reels, Shorts, TikTok) and safe zones](#vertical)
 - [🎚 Camera adjustments, voice enhancement and ducking](#camera-audio)
 - [🎧 Sound library and transitions](#sound)
@@ -88,6 +89,22 @@ Ready-made broadcast frames for news, talks, tutorials and demos; with your own 
 > 💡 **Tip:** A template is built from ordinary layers; edit it freely after applying.
 
 > 💡 **Tip:** Guest panels start empty: the guest lands in the first free panel when you press “Yayına al” (put on air).
+
+<a name="show-control"></a>
+
+## 🎬 Show flow: auto-run, your own templates and system health
+
+Run scenes on a timer, save your layouts and reuse them in any format, and see stutter or audio problems before they hurt a take.
+
+1. In the scene panel select a scene and type a time into “Otomatik geç (sn)” (auto-advance, 0 = manual). Do the same for as many scenes as you like.
+2. Press “▶ Otomatik sıra” (auto-run): scenes switch on their own when their time is up and the button shows the time left. Auto-run stops after the last scene; switching a scene by hand restarts the timer.
+3. Save a layout you like with “+ Aktif sahneyi şablon olarak kaydet” (save active scene as template) in the “▦ Şablon” window; apply it later from “★ Benim şablonlarım” (my templates) in any format (16:9, 9:16…) as a new scene or in place of the active one.
+4. Watch the “Sistem sağlığı” (system health) row under the recorder: when frame rate, render time or audio level is off it tells you why and what to do (low FPS, clipping, tab in the background...).
+5. The recording file name contains the format (e.g. project-9x16-20261019-231500) so vertical and landscape takes are easy to tell apart.
+
+> 💡 **Tip:** My templates are stored in this browser; media files travel with a template as long as they stay in the same browser's library.
+
+> 💡 **Tip:** Do not put the tab in the background while recording: the browser throttles drawing and System health flags it in red.
 
 <a name="vertical"></a>
 

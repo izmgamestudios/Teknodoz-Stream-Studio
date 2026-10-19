@@ -183,6 +183,43 @@ export const GUIDE: readonly GuideSection[] = [
     },
   },
   {
+    id: "show-control",
+    icon: "🎬",
+    to: "/studio",
+    tr: {
+      title: "Yayın akışı: otomatik sıra, kendi şablonların ve sistem sağlığı",
+      summary:
+        "Sahnelerin süreli olarak sırayla geçmesi, düzenlerini kaydedip her formatta yeniden kullanman ve takılma/ses sorunlarını önceden görmen için.",
+      steps: [
+        "Sahne panelinde bir sahneyi seç, “Otomatik geç (sn)” alanına süre yaz (0 = elle). Aynı işi istediğin kadar sahne için yap.",
+        "“▶ Otomatik sıra”ya bas: sahneler süreleri dolunca sırayla kendiliğinden geçer, düğmede kalan süre görünür. Son sahneden sonra otomatik sıra durur; elle sahne değiştirmek sayacı yeniden başlatır.",
+        "Beğendiğin bir düzeni “▦ Şablon” penceresinde “+ Aktif sahneyi şablon olarak kaydet” ile sakla; “★ Benim şablonlarım”dan istediğin zaman ve istediğin formatta (16:9, 9:16…) yeni sahne ya da aktif sahnenin yerine uygula.",
+        "Kayıt/Canlı alanındaki “Sistem sağlığı” satırını izle: kare hızı, çizim süresi ve ses seviyesi normal değilse sebebi ve ne yapacağın yazılır (örn. düşük FPS, ses kırpılması, sekmenin arka planda kalması).",
+        "Kayıt dosyasının adında format yer alır (örn. proje-9x16-20261019-231500), dikey ve yatay çekimleri ayırt etmek kolaylaşır.",
+      ],
+      tips: [
+        "Benim şablonlarım bu tarayıcıda saklanır; medya dosyaları aynı tarayıcının kütüphanesinde durduğu sürece şablonla birlikte gelir.",
+        "Kayıt sırasında sekmeyi arka plana atma: tarayıcı çizimi yavaşlatır ve Sistem sağlığı bunu kırmızı uyarıyla bildirir.",
+      ],
+    },
+    en: {
+      title: "Show flow: auto-run, your own templates and system health",
+      summary:
+        "Run scenes on a timer, save your layouts and reuse them in any format, and see stutter or audio problems before they hurt a take.",
+      steps: [
+        "In the scene panel select a scene and type a time into “Otomatik geç (sn)” (auto-advance, 0 = manual). Do the same for as many scenes as you like.",
+        "Press “▶ Otomatik sıra” (auto-run): scenes switch on their own when their time is up and the button shows the time left. Auto-run stops after the last scene; switching a scene by hand restarts the timer.",
+        "Save a layout you like with “+ Aktif sahneyi şablon olarak kaydet” (save active scene as template) in the “▦ Şablon” window; apply it later from “★ Benim şablonlarım” (my templates) in any format (16:9, 9:16…) as a new scene or in place of the active one.",
+        "Watch the “Sistem sağlığı” (system health) row under the recorder: when frame rate, render time or audio level is off it tells you why and what to do (low FPS, clipping, tab in the background...).",
+        "The recording file name contains the format (e.g. project-9x16-20261019-231500) so vertical and landscape takes are easy to tell apart.",
+      ],
+      tips: [
+        "My templates are stored in this browser; media files travel with a template as long as they stay in the same browser's library.",
+        "Do not put the tab in the background while recording: the browser throttles drawing and System health flags it in red.",
+      ],
+    },
+  },
+  {
     id: "vertical",
     icon: "📱",
     to: "/studio",

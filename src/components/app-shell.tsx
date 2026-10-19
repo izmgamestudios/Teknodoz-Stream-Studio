@@ -89,7 +89,7 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
               {t(n.label)}
               {n.to === "/room" && badge.waiting > 0 && (
                 <span
-                  className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
+                  className="ml-2 rounded-full bg-primary-solid px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
                   aria-label={t("shell.pending", { n: badge.waiting })}
                 >
                   {badge.waiting}
@@ -155,8 +155,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-primary-solid focus:px-4 focus:py-2 focus:text-primary-foreground"
+      >
+        {t("a11y.skip")}
+      </a>
       {/* desktop sidebar */}
-      <aside className="sticky top-0 z-30 hidden h-screen w-72 shrink-0 flex-col border-r bg-card md:flex">
+      <aside
+        aria-label={t("a11y.sidebar")}
+        className="sticky top-0 z-30 hidden h-screen w-72 shrink-0 flex-col border-r bg-card md:flex"
+      >
         <div className="space-y-2 border-b px-5 py-5">
           <div className="flex items-center gap-3">
             <BrandLogo className="text-xl" />
@@ -219,7 +228,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <div className="min-w-0 flex-1">{children}</div>
+      <main id="main" tabIndex={-1} className="min-w-0 flex-1 outline-none">
+        {children}
+      </main>
     </div>
   );
 }

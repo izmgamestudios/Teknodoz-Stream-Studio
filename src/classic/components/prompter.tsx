@@ -386,7 +386,7 @@ export function Prompter({
         style={{ opacity: dim }}
       />
       {camErr && (
-        <p className="absolute left-1/2 top-16 z-40 w-[90%] max-w-md -translate-x-1/2 rounded-md bg-destructive px-4 py-2 text-center text-sm text-primary-foreground">
+        <p className="absolute left-1/2 top-16 z-40 w-[90%] max-w-md -translate-x-1/2 rounded-md bg-destructive px-4 py-2 text-center text-sm text-white">
           {camErr}
         </p>
       )}
@@ -409,7 +409,7 @@ export function Prompter({
           </button>
           <span className="flex items-center gap-2">
             {recording && (
-              <span className="flex items-center gap-1 rounded-md bg-destructive px-2 py-1 font-bold text-primary-foreground">
+              <span className="flex items-center gap-1 rounded-md bg-destructive px-2 py-1 font-bold text-white">
                 <span className="size-2 animate-pulse rounded-full bg-white" />
                 REC {mmss(recSecs)}
               </span>
@@ -583,7 +583,7 @@ export function Prompter({
         <button
           onClick={toggleRec}
           disabled={!!camErr}
-          className={`min-h-12 rounded-lg px-4 font-bold text-primary-foreground disabled:opacity-40 ${recording ? "animate-pulse bg-destructive" : "bg-primary"}`}
+          className={`min-h-12 rounded-lg px-4 font-bold text-white disabled:opacity-40 ${recording ? "animate-pulse bg-destructive" : "bg-red-700"}`}
         >
           {recording ? "■ Bitir" : "● Kaydet"}
         </button>

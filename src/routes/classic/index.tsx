@@ -907,7 +907,7 @@ function Studio() {
           role="tab"
           aria-selected={pane === "live"}
           onClick={() => setPane("live")}
-          className={`rounded-md py-2 ${pane === "live" ? "bg-primary text-primary-foreground" : ""}`}
+          className={`rounded-md py-2 ${pane === "live" ? "bg-red-700 text-white" : ""}`}
         >
           ● Canlı{recording ? ` · ${mmss}` : ""}
         </button>
@@ -1333,7 +1333,7 @@ function Studio() {
                       </button>
                       <button
                         onClick={() => removeItem(sel.id)}
-                        className="rounded bg-destructive px-2 py-1 text-sm text-primary-foreground"
+                        className="rounded bg-destructive px-2 py-1 text-sm text-white"
                       >
                         Sil
                       </button>
@@ -1358,18 +1358,18 @@ function Studio() {
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 font-semibold text-primary">
               <span
-                className={`inline-block size-3 rounded-full ${live ? "animate-pulse bg-primary" : "bg-muted-foreground"}`}
+                className={`inline-block size-3 rounded-full ${live ? "animate-pulse bg-red-700" : "bg-muted-foreground"}`}
               />
               {live ? "CANLI YAYIN" : "CANLI — henüz yayında değil"}
               {recording && (
-                <span className="rounded bg-destructive px-2 py-0.5 text-xs text-primary-foreground">
+                <span className="rounded bg-destructive px-2 py-0.5 text-xs text-white">
                   REC {mmss}
                 </span>
               )}
             </h2>
             <button
               onClick={toggleRec}
-              className={`rounded-md px-4 py-2 text-sm font-bold text-primary-foreground ${recording ? "animate-pulse bg-destructive" : "bg-primary"}`}
+              className={`rounded-md px-4 py-2 text-sm font-bold text-white ${recording ? "animate-pulse bg-destructive" : "bg-red-700"}`}
             >
               {recording ? "■ Kaydı bitir" : "● Kayda başla"}
             </button>
@@ -1676,7 +1676,7 @@ function Studio() {
         <button
           onClick={toggleRec}
           aria-label={recording ? "Kaydı bitir" : "Kayda başla"}
-          className={`min-h-12 rounded-lg px-4 font-bold text-primary-foreground ${recording ? "animate-pulse bg-destructive" : "bg-primary"}`}
+          className={`min-h-12 rounded-lg px-4 font-bold text-white ${recording ? "animate-pulse bg-destructive" : "bg-red-700"}`}
         >
           {recording ? "■" : "●"}
         </button>

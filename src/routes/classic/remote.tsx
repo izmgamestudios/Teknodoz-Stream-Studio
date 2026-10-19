@@ -117,7 +117,7 @@ function Remote() {
       {(status === "lost" || status === "error") && (
         <button
           onClick={retry}
-          className="w-full rounded-xl bg-destructive py-3 font-bold text-primary-foreground"
+          className="w-full rounded-xl bg-destructive py-3 font-bold text-white"
         >
           Yeniden bağlan
         </button>
@@ -148,7 +148,7 @@ function Remote() {
         {guestLive ? (
           <button
             onClick={stopCamera}
-            className={`${btn} w-full bg-destructive text-primary-foreground`}
+            className={`${btn} w-full bg-destructive text-white`}
           >
             Kamerayı kapat
           </button>
@@ -192,7 +192,7 @@ function RecButton({
   return (
     <button
       onClick={() => cmd("rec")}
-      className={`min-h-16 w-full rounded-xl text-lg font-bold text-primary-foreground active:scale-95 ${recording ? "animate-pulse bg-destructive" : "bg-primary"}`}
+      className={`min-h-16 w-full rounded-xl text-lg font-bold text-white active:scale-95 ${recording ? "animate-pulse bg-destructive" : "bg-red-700"}`}
     >
       {recording ? `■ Kaydı bitir · ${mmss(secs)}` : "● Kayda başla"}
     </button>

@@ -368,6 +368,7 @@ export function LanguageSection() {
       <PanelTitle>{t("settings.lang")}</PanelTitle>
       <div className="max-w-xs">
         <SelectInput
+          label={t("settings.lang")}
           value={settings.lang}
           options={[
             { value: "tr", label: "Türkçe" },

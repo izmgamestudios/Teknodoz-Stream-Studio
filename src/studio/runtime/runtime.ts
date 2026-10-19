@@ -2,7 +2,7 @@
 // The glue: one StudioRuntime owns the project store, asset store, audio bus, prompter engine,
 // media sources, compositor and recorder, and exposes the actions the UI needs.
 // Browser-only: create it inside an effect (see use-studio.tsx), never at module scope.
-import { FORMATS, fitScene, stageFor } from "../format";
+import { FORMATS, fitScene, formatOf, stageFor } from "../format";
 import { Compositor } from "../engine/compositor";
 import { AudioBus } from "../engine/audio-bus";
 import {
@@ -25,6 +25,7 @@ import {
   type VoiceMeter,
   type VoiceSettings,
 } from "../engine/voice";
+import { planAutoAdvance, secondsLeft } from "./auto-advance";
 import { createMusicPlayer, TRACKS, type MusicPlayer } from "../engine/music";
 import { buildSfxBuffer, SFX_PRESETS } from "../engine/sfx-presets";
 import { downloadRecordingBundle, timestampName } from "../engine/download";
@@ -72,6 +73,13 @@ import { createLayer, defaultProject, setDefaultStage } from "../defaults";
 import { StudioHost, type InviteResult } from "../p2p";
 import { ensureBackdrop } from "../templates/backdrop";
 import { buildTemplateScene, resolveOptions } from "../templates/build";
+import {
+  instantiateMyTemplate,
+  loadMyTemplates,
+  makeMyTemplate,
+  saveMyTemplates,
+  type MyTemplate,
+} from "../templates/mine";
 import { getTemplate } from "../templates/catalog";
 import type { TemplateMode, TemplateOptions } from "../templates/types";
 import { roomBadge } from "../room/badge";
@@ -121,6 +129,9 @@ export interface RuntimeSnapshot {
   readonly error: string | null;
   /** seconds left before a recording starts (0 = no countdown running) */
   readonly countdown: number;
+  /** rundown automation: running, and seconds until the next scene (0 when not armed) */
+  readonly autoRun: boolean;
+  readonly autoLeft: number;
 }
 
 const EMPTY_PEERS: readonly PeerInfo[] = Object.freeze([]);
@@ -132,6 +143,8 @@ const INITIAL: RuntimeSnapshot = {
   voice: { active: false, speaking: false, error: null },
   error: null,
   countdown: 0,
+  autoRun: false,
+  autoLeft: 0,
 };
 
 export class StudioRuntime {
@@ -176,6 +189,9 @@ export class StudioRuntime {
   private voiceListeners = new Set<() => void>();
   private duckTimer: ReturnType<typeof setInterval> | null = null;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
+  private autoTimer: ReturnType<typeof setInterval> | null = null;
+  private autoDeadline = 0;
+  private autoKey = "";
   private duckMul = 1;
   private duckLast = 0;
   private duckBase = new Map<string, { base: number; set: number }>();
@@ -310,6 +326,7 @@ export class StudioRuntime {
     });
     const scene = getActiveScene(this.project.getState());
     this.lastActiveId = scene.id;
+    if (this.snap.autoRun) this.armAutoAdvance();
     this.compositor.setScene(scene);
     this.compositor.start();
   }
@@ -939,6 +956,132 @@ export class StudioRuntime {
     return n;
   }
 
+  /* --------------------------- rundown automation --------------------------- */
+
+  /** Starts / stops hands-free scene switching (each scene's own "otomatik geç" time). */
+  setAutoRun(on: boolean): void {
+    if (on === this.snap.autoRun) return;
+    this.patch({ autoRun: on, autoLeft: 0 });
+    if (on) this.armAutoAdvance();
+    else this.disarmAutoAdvance();
+  }
+
+  private disarmAutoAdvance(): void {
+    if (this.autoTimer) clearInterval(this.autoTimer);
+    this.autoTimer = null;
+    this.autoKey = "";
+    if (this.snap.autoLeft !== 0) this.patch({ autoLeft: 0 });
+  }
+
+  /** (Re)starts the countdown for the active scene; no-op while the same scene+time is already armed. */
+  private armAutoAdvance(): void {
+    const st = this.project.getState();
+    const plan = planAutoAdvance(st.scenes, st.activeSceneId);
+    if (!plan) {
+      this.disarmAutoAdvance();
+      return;
+    }
+    const key = `${st.activeSceneId}:${plan.seconds}`;
+    if (key === this.autoKey && this.autoTimer) return;
+    this.disarmAutoAdvance();
+    this.autoKey = key;
+    this.autoDeadline = performance.now() + plan.seconds * 1000;
+    this.patch({ autoLeft: plan.seconds });
+    this.autoTimer = setInterval(() => {
+      const left = secondsLeft(this.autoDeadline, performance.now());
+      if (left > 0) {
+        if (left !== this.snap.autoLeft) this.patch({ autoLeft: left });
+        return;
+      }
+      const again = planAutoAdvance(
+        this.project.getState().scenes,
+        this.project.getState().activeSceneId,
+      );
+      this.disarmAutoAdvance();
+      if (again?.nextId)
+        this.switchScene(again.nextId); // onProjectChange re-arms for the next scene
+      else this.patch({ autoRun: false }); // last scene: the show is over
+    }, 250);
+  }
+
+  /* ------------------------------ my templates ------------------------------ */
+
+  getMyTemplates(): MyTemplate[] {
+    return loadMyTemplates();
+  }
+
+  /** Saves the active scene (with its current output stage) as a reusable template. */
+  saveActiveSceneAsTemplate(name: string): boolean {
+    const st = this.project.getState();
+    const out = st.settings.output;
+    const t = makeMyTemplate(
+      name,
+      getActiveScene(st),
+      stageFor(out.width, out.height),
+    );
+    if (!t) return false;
+    return saveMyTemplates([
+      t,
+      ...loadMyTemplates().filter((x) => x.name !== t.name),
+    ]);
+  }
+
+  deleteMyTemplate(id: string): void {
+    saveMyTemplates(loadMyTemplates().filter((t) => t.id !== id));
+  }
+
+  /** New scene or replaced layers; fitted to the current output stage. */
+  applyMyTemplate(id: string, mode: TemplateMode): string | undefined {
+    const t = loadMyTemplates().find((x) => x.id === id);
+    if (!t) return undefined;
+    const out = this.project.getState().settings.output;
+    const scene = instantiateMyTemplate(t, stageFor(out.width, out.height));
+    if (mode === "replace-active") {
+      const active = getActiveScene(this.project.getState());
+      return this.project.replaceSceneLayers(
+        active.id,
+        scene.layers,
+        scene.name,
+      )
+        ? active.id
+        : undefined;
+    }
+    return this.project.insertScene(scene);
+  }
+
+  /* ------------------------------ system health ------------------------------ */
+
+  /** Raw numbers for the health panel (polled; see engine/health.ts). */
+  getHealthSample(): {
+    stats: { fps: number; frameMs: number; droppedFrames: number };
+    targetFps: number;
+    masterPeakDb: number;
+    micPresent: boolean;
+    micMuted: boolean;
+    recording: boolean;
+    width: number;
+    height: number;
+  } {
+    const out = this.project.getState().settings.output;
+    const stats = this.compositor?.getStats() ?? {
+      fps: 0,
+      frameMs: 0,
+      droppedFrames: 0,
+    };
+    const mic = this.audio.getState().channels.find((c) => c.id === "mic");
+    const peak = this.audio.getMasterLevel().peak;
+    return {
+      stats,
+      targetFps: out.fps,
+      masterPeakDb: peak > 0 ? 20 * Math.log10(peak) : -100,
+      micPresent: !!mic && mic.active,
+      micMuted: !!mic?.muted,
+      recording: this.isRecording(),
+      width: out.width,
+      height: out.height,
+    };
+  }
+
   /* ----------------------- voice enhancement + ducking ----------------------- */
 
   subscribeVoice = (cb: () => void): (() => void) => {
@@ -1117,7 +1260,13 @@ export class StudioRuntime {
     if (!rec) return false;
     try {
       const result = await rec.stop();
-      const base = timestampName(this.project.getState().name || "kayit");
+      const st = this.project.getState();
+      // the format in the name tells vertical (9x16) and landscape (16x9) takes apart
+      const fmt = formatOf(st.settings.output.width, st.settings.output.height);
+      const tag = fmt
+        ? fmt.id.replace(":", "x")
+        : `${st.settings.output.width}x${st.settings.output.height}`;
+      const base = timestampName(`${st.name || "kayit"}-${tag}`);
       await downloadRecordingBundle(result, base);
       return true;
     } catch (e) {
@@ -1164,6 +1313,7 @@ export class StudioRuntime {
 
   cancelCountdown(): void {
     if (this.countdownTimer) clearInterval(this.countdownTimer);
+    if (this.autoTimer) clearInterval(this.autoTimer);
     this.countdownTimer = null;
     if (this.snap.countdown !== 0) this.patch({ countdown: 0 });
   }

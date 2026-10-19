@@ -3,7 +3,11 @@ import { useState } from "react";
 
 import { GL_TRANSITIONS } from "../engine/gl-transitions";
 import { getActiveScene } from "../project/store";
-import { useProject, useStudio } from "../runtime/use-studio";
+import {
+  useProject,
+  useRuntimeSnapshot,
+  useStudio,
+} from "../runtime/use-studio";
 import type { TransitionType } from "../types";
 import { TemplateDialog } from "./template-dialog";
 import {
@@ -30,6 +34,7 @@ export function ScenePanel() {
   const rt = useStudio();
   const project = useProject();
   const active = getActiveScene(project);
+  const snap = useRuntimeSnapshot();
   const [editing, setEditing] = useState<string | null>(null);
 
   return (
@@ -162,6 +167,29 @@ export function ScenePanel() {
             }
           />
         </Field>
+        <Field label="Otomatik geç (sn, 0 = elle)">
+          <NumInput
+            value={active.autoAdvanceSec ?? 0}
+            min={0}
+            max={3600}
+            step={5}
+            onChange={(sec) => rt.project.setSceneAutoAdvance(active.id, sec)}
+          />
+        </Field>
+        <div className="flex items-end">
+          <button
+            className={`${BTN} w-full justify-center ${snap.autoRun ? "bg-speaker-b text-background" : ""}`}
+            aria-pressed={snap.autoRun}
+            onClick={() => rt.setAutoRun(!snap.autoRun)}
+            title="Süresi olan sahneler sırayla kendiliğinden geçer"
+          >
+            {snap.autoRun
+              ? snap.autoLeft > 0
+                ? `■ Otomatik sıra · ${snap.autoLeft} sn`
+                : "■ Otomatik sıra açık"
+              : "▶ Otomatik sıra"}
+          </button>
+        </div>
         <div className="col-span-2">
           <Field label="Geçiş türü">
             <SelectInput

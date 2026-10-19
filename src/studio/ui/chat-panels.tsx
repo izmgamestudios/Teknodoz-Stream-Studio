@@ -161,7 +161,7 @@ export function ModerationDesk({
 
       {snap.onAir && (
         <div className="mb-2 rounded-md border border-primary/60 bg-primary/10 p-2 text-sm">
-          <span className="mr-2 rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+          <span className="mr-2 rounded bg-primary-solid px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
             YAYINDA
           </span>
           <b>{snap.onAir.author}:</b> {snap.onAir.text}

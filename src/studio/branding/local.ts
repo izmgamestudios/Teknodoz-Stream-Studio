@@ -55,6 +55,7 @@ const THEME_PROPS = [
   "--speaker-b",
   "--speaker-a",
   "--primary",
+  "--primary-solid",
   "--primary-foreground",
   "--radius",
 ] as const;

@@ -317,7 +317,7 @@ export function RemoteView({ client }: { client: StudioClient }) {
         className="grid grid-cols-2 gap-2"
       >
         <button
-          className={`${big} ${state?.recording ? "animate-pulse bg-destructive text-primary-foreground" : "bg-primary text-primary-foreground"}`}
+          className={`${big} ${state?.recording ? "animate-pulse bg-destructive text-primary-foreground" : "bg-primary-solid text-primary-foreground"}`}
           onClick={() => send({ kind: "record", action: "toggle" })}
         >
           {state?.recording ? t("remote.stop") : t("remote.rec")}

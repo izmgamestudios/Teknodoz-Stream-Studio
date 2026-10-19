@@ -24,6 +24,7 @@ import {
   type UploadedImage,
 } from "../templates/uploads";
 import { BTN, BTN_PRIMARY, ColorInput, Field, INPUT } from "./fields";
+import { MyTemplates } from "./my-templates";
 import { TemplatePreview } from "./template-preview";
 
 const FIRST = TEMPLATES[0];
@@ -241,6 +242,7 @@ export function TemplateDialog() {
 
         <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
           <div className="space-y-4">
+            <MyTemplates mode={mode} onApplied={() => setOpen(false)} />
             {TEMPLATE_GROUPS.map((g) => (
               <div key={g.id}>
                 <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">

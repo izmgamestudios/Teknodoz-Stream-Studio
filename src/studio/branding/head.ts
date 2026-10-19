@@ -166,6 +166,7 @@ export function themeVars(brand: Brand): ThemeVars {
   if (accent2) vars["--speaker-a"] = accent2;
   if (primary) {
     vars["--primary"] = primary;
+    vars["--primary-solid"] = primary; // solid fills follow the brand color
     vars["--primary-foreground"] = readableOn(primary);
   }
   if (Number.isFinite(brand.radius) && brand.radius !== DEFAULT_BRAND.radius)

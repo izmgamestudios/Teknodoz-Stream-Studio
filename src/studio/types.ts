@@ -222,6 +222,8 @@ export interface Scene {
   /** Single key like "1".."9" (or custom combo like "Shift+F1"); optional */
   hotkey?: string;
   transition: Transition;
+  /** rundown automation: seconds on air before the next scene takes over (absent / 0 = manual) */
+  autoAdvanceSec?: number;
 }
 
 /* ------------------------------------------------------------------ */

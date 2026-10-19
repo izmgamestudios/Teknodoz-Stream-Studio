@@ -38,7 +38,7 @@ export function MobileBar() {
         ⏭
       </button>
       <button
-        className={`${btn} text-primary-foreground ${recording ? "animate-pulse bg-destructive" : "bg-primary"}`}
+        className={`${btn} text-primary-foreground ${recording ? "animate-pulse bg-destructive" : "bg-primary-solid"}`}
         aria-label={recording ? "Kaydı bitir" : "Kayda başla"}
         disabled={rec?.status === "stopping"}
         onClick={() => rt.toggleRecording()}

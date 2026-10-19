@@ -10,6 +10,7 @@
 - [📜 Prompter](#prompter)
 - [🎬 Stüdyo: sahneler ve katmanlar](#studio)
 - [▦ Şablonlar ve logo](#templates)
+- [🎬 Yayın akışı: otomatik sıra, kendi şablonların ve sistem sağlığı](#show-control)
 - [📱 Dikey format (Reels, Shorts, TikTok) ve güvenli bölge](#vertical)
 - [🎚 Kamera ayarları, ses iyileştirme ve ducking](#camera-audio)
 - [🎧 Ses kütüphanesi ve geçişler](#sound)
@@ -88,6 +89,22 @@ Haber, konuşma, eğitim ve demo için hazır yayın çerçeveleri; kendi logon 
 > 💡 **İpucu:** Şablon sıradan katmanlardan kurulur; uyguladıktan sonra dilediğin gibi düzenleyebilirsin.
 
 > 💡 **İpucu:** Konuk panelleri boş gelir: konuğu “Yayına al”dığında ilk boş panele yerleşir.
+
+<a name="show-control"></a>
+
+## 🎬 Yayın akışı: otomatik sıra, kendi şablonların ve sistem sağlığı
+
+Sahnelerin süreli olarak sırayla geçmesi, düzenlerini kaydedip her formatta yeniden kullanman ve takılma/ses sorunlarını önceden görmen için.
+
+1. Sahne panelinde bir sahneyi seç, “Otomatik geç (sn)” alanına süre yaz (0 = elle). Aynı işi istediğin kadar sahne için yap.
+2. “▶ Otomatik sıra”ya bas: sahneler süreleri dolunca sırayla kendiliğinden geçer, düğmede kalan süre görünür. Son sahneden sonra otomatik sıra durur; elle sahne değiştirmek sayacı yeniden başlatır.
+3. Beğendiğin bir düzeni “▦ Şablon” penceresinde “+ Aktif sahneyi şablon olarak kaydet” ile sakla; “★ Benim şablonlarım”dan istediğin zaman ve istediğin formatta (16:9, 9:16…) yeni sahne ya da aktif sahnenin yerine uygula.
+4. Kayıt/Canlı alanındaki “Sistem sağlığı” satırını izle: kare hızı, çizim süresi ve ses seviyesi normal değilse sebebi ve ne yapacağın yazılır (örn. düşük FPS, ses kırpılması, sekmenin arka planda kalması).
+5. Kayıt dosyasının adında format yer alır (örn. proje-9x16-20261019-231500), dikey ve yatay çekimleri ayırt etmek kolaylaşır.
+
+> 💡 **İpucu:** Benim şablonlarım bu tarayıcıda saklanır; medya dosyaları aynı tarayıcının kütüphanesinde durduğu sürece şablonla birlikte gelir.
+
+> 💡 **İpucu:** Kayıt sırasında sekmeyi arka plana atma: tarayıcı çizimi yavaşlatır ve Sistem sağlığı bunu kırmızı uyarıyla bildirir.
 
 <a name="vertical"></a>
 

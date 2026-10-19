@@ -266,7 +266,7 @@ function GuidePage() {
           </ul>
         </nav>
 
-        <main className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-4">
           {!q && (
             <section
               className={PANEL}
@@ -480,7 +480,7 @@ function GuidePage() {
               {TXT.bib[lang]}
             </a>
           </div>
-        </main>
+        </div>
       </div>
       <CreditsFooter className="mx-auto mt-6 max-w-6xl border-t pt-3" />
     </div>

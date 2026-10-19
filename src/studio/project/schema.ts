@@ -223,6 +223,7 @@ const sceneSchema = z.object({
   name,
   layers: z.array(z.unknown()).max(LIMITS.layersPerScene),
   hotkey: z.string().max(32).optional(),
+  autoAdvanceSec: num(0, 3600).optional(),
   transition: z.object({
     type: z.union([
       z.enum(["cut", "fade", "slide"]),
@@ -339,6 +340,8 @@ export function parseProject(input: unknown): ParseProjectResult {
       layers,
       transition: s.transition,
     };
+    if (s.autoAdvanceSec && s.autoAdvanceSec > 0)
+      scene.autoAdvanceSec = s.autoAdvanceSec;
     if (s.hotkey && !hotkeys.has(s.hotkey)) {
       hotkeys.add(s.hotkey);
       scene.hotkey = s.hotkey;
