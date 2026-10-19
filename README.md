@@ -170,3 +170,16 @@ cd ~/htdocs/ALANADI.COM && git fetch origin && git reset --hard origin/main \
 - Canlı yayın (`/live`) için sunucuya `ffmpeg` kurun ve ortama gizli bir `LIVE_ADMIN_TOKEN` (≥16 karakter) verin; reverse proxy gövde limiti ≥ 8 MB olmalı. Güvenlik modeli ve kurulum: [`docs/LIVE.md`](docs/LIVE.md).
 - Marka/meta: sunucu ortamına `BRAND_JSON` ya da `BRAND_*` değişkenleri verin (en az `BRAND_SITE_URL=https://alan.adı`); pm2'yi `--update-env` ile başlatın. Ayrıntı: [`docs/BRANDING.md`](docs/BRANDING.md).
 - Gerçek cihaz test rehberi: [`docs/DEVICE-TESTING.md`](docs/DEVICE-TESTING.md).
+
+## Arayüzler ve veri senkronu
+
+| Yol | Ne | Not |
+|---|---|---|
+| `/studio` | Ana Stüdyo: sahneler, katmanlar, oda, canlı yayın, WebGL geçişleri, ses kütüphanesi | `src/studio/` |
+| `/classic` | Klasik Stüdyo: solda düzenle / sağda canlı, şablonlar, sahne listesi, mobil prompter | `src/classic/`, kendi PeerJS kumandası `/classic/remote`, `/classic/join` |
+
+Ortak modüller: `src/studio/engine/{gl-transitions,music,sfx-presets}.ts` (iki arayüz de aynısını kullanır).
+
+Senkron (`src/studio/sync/shared.ts`, aynı tarayıcıda localStorage + `storage` olayı, sunucu yok):
+- **Prompter metni:** ana Stüdyo, Klasik prompter ve diğer sekmeler arasında iki yönlü, son yazan kazanır.
+- **Sahneler:** Klasik'te "⇄ Ana Stüdyo'ya gönder" sahneleri katman tabanlı sahnelere çevirir (`src/classic/sync.ts`); ana Stüdyo açıksa anında, kapalıysa sonraki açılışta `↪ ad` ile sona eklenir. Canlı sahne değişmez. Logolar ve arka plan videosu aktarılmaz (liste gösterilir).

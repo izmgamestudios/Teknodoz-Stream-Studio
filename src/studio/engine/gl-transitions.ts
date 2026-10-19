@@ -1,5 +1,7 @@
 // src/lib/studio/transitions.ts
 // WebGL runner for the open-source gl-transitions collection (MIT, https://gl-transitions.com).
+export const NO_TRANSITION = "none";
+
 /** Scene transition types backed by gl-transitions look like "gl:CrossZoom". */
 export const GL_PREFIX = "gl:";
 export const isGlTransition = (type: string): type is `gl:${string}` =>

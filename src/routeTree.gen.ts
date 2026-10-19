@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ClassicRouteRouteImport } from './routes/classic/route'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as GuideRouteImport } from './routes/guide'
@@ -20,11 +21,20 @@ import { Route as RoomRouteImport } from './routes/room'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StudioRouteImport } from './routes/studio'
 import { Route as ChatCodeRouteImport } from './routes/chat.$code'
+import { Route as ClassicIndexRouteImport } from './routes/classic/index'
+import { Route as ClassicJoinRouteImport } from './routes/classic/join'
+import { Route as ClassicPrompterRouteImport } from './routes/classic/prompter'
+import { Route as ClassicRemoteRouteImport } from './routes/classic/remote'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClassicRouteRoute = ClassicRouteRouteImport.update({
+  id: '/classic',
+  path: '/classic',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityRoute = CommunityRouteImport.update({
@@ -77,6 +87,26 @@ const ChatCodeRoute = ChatCodeRouteImport.update({
   path: '/chat/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClassicIndexRoute = ClassicIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ClassicRouteRoute,
+} as any)
+const ClassicJoinRoute = ClassicJoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => ClassicRouteRoute,
+} as any)
+const ClassicPrompterRoute = ClassicPrompterRouteImport.update({
+  id: '/prompter',
+  path: '/prompter',
+  getParentRoute: () => ClassicRouteRoute,
+} as any)
+const ClassicRemoteRoute = ClassicRemoteRouteImport.update({
+  id: '/remote',
+  path: '/remote',
+  getParentRoute: () => ClassicRouteRoute,
+} as any)
 const RCodeRoute = RCodeRouteImport.update({
   id: '/r/$code',
   path: '/r/$code',
@@ -85,6 +115,7 @@ const RCodeRoute = RCodeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/classic': typeof ClassicRouteRouteWithChildren
   '/community': typeof CommunityRoute
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
@@ -95,7 +126,11 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
   '/chat/$code': typeof ChatCodeRoute
+  '/classic/join': typeof ClassicJoinRoute
+  '/classic/prompter': typeof ClassicPrompterRoute
+  '/classic/remote': typeof ClassicRemoteRoute
   '/r/$code': typeof RCodeRoute
+  '/classic/': typeof ClassicIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -109,11 +144,16 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
   '/chat/$code': typeof ChatCodeRoute
+  '/classic/join': typeof ClassicJoinRoute
+  '/classic/prompter': typeof ClassicPrompterRoute
+  '/classic/remote': typeof ClassicRemoteRoute
   '/r/$code': typeof RCodeRoute
+  '/classic': typeof ClassicIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/classic': typeof ClassicRouteRouteWithChildren
   '/community': typeof CommunityRoute
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
@@ -124,12 +164,17 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
   '/chat/$code': typeof ChatCodeRoute
+  '/classic/join': typeof ClassicJoinRoute
+  '/classic/prompter': typeof ClassicPrompterRoute
+  '/classic/remote': typeof ClassicRemoteRoute
   '/r/$code': typeof RCodeRoute
+  '/classic/': typeof ClassicIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/classic'
     | '/community'
     | '/download'
     | '/guide'
@@ -140,7 +185,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/studio'
     | '/chat/$code'
+    | '/classic/join'
+    | '/classic/prompter'
+    | '/classic/remote'
     | '/r/$code'
+    | '/classic/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -154,10 +203,15 @@ export interface FileRouteTypes {
     | '/settings'
     | '/studio'
     | '/chat/$code'
+    | '/classic/join'
+    | '/classic/prompter'
+    | '/classic/remote'
     | '/r/$code'
+    | '/classic'
   id:
     | '__root__'
     | '/'
+    | '/classic'
     | '/community'
     | '/download'
     | '/guide'
@@ -168,11 +222,16 @@ export interface FileRouteTypes {
     | '/settings'
     | '/studio'
     | '/chat/$code'
+    | '/classic/join'
+    | '/classic/prompter'
+    | '/classic/remote'
     | '/r/$code'
+    | '/classic/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ClassicRouteRoute: typeof ClassicRouteRouteWithChildren
   CommunityRoute: typeof CommunityRoute
   DownloadRoute: typeof DownloadRoute
   GuideRoute: typeof GuideRoute
@@ -193,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/classic': {
+      id: '/classic'
+      path: '/classic'
+      fullPath: '/classic'
+      preLoaderRoute: typeof ClassicRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community': {
@@ -265,6 +331,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/classic/': {
+      id: '/classic/'
+      path: '/'
+      fullPath: '/classic/'
+      preLoaderRoute: typeof ClassicIndexRouteImport
+      parentRoute: typeof ClassicRouteRoute
+    }
+    '/classic/join': {
+      id: '/classic/join'
+      path: '/join'
+      fullPath: '/classic/join'
+      preLoaderRoute: typeof ClassicJoinRouteImport
+      parentRoute: typeof ClassicRouteRoute
+    }
+    '/classic/prompter': {
+      id: '/classic/prompter'
+      path: '/prompter'
+      fullPath: '/classic/prompter'
+      preLoaderRoute: typeof ClassicPrompterRouteImport
+      parentRoute: typeof ClassicRouteRoute
+    }
+    '/classic/remote': {
+      id: '/classic/remote'
+      path: '/remote'
+      fullPath: '/classic/remote'
+      preLoaderRoute: typeof ClassicRemoteRouteImport
+      parentRoute: typeof ClassicRouteRoute
+    }
     '/r/$code': {
       id: '/r/$code'
       path: '/r/$code'
@@ -275,8 +369,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ClassicRouteRouteChildren {
+  ClassicJoinRoute: typeof ClassicJoinRoute
+  ClassicPrompterRoute: typeof ClassicPrompterRoute
+  ClassicRemoteRoute: typeof ClassicRemoteRoute
+  ClassicIndexRoute: typeof ClassicIndexRoute
+}
+
+const ClassicRouteRouteChildren: ClassicRouteRouteChildren = {
+  ClassicJoinRoute: ClassicJoinRoute,
+  ClassicPrompterRoute: ClassicPrompterRoute,
+  ClassicRemoteRoute: ClassicRemoteRoute,
+  ClassicIndexRoute: ClassicIndexRoute,
+}
+
+const ClassicRouteRouteWithChildren = ClassicRouteRoute._addFileChildren(
+  ClassicRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ClassicRouteRoute: ClassicRouteRouteWithChildren,
   CommunityRoute: CommunityRoute,
   DownloadRoute: DownloadRoute,
   GuideRoute: GuideRoute,

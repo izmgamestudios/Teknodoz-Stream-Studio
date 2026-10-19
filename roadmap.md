@@ -8,3 +8,5 @@
 - [x] Mobil: alt eylem çubuğu (önceki/sonraki sahne, kayıt)
 - [ ] CC0 ses paketleri (Kenney/Freesound) `public/sfx` altına (bu ortamdan indirilemedi)
 - [ ] Sahne geçişi sırasında otomatik whoosh efekti
+- [x] Klasik Stüdyo (`/classic`): solda düzenle / sağda canlı, 8 şablon, sahne listesi, PeerJS telefon kumandası (`/classic/remote`), konuk daveti (`/classic/join`), mobil prompter (`/classic/prompter`)
+- [x] Senkron: prompter metni (ana Stüdyo ⇄ Klasik ⇄ diğer sekmeler) ve Klasik sahnelerini ana Stüdyo'ya aktarma (anında, açık sekmeye)

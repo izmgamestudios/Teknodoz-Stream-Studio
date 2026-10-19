@@ -181,6 +181,23 @@ export function createProjectStore(
       commit({ ...state, scenes, activeSceneId: fresh.id });
       return fresh.id;
     },
+    /** Append a built scene at the END without changing the live scene (used by imports/sync). */
+    appendScene(scene: Scene): string | undefined {
+      if (
+        state.scenes.length >= LIMITS.scenes ||
+        scene.layers.length > LIMITS.layersPerScene
+      )
+        return undefined;
+      const fresh: Scene = {
+        ...scene,
+        id: uid("sc"),
+        name: scene.name.slice(0, LIMITS.nameChars),
+        layers: scene.layers.map(cloneLayerFresh),
+      };
+      delete fresh.hotkey;
+      commit({ ...state, scenes: [...state.scenes, fresh] });
+      return fresh.id;
+    },
     /** Replace the layers (and optionally the name) of a scene, keeping its id/hotkey/transition. */
     replaceSceneLayers(id: string, layers: Layer[], name?: string): boolean {
       if (layers.length > LIMITS.layersPerScene) return false;

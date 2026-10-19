@@ -11,6 +11,7 @@ const NAV: readonly {
   to:
     | "/"
     | "/studio"
+    | "/classic"
     | "/room"
     | "/live"
     | "/community"
@@ -23,6 +24,12 @@ const NAV: readonly {
 }[] = [
   { to: "/", label: "nav.prompter", hint: "nav.prompter.hint", icon: "📜" },
   { to: "/studio", label: "nav.studio", hint: "nav.studio.hint", icon: "🎬" },
+  {
+    to: "/classic",
+    label: "nav.classic",
+    hint: "nav.classic.hint",
+    icon: "🎛️",
+  },
   { to: "/room", label: "nav.room", hint: "nav.room.hint", icon: "🚪" },
   { to: "/live", label: "nav.live", hint: "nav.live.hint", icon: "📡" },
   {
@@ -116,7 +123,14 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
 }
 
 /** Pages opened by guests / phones: no studio navigation around them. */
-const BARE_PREFIXES = ["/join", "/remote", "/r", "/chat"];
+const BARE_PREFIXES = [
+  "/join",
+  "/remote",
+  "/r",
+  "/chat",
+  "/classic/join",
+  "/classic/remote",
+];
 
 /** Slogan with its last word highlighted (the translated default when no slogan is set). */
 function useHeadline(): { a: string; b: string } {

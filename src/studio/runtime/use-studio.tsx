@@ -36,6 +36,7 @@ export function acquireRuntime(): Promise<StudioRuntime> {
       runtime,
       ready: runtime.restore().then(() => {
         runtime.resumeSavedRoom();
+        runtime.startSync();
         return runtime;
       }),
     };

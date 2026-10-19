@@ -4,6 +4,14 @@
 // Browser-only: create it inside an effect (see use-studio.tsx), never at module scope.
 import { Compositor } from "../engine/compositor";
 import { AudioBus } from "../engine/audio-bus";
+import {
+  publishScript,
+  readSharedScript,
+  subscribeHandoff,
+  subscribeScript,
+  takeHandoff,
+  type ScriptMessage,
+} from "../sync/shared";
 import { createMusicPlayer, TRACKS, type MusicPlayer } from "../engine/music";
 import { buildSfxBuffer, SFX_PRESETS } from "../engine/sfx-presets";
 import { downloadRecordingBundle, timestampName } from "../engine/download";
@@ -136,6 +144,10 @@ export class StudioRuntime {
     trackId: string | null;
   } | null = null;
   private sfxBuffers = new Map<string, AudioBuffer>();
+  private syncUnsubs: Array<() => void> = [];
+  private syncTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastSyncedScript = "";
+  private lastSyncAt = 0;
   private host: StudioHost | null = null;
   private hostUnsubs: Array<() => void> = [];
   private programStream: MediaStream | null = null;
@@ -779,6 +791,65 @@ export class StudioRuntime {
     return true;
   }
 
+  /* ------------------- cross-tab / Classic studio sync ------------------- */
+
+  /**
+   * Keeps the prompter script in sync with other tabs and the Classic studio, and imports
+   * scenes handed over by it. Safe to call once after `restore()`; undone by `dispose()`.
+   */
+  startSync(): void {
+    if (this.syncUnsubs.length > 0 || typeof window === "undefined") return;
+    const script = () => this.project.getState().prompter.script;
+
+    const shared = readSharedScript();
+    if (shared && shared.text !== script() && script().trim() === "") {
+      this.adoptScript(shared);
+    } else if (script().trim() !== "" && shared?.text !== script()) {
+      this.pushScript();
+    }
+    this.lastSyncedScript = script();
+
+    this.syncUnsubs.push(
+      subscribeScript((m) => {
+        if (m.at > this.lastSyncAt && m.text !== script()) this.adoptScript(m);
+      }),
+      subscribeHandoff(() => this.importHandoff()),
+      this.project.subscribe(() => {
+        if (script() === this.lastSyncedScript) return;
+        this.lastSyncedScript = script();
+        if (this.syncTimer) clearTimeout(this.syncTimer);
+        this.syncTimer = setTimeout(() => this.pushScript(), 400);
+      }),
+    );
+    this.importHandoff();
+  }
+
+  private adoptScript(m: ScriptMessage): void {
+    this.lastSyncAt = m.at;
+    this.lastSyncedScript = m.text;
+    this.project.setPrompterScript(m.text);
+  }
+
+  private pushScript(): void {
+    const at = Date.now();
+    this.lastSyncAt = at;
+    publishScript(this.project.getState().prompter.script, "main", at);
+  }
+
+  /** Scenes queued by the Classic studio; validated through the project schema before use. */
+  importHandoff(): number {
+    const h = takeHandoff();
+    if (!h) return 0;
+    const base = this.project.getState();
+    const parsed = parseProject({ ...base, scenes: h.scenes, activeSceneId: "" });
+    if (!parsed.ok) return 0;
+    let n = 0;
+    for (const sc of parsed.project.scenes) {
+      if (this.project.appendScene({ ...sc, name: `↪ ${sc.name}` })) n++;
+    }
+    return n;
+  }
+
   isTrackPlaying(trackId: string): boolean {
     return this.gen?.trackId === trackId;
   }
@@ -1063,6 +1134,9 @@ export class StudioRuntime {
     this.teardownHost();
     for (const el of this.music.values()) el.pause();
     this.music.clear();
+    for (const u of this.syncUnsubs) u();
+    this.syncUnsubs = [];
+    if (this.syncTimer) clearTimeout(this.syncTimer);
     this.gen?.player.stop();
     void this.gen?.ctx.close();
     this.gen = null;
