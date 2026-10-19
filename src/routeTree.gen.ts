@@ -10,13 +10,36 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CommunityRouteImport } from './routes/community'
+import { Route as DownloadRouteImport } from './routes/download'
+import { Route as GuideRouteImport } from './routes/guide'
 import { Route as JoinRouteImport } from './routes/join'
+import { Route as LiveRouteImport } from './routes/live'
 import { Route as RemoteRouteImport } from './routes/remote'
+import { Route as RoomRouteImport } from './routes/room'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StudioRouteImport } from './routes/studio'
+import { Route as ChatCodeRouteImport } from './routes/chat.$code'
+import { Route as RCodeRouteImport } from './routes/r.$code'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DownloadRoute = DownloadRouteImport.update({
+  id: '/download',
+  path: '/download',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideRoute = GuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JoinRoute = JoinRouteImport.update({
@@ -24,9 +47,24 @@ const JoinRoute = JoinRouteImport.update({
   path: '/join',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LiveRoute = LiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RemoteRoute = RemoteRouteImport.update({
   id: '/remote',
   path: '/remote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoomRoute = RoomRouteImport.update({
+  id: '/room',
+  path: '/room',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudioRoute = StudioRouteImport.update({
@@ -34,39 +72,118 @@ const StudioRoute = StudioRouteImport.update({
   path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatCodeRoute = ChatCodeRouteImport.update({
+  id: '/chat/$code',
+  path: '/chat/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RCodeRoute = RCodeRouteImport.update({
+  id: '/r/$code',
+  path: '/r/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/community': typeof CommunityRoute
+  '/download': typeof DownloadRoute
+  '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
+  '/live': typeof LiveRoute
   '/remote': typeof RemoteRoute
+  '/room': typeof RoomRoute
+  '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
+  '/chat/$code': typeof ChatCodeRoute
+  '/r/$code': typeof RCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/community': typeof CommunityRoute
+  '/download': typeof DownloadRoute
+  '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
+  '/live': typeof LiveRoute
   '/remote': typeof RemoteRoute
+  '/room': typeof RoomRoute
+  '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
+  '/chat/$code': typeof ChatCodeRoute
+  '/r/$code': typeof RCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/community': typeof CommunityRoute
+  '/download': typeof DownloadRoute
+  '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
+  '/live': typeof LiveRoute
   '/remote': typeof RemoteRoute
+  '/room': typeof RoomRoute
+  '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
+  '/chat/$code': typeof ChatCodeRoute
+  '/r/$code': typeof RCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/join' | '/remote' | '/studio'
+  fullPaths:
+    | '/'
+    | '/community'
+    | '/download'
+    | '/guide'
+    | '/join'
+    | '/live'
+    | '/remote'
+    | '/room'
+    | '/settings'
+    | '/studio'
+    | '/chat/$code'
+    | '/r/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/join' | '/remote' | '/studio'
-  id: '__root__' | '/' | '/join' | '/remote' | '/studio'
+  to:
+    | '/'
+    | '/community'
+    | '/download'
+    | '/guide'
+    | '/join'
+    | '/live'
+    | '/remote'
+    | '/room'
+    | '/settings'
+    | '/studio'
+    | '/chat/$code'
+    | '/r/$code'
+  id:
+    | '__root__'
+    | '/'
+    | '/community'
+    | '/download'
+    | '/guide'
+    | '/join'
+    | '/live'
+    | '/remote'
+    | '/room'
+    | '/settings'
+    | '/studio'
+    | '/chat/$code'
+    | '/r/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CommunityRoute: typeof CommunityRoute
+  DownloadRoute: typeof DownloadRoute
+  GuideRoute: typeof GuideRoute
   JoinRoute: typeof JoinRoute
+  LiveRoute: typeof LiveRoute
   RemoteRoute: typeof RemoteRoute
+  RoomRoute: typeof RoomRoute
+  SettingsRoute: typeof SettingsRoute
   StudioRoute: typeof StudioRoute
+  ChatCodeRoute: typeof ChatCodeRoute
+  RCodeRoute: typeof RCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -78,11 +195,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/download': {
+      id: '/download'
+      path: '/download'
+      fullPath: '/download'
+      preLoaderRoute: typeof DownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide': {
+      id: '/guide'
+      path: '/guide'
+      fullPath: '/guide'
+      preLoaderRoute: typeof GuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/join': {
       id: '/join'
       path: '/join'
       fullPath: '/join'
       preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/live': {
+      id: '/live'
+      path: '/live'
+      fullPath: '/live'
+      preLoaderRoute: typeof LiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/remote': {
@@ -92,6 +237,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RemoteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/room': {
+      id: '/room'
+      path: '/room'
+      fullPath: '/room'
+      preLoaderRoute: typeof RoomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/studio': {
       id: '/studio'
       path: '/studio'
@@ -99,14 +258,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat/$code': {
+      id: '/chat/$code'
+      path: '/chat/$code'
+      fullPath: '/chat/$code'
+      preLoaderRoute: typeof ChatCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$code': {
+      id: '/r/$code'
+      path: '/r/$code'
+      fullPath: '/r/$code'
+      preLoaderRoute: typeof RCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CommunityRoute: CommunityRoute,
+  DownloadRoute: DownloadRoute,
+  GuideRoute: GuideRoute,
   JoinRoute: JoinRoute,
+  LiveRoute: LiveRoute,
   RemoteRoute: RemoteRoute,
+  RoomRoute: RoomRoute,
+  SettingsRoute: SettingsRoute,
   StudioRoute: StudioRoute,
+  ChatCodeRoute: ChatCodeRoute,
+  RCodeRoute: RCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

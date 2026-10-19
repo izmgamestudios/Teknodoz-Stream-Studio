@@ -1,131 +1,218 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+// src/routes/index.tsx
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 
-import { Prompter, type Line } from "@/components/prompter";
-import { RemotePanel } from "@/components/remote-panel";
+import {
+  StudioProvider,
+  useProject,
+  useRuntimeSnapshot,
+  useSources,
+  useStudio,
+  usePrompterState,
+} from "@/studio/runtime/use-studio";
+import { CreditsFooter, AboutDialog } from "@/studio/ui/credits";
+import {
+  BTN,
+  BTN_ACCENT,
+  BTN_PRIMARY,
+  Check,
+  formatMs,
+  RangeInput,
+} from "@/studio/ui/fields";
+import { PrompterPanel } from "@/studio/ui/prompter-panel";
+import { NotchView, PrompterView } from "@/studio/ui/prompter-view";
+import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
-      { title: "PodPrompter — Podcast Kamera Prompter" },
-      { name: "description", content: "Kamerayla çekerken A/B diyaloglarını ekranda okuyabileceğin podcast prompter uygulaması." },
-      { property: "og:title", content: "PodPrompter — Podcast Kamera Prompter" },
-      { property: "og:description", content: "Word, metin dosyası veya yapıştırma ile diyalog yükle, kameraya bakarak oku." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { title: titleFromMatches(matches, "Prompter") },
+      {
+        name: "description",
+        content:
+          "Sunucusuz, tarayıcıda çalışan akıllı teleprompter: sesle takip, kamera altı notch modu, burn-in ve .docx/.txt içe aktarma.",
+      },
+      { property: "og:title", content: titleFromMatches(matches, "Prompter") },
     ],
   }),
-  component: Index,
+  component: PrompterPage,
 });
 
-const SAMPLE = `A: Herkese merhaba, podcastimize hoş geldiniz!
-B: Merhaba! Bugün çok güzel bir konumuz var.
-A: Evet, bugün oyun geliştirmeyi konuşacağız.
-B: O zaman hemen başlayalım.`;
-
-function parse(raw: string): Line[] {
-  const out: Line[] = [];
-  let next: "A" | "B" = "A";
-  for (const l of raw.split(/\r?\n/)) {
-    const t = l.trim();
-    if (!t) continue;
-    const m = t.match(/^([AaBb])\s*[:\-–)]\s*(.*)$/);
-    if (m) {
-      const s = (m[1] ?? "A").toUpperCase() as "A" | "B";
-      out.push({ speaker: s, text: m[2] ?? "" });
-      next = s === "A" ? "B" : "A";
-    } else {
-      out.push({ speaker: next, text: t });
-      next = next === "A" ? "B" : "A";
-    }
-  }
-  return out;
+function PrompterPage() {
+  return (
+    <StudioProvider
+      fallback={
+        <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+          Yükleniyor…
+        </div>
+      }
+    >
+      <PrompterApp />
+    </StudioProvider>
+  );
 }
 
-function Index() {
-  const [raw, setRaw] = useState(SAMPLE);
-  const [nameA, setNameA] = useState("A");
-  const [nameB, setNameB] = useState("B");
-  const [mode, setMode] = useState<"edit" | "prompt">("edit");
-  const [err, setErr] = useState("");
+function PrompterApp() {
+  const rt = useStudio();
+  const project = useProject();
+  const [full, setFull] = useState(false);
 
-  async function onFile(f: File) {
-    setErr("");
-    try {
-      if (f.name.toLowerCase().endsWith(".docx")) {
-        const mammoth = await import("mammoth");
-        const res = await mammoth.extractRawText({ arrayBuffer: await f.arrayBuffer() });
-        setRaw(res.value);
-      } else {
-        setRaw(await f.text());
-      }
-    } catch {
-      setErr("Dosya okunamadı. .docx veya .txt dosyası deneyin.");
-    }
-  }
-
-  const lines = parse(raw);
-  const words = raw.split(/\s+/).filter(Boolean).length;
-  const minutes = Math.max(1, Math.round(words / 150)); // ~150 words/min spoken
-
-  if (mode === "prompt")
-    return <Prompter lines={lines} nameA={nameA} nameB={nameB} onExit={() => setMode("edit")} />;
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (rt.handleKey(e)) e.preventDefault();
+      else if (e.key === "Escape") setFull(false);
+    };
+    window.addEventListener("keydown", down);
+    return () => window.removeEventListener("keydown", down);
+  }, [rt]);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6 pb-28 sm:px-5 sm:py-10 md:pb-10">
-      <header className="mb-8">
-        <p className="text-sm uppercase tracking-[0.3em] text-speaker-a">PodPrompter</p>
-        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Podcast kamera prompter</h1>
-        <p className="mt-2 text-muted-foreground">
-          Diyaloğu yapıştır veya Word / metin dosyası yükle. Satırları <b>A:</b> ve <b>B:</b> ile başlat (başlatmazsan sırayla dağıtılır).
-        </p>
+    <div className="min-h-screen p-3 md:p-6">
+      <header className="mx-auto mb-4 flex max-w-5xl flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-speaker-b">
+            Teknodoz · DozPrompt
+          </p>
+          <h1 className="mt-1 text-3xl font-bold">Akıllı prompter</h1>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+            Metni yapıştır ya da .docx/.txt yükle. HUD yalnızca sende görünür ve
+            kayda girmez; istersen burn-in ile videoya göm.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <AboutDialog />
+          <button
+            className={BTN_ACCENT}
+            onClick={() => setFull(true)}
+            disabled={project.prompter.script.trim() === ""}
+          >
+            ▶ Tam ekran prompter
+          </button>
+        </div>
       </header>
 
-      <div className="grid gap-6 md:grid-cols-[1fr_320px]">
-        <section className="rounded-xl border bg-card p-4">
-          <div className="mb-3 flex flex-wrap items-center gap-3">
-            <label className="cursor-pointer rounded-md bg-secondary px-3 py-2 text-sm hover:bg-accent">
-              Dosya yükle (.docx / .txt)
-              <input type="file" accept=".docx,.txt,.md,text/plain" className="hidden"
-                onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
-            </label>
-            <button onClick={() => setRaw("")} className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent">Temizle</button>
-            {err && <span className="text-sm text-destructive">{err}</span>}
-          </div>
-          <textarea value={raw} onChange={(e) => setRaw(e.target.value)}
-            className="h-[45vh] min-h-64 w-full resize-y md:h-[420px] rounded-md border bg-background p-3 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
-            placeholder="A: Merhaba...&#10;B: Selam..." />
-        </section>
+      <div className="mx-auto max-w-5xl">
+        <PrompterPanel />
+      </div>
 
-        <aside className="space-y-4">
-          <div className="rounded-xl border bg-card p-4 space-y-3">
-            <h2 className="font-semibold">Konuşmacılar</h2>
-            <label className="block text-sm text-speaker-a">A kişisi (solda)
-              <input value={nameA} onChange={(e) => setNameA(e.target.value)} className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-foreground" />
-            </label>
-            <label className="block text-sm text-speaker-b">B kişisi (sağda)
-              <input value={nameB} onChange={(e) => setNameB(e.target.value)} className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-foreground" />
-            </label>
-          </div>
-          <div className="rounded-xl border bg-card p-4 max-h-60 overflow-auto space-y-2 text-sm">
-            <h2 className="font-semibold">Önizleme · {lines.length} replik · {words} kelime · ~{minutes} dk</h2>
-            {lines.slice(0, 8).map((l, i) => (
-              <p key={i} className={l.speaker === "A" ? "text-speaker-a" : "text-right text-speaker-b"}>{l.text}</p>
-            ))}
-          </div>
-          <RemotePanel />
-          <Link to="/studio" className="block w-full rounded-xl border border-speaker-b py-3 text-center font-bold text-speaker-b hover:bg-accent">
-            🎬 Stüdyoyu aç (logo, müzik, efekt)
-          </Link>
-          <button disabled={!lines.length} onClick={() => setMode("prompt")}
-            className="w-full rounded-xl bg-primary py-4 text-lg font-bold text-primary-foreground hover:opacity-90 disabled:opacity-40">
-            ● Kamerayı aç ve başla
-          </button>
-        </aside>
+      <CreditsFooter className="mx-auto mt-6 max-w-5xl border-t pt-3" />
+      {full && <FullscreenPrompter onExit={() => setFull(false)} />}
+    </div>
+  );
+}
+
+/** Camera behind the scrolling text, like a classic teleprompter mirror rig. */
+function FullscreenPrompter({ onExit }: { onExit: () => void }) {
+  const rt = useStudio();
+  const project = useProject();
+  const sources = useSources();
+  const engine = usePrompterState();
+  const snap = useRuntimeSnapshot();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { settings } = project.prompter;
+  const live =
+    snap.recorder?.status === "recording" || snap.recorder?.status === "paused";
+  const [now, setNow] = useState(0);
+
+  useEffect(() => {
+    if (!sources.webcam) void rt.sources.startWebcam();
+  }, [rt, sources.webcam]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v) v.srcObject = rt.sources.getWebcamStream();
+  }, [rt, sources.webcam]);
+
+  useEffect(() => {
+    if (!live) return;
+    const id = window.setInterval(
+      () => setNow(rt.getRecordingElapsedMs()),
+      250,
+    );
+    return () => window.clearInterval(id);
+  }, [live, rt]);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black">
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover"
+        style={{ transform: "scaleX(-1)" }}
+      />
+      <div className="absolute inset-0 bg-black/55" />
+      {settings.display === "hud" ? (
+        <div className="absolute inset-x-0 bottom-16 top-0">
+          <PrompterView className="h-full rounded-none bg-transparent" />
+        </div>
+      ) : (
+        <NotchView />
+      )}
+      {!sources.webcam && sources.error && (
+        <p
+          role="alert"
+          className="absolute left-1/2 top-4 -translate-x-1/2 rounded-md bg-destructive px-4 py-2 text-sm text-primary-foreground"
+        >
+          Kameraya erişilemedi. Tarayıcı izinlerini kontrol edin.
+        </p>
+      )}
+      <div className="absolute inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-center gap-3 bg-card/90 p-3 text-sm backdrop-blur">
+        <button className={BTN} onClick={onExit}>
+          ← Çık (Esc)
+        </button>
+        <button className={BTN_ACCENT} onClick={() => rt.prompter.toggle()}>
+          {engine.playing ? "❚❚ Durdur" : "▶ Kaydır"}
+        </button>
+        <button className={BTN} onClick={() => rt.prompter.rewind()}>
+          ⏮ Başa
+        </button>
+        <label className="flex items-center gap-2 text-xs">
+          Hız
+          <span className="w-28">
+            <RangeInput
+              label="Hız"
+              min={0}
+              max={300}
+              value={settings.speedPx}
+              onChange={(speedPx) =>
+                rt.project.updatePrompterSettings({ speedPx })
+              }
+            />
+          </span>
+        </label>
+        <label className="flex items-center gap-2 text-xs">
+          Yazı
+          <span className="w-28">
+            <RangeInput
+              label="Yazı boyutu"
+              min={20}
+              max={120}
+              value={settings.fontSize}
+              onChange={(fontSize) =>
+                rt.project.updatePrompterSettings({ fontSize })
+              }
+            />
+          </span>
+        </label>
+        <Check
+          checked={settings.mirror}
+          onChange={(mirror) => rt.project.updatePrompterSettings({ mirror })}
+        >
+          Ayna
+        </Check>
+        <button
+          className={
+            live
+              ? "inline-flex animate-pulse items-center rounded-md bg-destructive px-4 py-1.5 text-xs font-bold text-primary-foreground"
+              : BTN_PRIMARY
+          }
+          onClick={() => rt.toggleRecording()}
+        >
+          {live ? `■ Bitir ${formatMs(now)}` : "● Kaydet"}
+        </button>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
-        <button disabled={!lines.length} onClick={() => setMode("prompt")} className="min-h-12 w-full rounded-xl bg-primary text-lg font-bold text-primary-foreground disabled:opacity-40">● Kamerayı aç ve başla</button>
-      </div>
-    </main>
+    </div>
   );
 }
