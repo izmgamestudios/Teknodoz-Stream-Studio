@@ -2,6 +2,7 @@
 // The glue: one StudioRuntime owns the project store, asset store, audio bus, prompter engine,
 // media sources, compositor and recorder, and exposes the actions the UI needs.
 // Browser-only: create it inside an effect (see use-studio.tsx), never at module scope.
+import { FORMATS, stageFor } from "../format";
 import { Compositor } from "../engine/compositor";
 import { AudioBus } from "../engine/audio-bus";
 import {
@@ -15,6 +16,15 @@ import {
   takeHandoff,
   type ScriptMessage,
 } from "../sync/shared";
+import {
+  duckStep,
+  loadVoiceSettings,
+  sanitizeVoiceSettings,
+  saveVoiceSettings,
+  VoiceProcessor,
+  type VoiceMeter,
+  type VoiceSettings,
+} from "../engine/voice";
 import { createMusicPlayer, TRACKS, type MusicPlayer } from "../engine/music";
 import { buildSfxBuffer, SFX_PRESETS } from "../engine/sfx-presets";
 import { downloadRecordingBundle, timestampName } from "../engine/download";
@@ -58,7 +68,7 @@ import {
   saveSettings,
   type Autosaver,
 } from "../storage";
-import { createLayer, defaultProject } from "../defaults";
+import { createLayer, defaultProject, setDefaultStage } from "../defaults";
 import { StudioHost, type InviteResult } from "../p2p";
 import { ensureBackdrop } from "../templates/backdrop";
 import { buildTemplateScene, resolveOptions } from "../templates/build";
@@ -90,6 +100,11 @@ import { SourceManager } from "./sources";
 
 const EXPOSURE_KEY = "sponsors:exposure:v1";
 const GEN_CHANNEL = "music:gen";
+
+export interface VoiceSnapshot {
+  readonly settings: VoiceSettings;
+  readonly meter: VoiceMeter;
+}
 const AUTO_WHOOSH_KEY = "studio.autoWhoosh.v1";
 
 export interface RuntimeSnapshot {
@@ -148,6 +163,17 @@ export class StudioRuntime {
     trackId: string | null;
   } | null = null;
   private sfxBuffers = new Map<string, AudioBuffer>();
+  /** Mic enhancement (rumble filter, gate, EQ, compressor, limiter) + music ducking. */
+  readonly micFx = new VoiceProcessor();
+  private voiceSnap: VoiceSnapshot = {
+    settings: loadVoiceSettings(),
+    meter: { open: true, db: -100 },
+  };
+  private voiceListeners = new Set<() => void>();
+  private duckTimer: ReturnType<typeof setInterval> | null = null;
+  private duckMul = 1;
+  private duckLast = 0;
+  private duckBase = new Map<string, { base: number; set: number }>();
   private syncUnsubs: Array<() => void> = [];
   private syncTimer: ReturnType<typeof setTimeout> | null = null;
   private lastSyncedScript = "";
@@ -178,7 +204,15 @@ export class StudioRuntime {
     this.prompter = new PrompterEngine({
       speedPx: initial.prompter.settings.speedPx,
     });
-    this.sources = new SourceManager(this.assets, this.audio);
+    this.sources = new SourceManager(this.assets, this.audio, {
+      processor: this.micFx,
+      settings: () => this.voiceSnap.settings,
+    });
+    this.micFx.subscribe((meter) => {
+      this.voiceSnap = { ...this.voiceSnap, meter };
+      for (const l of [...this.voiceListeners]) l();
+    });
+    this.updateDuckTimer();
     this.autosaver = createAutosaver(createKvStore());
 
     const st = this.project.getState();
@@ -410,6 +444,7 @@ export class StudioRuntime {
       this.lastSettingsJson = settingsJson;
       saveSettings(state.settings);
       const o = state.settings.output;
+      setDefaultStage(stageFor(o.width, o.height));
       if (this.canvas && !this.recorder) {
         this.compositor?.resize(o.width, o.height);
         this.canvas.width = o.width;
@@ -673,10 +708,13 @@ export class StudioRuntime {
     const def = getTemplate(templateId);
     if (!def) return undefined;
     const resolved = resolveOptions(def, options);
+    // a vertical / square template switches the output format first (existing scenes are re-laid out)
+    const fmt = FORMATS.find((f) => f.id === (def.format ?? "16:9"));
+    if (fmt) this.setOutputFormat(fmt.width, fmt.height);
     // an uploaded background replaces the generated dotted one
     const bg =
       def.backdrop && !resolved.backgroundAssetId
-        ? await ensureBackdrop(this.assets, resolved.accent)
+        ? await ensureBackdrop(this.assets, resolved.accent, def.stage)
         : undefined;
     const scene = buildTemplateScene(def, resolved, bg);
     if (mode === "replace-active") {
@@ -690,6 +728,16 @@ export class StudioRuntime {
         : undefined;
     }
     return this.project.insertScene(scene);
+  }
+
+  /**
+   * Switches the output format (16:9, 9:16, 4:5, 1:1...). Not allowed while recording: the
+   * recorder owns the canvas size. Scenes are laid out again for the new stage unless `adapt` is off.
+   */
+  setOutputFormat(width: number, height: number, adapt = true): boolean {
+    if (this.recorder) return false;
+    this.project.setOutputFormat(width, height, adapt);
+    return true;
   }
 
   takeGuestOffAir(peerId: string): boolean {
@@ -880,6 +928,75 @@ export class StudioRuntime {
       if (this.project.appendScene({ ...sc, name: `↪ ${sc.name}` })) n++;
     }
     return n;
+  }
+
+  /* ----------------------- voice enhancement + ducking ----------------------- */
+
+  subscribeVoice = (cb: () => void): (() => void) => {
+    this.voiceListeners.add(cb);
+    return () => this.voiceListeners.delete(cb);
+  };
+  getVoiceSnapshot = (): VoiceSnapshot => this.voiceSnap;
+
+  setVoiceSettings(next: VoiceSettings): void {
+    const settings = sanitizeVoiceSettings(next);
+    saveVoiceSettings(settings);
+    this.voiceSnap = { ...this.voiceSnap, settings };
+    this.micFx.update(settings);
+    this.updateDuckTimer();
+    for (const l of [...this.voiceListeners]) l();
+  }
+
+  private updateDuckTimer(): void {
+    const on = this.voiceSnap.settings.ducking.enabled;
+    if (on && !this.duckTimer) {
+      this.duckLast = performance.now();
+      this.duckTimer = setInterval(() => this.duckTick(), 50);
+    } else if (!on && this.duckTimer) {
+      clearInterval(this.duckTimer);
+      this.duckTimer = null;
+      this.duckMul = 1;
+      this.applyDuck(1); // give the music back at full level
+      this.duckBase.clear();
+    }
+  }
+
+  /** Lowers every music channel while the mic is speaking (the user's own level is the base). */
+  private duckTick(): void {
+    const d = this.voiceSnap.settings.ducking;
+    const now = performance.now();
+    const dt = now - this.duckLast;
+    this.duckLast = now;
+    const mic = this.audio.getState().channels.find((c) => c.id === "mic");
+    const speaking =
+      !!mic &&
+      mic.active &&
+      !mic.muted &&
+      this.audio.getLevel("mic").db > d.thresholdDb;
+    this.duckMul = duckStep(this.duckMul, speaking, d, dt);
+    this.applyDuck(this.duckMul);
+  }
+
+  private applyDuck(mul: number): void {
+    const channels = this.audio
+      .getState()
+      .channels.filter((c) => c.kind === "music");
+    const seen = new Set<string>();
+    for (const c of channels) {
+      seen.add(c.id);
+      const known = this.duckBase.get(c.id);
+      // a gain we did not set means the user moved the slider: that value is the new base
+      const base =
+        !known || Math.abs(c.gain - known.set) > 0.012 ? c.gain : known.base;
+      const target = Math.min(1.5, base * mul);
+      if (Math.abs(target - c.gain) > 0.004) this.audio.setGain(c.id, target);
+      this.duckBase.set(c.id, {
+        base,
+        set: Math.abs(target - c.gain) > 0.004 ? target : c.gain,
+      });
+    }
+    for (const id of [...this.duckBase.keys()])
+      if (!seen.has(id)) this.duckBase.delete(id);
   }
 
   isTrackPlaying(trackId: string): boolean {
@@ -1174,6 +1291,8 @@ export class StudioRuntime {
     this.teardownHost();
     for (const el of this.music.values()) el.pause();
     this.music.clear();
+    if (this.duckTimer) clearInterval(this.duckTimer);
+    this.micFx.detach();
     for (const u of this.syncUnsubs) u();
     this.syncUnsubs = [];
     if (this.syncTimer) clearTimeout(this.syncTimer);

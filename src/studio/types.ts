@@ -64,6 +64,16 @@ export interface ChromaKey {
   spill: number;
 }
 
+/** Effects beyond CSS filters (see engine/fx.ts). All 0 = off. */
+export interface LayerFx {
+  /** 0..100 unsharp-mask strength */
+  sharpen: number;
+  /** 0..100 edge darkening */
+  vignette: number;
+  /** -100 (cool) .. 100 (warm) */
+  warmth: number;
+}
+
 export interface LayerBase {
   id: string;
   name: string;
@@ -76,6 +86,8 @@ export interface LayerBase {
   transform: Transform;
   /** CSS filter string, "none" for no filter */
   filter: string;
+  /** extra per-layer effects; absent = none */
+  fx?: LayerFx;
   chroma: ChromaKey;
 }
 

@@ -2,6 +2,7 @@
 // Owns every live media source (camera, screen, prototype capture, guests, asset images/videos)
 // and resolves a Layer to a drawable FrameSource for the compositor. Browser-only: construct it
 // inside an effect, never at module scope.
+import type { VoiceProcessor, VoiceSettings } from "../engine/voice";
 import type { AudioBus, ChannelHandle } from "../engine/audio-bus";
 import { captureSurface, type CaptureHandle } from "../proto";
 import type { AssetStore, FrameSource, Layer } from "../types";
@@ -84,6 +85,11 @@ export class SourceManager {
   constructor(
     private readonly assets: AssetStore,
     private readonly audio: AudioBus,
+    /** optional mic enhancement: the mic channel then carries the processed audio */
+    private readonly voice?: {
+      processor: VoiceProcessor;
+      settings: () => VoiceSettings;
+    },
   ) {}
 
   /* ------------------------------ store ------------------------------ */
@@ -157,15 +163,27 @@ export class SourceManager {
       void video.play().catch(() => undefined);
       let channel: ChannelHandle | null = null;
       if (stream.getAudioTracks().length > 0) {
+        let micInput: MediaStream = stream;
+        if (this.voice) {
+          try {
+            micInput = await this.voice.processor.attach(
+              new MediaStream(stream.getAudioTracks()),
+              this.voice.settings(),
+            );
+          } catch {
+            micInput = stream; // processing is optional: fall back to the raw mic
+          }
+        }
         channel = this.audio.addChannel(
           { id: "mic", label: "Mikrofon", kind: "mic" },
-          stream,
+          micInput,
           {
             monitor: false,
           },
         );
       }
       const stop = () => {
+        this.voice?.processor.detach();
         channel?.remove();
         stream.getTracks().forEach((t) => t.stop());
         video.srcObject = null;

@@ -1,6 +1,8 @@
 // src/studio/ui/inspector.tsx
 // Properties of the selected layer: common (opacity, blend, filter, transform), chroma key and
 // kind-specific fields.
+import { getDefaultStage } from "../defaults";
+import { ImageAdjust } from "./image-adjust";
 import { getActiveScene, findLayer, type LayerPatch } from "../project/store";
 import { useProject, useStudio } from "../runtime/use-studio";
 import type { BlendMode, Layer } from "../types";
@@ -111,7 +113,7 @@ export function Inspector({ selectedId }: { selectedId: string | null }) {
               onChange={(blend) => patch({ blend })}
             />
           </Field>
-          <div className="col-span-2">
+          <div className={KEYABLE.has(layer.kind) ? "hidden" : "col-span-2"}>
             <Field label="Görüntü efekti">
               <select
                 className={INPUT}
@@ -176,7 +178,7 @@ export function Inspector({ selectedId }: { selectedId: string | null }) {
               className="w-full rounded-md bg-secondary px-2 py-1.5 text-xs hover:bg-accent"
               onClick={() =>
                 patch({
-                  transform: { x: 0, y: 0, w: 1920, h: 1080, rotation: 0 },
+                  transform: { x: 0, y: 0, ...getDefaultStage(), rotation: 0 },
                 })
               }
             >
@@ -186,6 +188,8 @@ export function Inspector({ selectedId }: { selectedId: string | null }) {
         </div>
 
         <KindFields layer={layer} sceneId={scene.id} patch={patch} />
+
+        {KEYABLE.has(layer.kind) && <ImageAdjust layer={layer} patch={patch} />}
 
         {KEYABLE.has(layer.kind) && (
           <fieldset className="space-y-2 rounded-lg border p-2">

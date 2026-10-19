@@ -46,8 +46,12 @@ describe("catalog", () => {
       for (const p of def.panels) {
         expect(p.rect.x).toBeGreaterThanOrEqual(0);
         expect(p.rect.y).toBeGreaterThanOrEqual(0);
-        expect(p.rect.x + p.rect.w).toBeLessThanOrEqual(LOGICAL_W);
-        expect(p.rect.y + p.rect.h).toBeLessThanOrEqual(LOGICAL_H);
+        expect(p.rect.x + p.rect.w).toBeLessThanOrEqual(
+          def.stage?.w ?? LOGICAL_W,
+        );
+        expect(p.rect.y + p.rect.h).toBeLessThanOrEqual(
+          def.stage?.h ?? LOGICAL_H,
+        );
       }
       for (const [i, a] of def.panels.entries())
         for (const b of def.panels.slice(i + 1)) {
@@ -249,19 +253,20 @@ describe("logo and custom background", () => {
       const r = def.logo;
       expect(r.x).toBeGreaterThanOrEqual(0);
       expect(r.y).toBeGreaterThanOrEqual(0);
-      expect(r.x + r.w).toBeLessThanOrEqual(LOGICAL_W);
-      expect(r.y + r.h).toBeLessThanOrEqual(LOGICAL_H);
+      const SW = def.stage?.w ?? LOGICAL_W;
+      const SH = def.stage?.h ?? LOGICAL_H;
+      expect(r.x + r.w).toBeLessThanOrEqual(SW);
+      expect(r.y + r.h).toBeLessThanOrEqual(SH);
       if (def.lowerThird)
         expect(overlap(r, { ...def.lowerThird, h: 164 }), "lower third").toBe(
           false,
         );
       if (def.ticker)
-        expect(
-          overlap(r, { x: 0, y: 990, w: LOGICAL_W, h: 90 }),
-          "ticker",
-        ).toBe(false);
+        expect(overlap(r, { x: 0, y: SH - 90, w: SW, h: 90 }), "ticker").toBe(
+          false,
+        );
       // only the full-bleed layouts (solo, quad) may put the logo over video
-      if (!["solo", "quad"].includes(id))
+      if (!["solo", "quad", "radio", "v-solo", "sq-solo"].includes(id))
         for (const p of def.panels)
           expect(overlap(r, p.rect), p.id).toBe(false);
     },

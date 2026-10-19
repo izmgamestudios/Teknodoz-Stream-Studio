@@ -27,7 +27,10 @@ import {
   type TransitionType,
   type WebLayer,
 } from "../types";
+import { stageFor, type StageSize } from "../format";
+import { hasFx } from "./adjust";
 import { resolveBlend, sanitizeCssFilter } from "./blend";
+import { FxProcessor, type FxEngine } from "./fx";
 import {
   glName,
   isGlTransition,
@@ -372,6 +375,9 @@ export class Compositor {
 
   private scene: Scene | null = null;
   private transition: ActiveTransition | null = null;
+  private fx: FxEngine | null = null;
+  /** logical stage (follows the output aspect: 1920x1080, 1080x1920, 1080x1080...) */
+  private stage: StageSize = { w: LOGICAL_W, h: LOGICAL_H };
   private glEngine: TransitionEngine | null = null;
   private glLoading = false;
   private glFailed = false;
@@ -417,11 +423,12 @@ export class Compositor {
     // `ctx.filter` is missing in some browsers (Safari); feature-detect instead of assuming.
     this.supportsFilter =
       typeof (ctx as { filter?: unknown }).filter === "string";
+    this.stage = stageFor(this.widthPx, this.heightPx);
     this.fit = computeStageFit(
       this.widthPx,
       this.heightPx,
-      LOGICAL_W,
-      LOGICAL_H,
+      this.stage.w,
+      this.stage.h,
     );
   }
 
@@ -531,7 +538,8 @@ export class Compositor {
     this.canvas.width = w; // resets the context state...
     this.canvas.height = h;
     configureContext(this.ctx); // ...so restore ours
-    this.fit = computeStageFit(w, h, LOGICAL_W, LOGICAL_H);
+    this.stage = stageFor(w, h);
+    this.fit = computeStageFit(w, h, this.stage.w, this.stage.h);
     if (this.fadeBuffer) {
       this.fadeBuffer.canvas.width = w;
       this.fadeBuffer.canvas.height = h;
@@ -584,6 +592,8 @@ export class Compositor {
     this.disposed = true;
     this.glEngine?.dispose();
     this.glEngine = null;
+    this.fx?.dispose();
+    this.fx = null;
     this.stop();
     this.listeners.clear();
     if (this.ownsChroma) this.chroma?.dispose();
@@ -772,8 +782,8 @@ export class Compositor {
       ctx.rect(
         this.fit.offsetX,
         this.fit.offsetY,
-        LOGICAL_W * this.fit.scale,
-        LOGICAL_H * this.fit.scale,
+        this.stage.w * this.fit.scale,
+        this.stage.h * this.fit.scale,
       );
       ctx.clip();
     }
@@ -966,17 +976,51 @@ export class Compositor {
       }
     }
 
-    if (mirror) {
-      ctx.save();
-      const cx = dst.x + dst.w / 2;
-      ctx.translate(cx, 0);
-      ctx.scale(-1, 1);
-      ctx.translate(-cx, 0);
-      ctx.drawImage(image, sx, sy, sw, sh, dst.x, dst.y, dst.w, dst.h);
-      ctx.restore();
-    } else {
-      ctx.drawImage(image, sx, sy, sw, sh, dst.x, dst.y, dst.w, dst.h);
+    const paint = (c: Ctx2D, d: Rect): void => {
+      if (mirror) {
+        c.save();
+        const cx = d.x + d.w / 2;
+        c.translate(cx, 0);
+        c.scale(-1, 1);
+        c.translate(-cx, 0);
+        c.drawImage(image, sx, sy, sw, sh, d.x, d.y, d.w, d.h);
+        c.restore();
+      } else {
+        c.drawImage(image, sx, sy, sw, sh, d.x, d.y, d.w, d.h);
+      }
+    };
+
+    // Layers with sharpen / vignette / warmth go through a scratch canvas that also applies the
+    // CSS filter, so the effects see the adjusted picture.
+    const fx = layer.fx;
+    if (hasFx(fx)) {
+      const out = this.fxEngine()?.process(
+        layer.id,
+        dst.w,
+        dst.h,
+        sanitizeCssFilter(layer.filter),
+        fx,
+        (c, w, h) => paint(c as Ctx2D, { x: 0, y: 0, w, h }),
+        this.supportsFilter,
+      );
+      if (out) {
+        if (this.supportsFilter) ctx.filter = "none"; // already applied in the scratch canvas
+        ctx.drawImage(out, dst.x, dst.y, dst.w, dst.h);
+        return;
+      }
     }
+    paint(ctx, dst);
+  }
+
+  private fxEngine(): FxEngine | null {
+    if (!this.fx && !this.disposed) {
+      try {
+        this.fx = new FxProcessor({ createCanvas: this.makeCanvas });
+      } catch (err) {
+        this.warnOnce("fx", err);
+      }
+    }
+    return this.fx;
   }
 
   private drawWeb(

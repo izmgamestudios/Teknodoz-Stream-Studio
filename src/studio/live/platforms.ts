@@ -95,6 +95,8 @@ export function getPlatform(id: string): Platform {
   );
 }
 
+import { orientedSize } from "../format";
+
 export interface Quality {
   id: string;
   label: string;
@@ -143,6 +145,18 @@ export const QUALITIES: readonly Quality[] = [
     hint: "Güçlü sunucu + ≥15 Mbps yükleme gerekir",
   },
 ];
+
+/** The quality at the output's aspect ratio (vertical 9:16 swaps the axes, square uses the short side). */
+export function orientQuality(q: Quality, outW: number, outH: number): Quality {
+  const { width, height } = orientedSize(q, outW, outH);
+  const tag =
+    outH > outW * 1.02
+      ? " · dikey"
+      : Math.abs(outW / outH - 1) < 0.02
+        ? " · kare"
+        : "";
+  return { ...q, width, height, label: `${q.label}${tag}` };
+}
 
 export function getQuality(id: string): Quality {
   return QUALITIES.find((q) => q.id === id) ?? (QUALITIES[1] as Quality);

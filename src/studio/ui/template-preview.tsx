@@ -8,6 +8,8 @@ import type { TemplateDef, TemplateOptions } from "../templates/types";
 import type { Layer } from "../types";
 import { LOGICAL_H, LOGICAL_W } from "../types";
 
+type Stage = { w: number; h: number };
+
 const PANEL_ICON = {
   webcam: "📷",
   guest: "👤",
@@ -19,18 +21,18 @@ function pct(v: number, total: number): string {
   return `${((v / total) * 100).toFixed(3)}%`;
 }
 
-function cqw(px: number): string {
-  return `${((px / LOGICAL_W) * 100).toFixed(3)}cqw`;
+function cqw(px: number, stage: Stage): string {
+  return `${((px / stage.w) * 100).toFixed(3)}cqw`;
 }
 
-function boxStyle(l: Layer): CSSProperties {
+function boxStyle(l: Layer, stage: Stage): CSSProperties {
   const t = l.transform;
   return {
     position: "absolute",
-    left: pct(t.x, LOGICAL_W),
-    top: pct(t.y, LOGICAL_H),
-    width: pct(t.w, LOGICAL_W),
-    height: pct(t.h, LOGICAL_H),
+    left: pct(t.x, stage.w),
+    top: pct(t.y, stage.h),
+    width: pct(t.w, stage.w),
+    height: pct(t.h, stage.h),
   };
 }
 
@@ -49,8 +51,10 @@ function backdropStyle(accent: string): CSSProperties {
 function PreviewLayer({
   layer,
   urls,
+  stage,
 }: {
   layer: Layer;
+  stage: Stage;
   urls?: Readonly<Record<string, string>>;
 }) {
   switch (layer.kind) {
@@ -62,7 +66,7 @@ function PreviewLayer({
           src={url}
           alt=""
           style={{
-            ...boxStyle(layer),
+            ...boxStyle(layer, stage),
             objectFit: layer.fit === "cover" ? "cover" : "contain",
           }}
         />
@@ -75,10 +79,10 @@ function PreviewLayer({
       return (
         <div
           style={{
-            ...boxStyle(layer),
+            ...boxStyle(layer, stage),
             background:
               "linear-gradient(160deg, rgba(120,140,200,0.35), rgba(40,50,90,0.55))",
-            fontSize: cqw(layer.transform.h > 400 ? 56 : 36),
+            fontSize: cqw(layer.transform.h > 400 ? 56 : 36, stage),
           }}
           className="flex flex-col items-center justify-center text-white/80"
         >
@@ -89,15 +93,15 @@ function PreviewLayer({
       return (
         <div
           style={{
-            ...boxStyle(layer),
+            ...boxStyle(layer, stage),
             background: layer.fill,
             border:
               layer.strokeWidth > 0
-                ? `${cqw(layer.strokeWidth)} solid ${layer.stroke}`
+                ? `${cqw(layer.strokeWidth, stage)} solid ${layer.stroke}`
                 : undefined,
             boxSizing: "border-box",
             color: layer.textColor,
-            fontSize: cqw(Math.min(40, layer.transform.h * 0.3)),
+            fontSize: cqw(Math.min(40, layer.transform.h * 0.3), stage),
           }}
           className="flex items-center justify-center overflow-hidden whitespace-nowrap"
         >
@@ -108,14 +112,14 @@ function PreviewLayer({
       return (
         <div
           style={{
-            ...boxStyle(layer),
+            ...boxStyle(layer, stage),
             background:
               layer.background === "transparent" ? undefined : layer.background,
             color: layer.color,
-            fontSize: cqw(layer.fontSize),
+            fontSize: cqw(layer.fontSize, stage),
             fontWeight: layer.bold ? 700 : 400,
             justifyContent: layer.align === "center" ? "center" : "flex-start",
-            paddingInline: cqw(layer.fontSize * 0.5),
+            paddingInline: cqw(layer.fontSize * 0.5, stage),
           }}
           className="flex items-center overflow-hidden whitespace-nowrap leading-none"
         >
@@ -154,11 +158,15 @@ export function TemplatePreview({
     ],
   );
   const accent = opts.accent ?? def.defaults.accent;
+  const stage: Stage = def.stage ?? { w: LOGICAL_W, h: LOGICAL_H };
+  const portrait = stage.h > stage.w;
   return (
     <div
       aria-hidden="true"
-      className={`relative aspect-video w-full overflow-hidden rounded-md border ${className}`}
+      className={`relative mx-auto w-full overflow-hidden rounded-md border ${className}`}
       style={{
+        aspectRatio: `${stage.w} / ${stage.h}`,
+        ...(portrait ? { maxWidth: "9.5rem" } : {}),
         containerType: "inline-size",
         ...(def.backdrop &&
         !(opts.backgroundAssetId && assetUrls?.[opts.backgroundAssetId])
@@ -170,6 +178,7 @@ export function TemplatePreview({
         <PreviewLayer
           key={l.id}
           layer={l}
+          stage={stage}
           {...(assetUrls ? { urls: assetUrls } : {})}
         />
       ))}

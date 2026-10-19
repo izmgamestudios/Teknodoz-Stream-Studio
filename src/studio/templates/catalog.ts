@@ -2,6 +2,10 @@
 // The built-in broadcast frame templates. Geometry is in the 1920x1080 logical stage.
 import type { PanelSpec, TemplateDef, TemplateOptions } from "./types";
 
+const VERT = { w: 1080, h: 1920 } as const;
+const P45 = { w: 1080, h: 1350 } as const;
+const SQUARE = { w: 1080, h: 1080 } as const;
+
 const BLUE = "#1d4ed8";
 const TEAL = "#0e9f8e";
 const VIOLET = "#7c3aed";
@@ -304,6 +308,208 @@ export const TEMPLATES: readonly TemplateDef[] = [
       "Takip et • Beğen • Yorum yaz • Teknodoz Studio",
     ),
   },
+  /* ---------------- landscape additions ---------------- */
+  {
+    id: "interview",
+    name: "Röportaj (büyük konuk)",
+    description: "Konuk büyük, sunucu sağ sütunda; altta isim bandı.",
+    group: "talk",
+    panels: [
+      guest("guest", "Konuk", 40, 130, 1240, 698),
+      cam("host", "Sunucu", 1320, 130, 560, 420),
+    ],
+    backdrop: true,
+    frames: true,
+    captions: false,
+    topTitle: true,
+    lowerThird: { x: 40, y: 860, w: 1240 },
+    logo: { x: 1640, y: 580, w: 240, h: 120 },
+    ticker: false,
+    defaults: opts(TEAL, "RÖPORTAJ", "KONUK ADI · UNVAN", TICKER),
+  },
+  {
+    id: "radio",
+    name: "Radyo / müzik yayını",
+    description:
+      "Tam ekran kamera, altta şarkı/sunucu bandı, kayan yazı ve logo.",
+    group: "talk",
+    panels: [cam("host", "Sunucu", 0, 0, 1920, 990)],
+    backdrop: false,
+    frames: false,
+    captions: false,
+    topTitle: false,
+    lowerThird: { x: 40, y: 800, w: 1100 },
+    logo: { x: 1640, y: 30, w: 240, h: 110 },
+    ticker: true,
+    defaults: opts(VIOLET, "ŞİMDİ ÇALIYOR", "CANLI", TICKER),
+  },
+
+  /* ---------------- vertical 9:16 (1080x1920) ---------------- */
+  {
+    id: "v-solo",
+    name: "Dikey solo (Reels / Shorts)",
+    description:
+      "Tam ekran dikey kamera; alt bant platform arayüzünün üstünde kalır (güvenli bölge).",
+    group: "social",
+    format: "9:16",
+    stage: VERT,
+    panels: [cam("host", "Sunucu", 0, 0, 1080, 1920)],
+    backdrop: false,
+    frames: false,
+    captions: false,
+    topTitle: false,
+    lowerThird: { x: 40, y: 1440, w: 1000 },
+    logo: { x: 780, y: 70, w: 250, h: 110 },
+    ticker: false,
+    defaults: opts(ORANGE, "BAŞLIK BURAYA", "CANLI", TICKER),
+  },
+  {
+    id: "v-talk",
+    name: "Dikey konuşma (üst-alt)",
+    description:
+      "İki kişi alt alta: üstte sunucu, altta konuk; başlık şeridi ve kayan yazı.",
+    group: "social",
+    format: "9:16",
+    stage: VERT,
+    panels: [
+      cam("host", "Sunucu", 40, 130, 1000, 790),
+      guest("guest", "Konuk", 40, 950, 1000, 790),
+    ],
+    backdrop: true,
+    frames: true,
+    captions: false,
+    topTitle: true,
+    logo: { x: 800, y: 8, w: 240, h: 80 },
+    ticker: true,
+    defaults: opts(VIOLET, "SOHBET", "", TICKER),
+  },
+  {
+    id: "v-interview",
+    name: "Dikey röportaj (etiketli)",
+    description: "Alt alta iki panel, her birinin altında isim etiketi.",
+    group: "social",
+    format: "9:16",
+    stage: VERT,
+    panels: [
+      cam("host", "Sunucu", 40, 130, 1000, 720),
+      guest("guest", "Konuk", 40, 960, 1000, 720),
+    ],
+    backdrop: true,
+    frames: true,
+    captions: true,
+    topTitle: true,
+    logo: { x: 800, y: 8, w: 240, h: 80 },
+    ticker: true,
+    defaults: opts(BLUE, "RÖPORTAJ", "", TICKER),
+  },
+  {
+    id: "v-screen",
+    name: "Dikey ekran + kamera",
+    description:
+      "Üstte ekran/prototip, altta yüz kamerası: eğitim ve demo için.",
+    group: "social",
+    format: "9:16",
+    stage: VERT,
+    panels: [
+      {
+        id: "screen",
+        kind: "screen",
+        label: "Ekran paylaşımı",
+        rect: { x: 40, y: 130, w: 1000, h: 1000 },
+      },
+      cam("host", "Sunucu", 40, 1170, 1000, 560),
+    ],
+    backdrop: true,
+    frames: true,
+    captions: false,
+    topTitle: true,
+    logo: { x: 800, y: 8, w: 240, h: 80 },
+    ticker: true,
+    defaults: opts(TEAL, "CANLI DEMO", "", TICKER),
+  },
+  {
+    id: "v-news",
+    name: "Dikey haber",
+    description:
+      "Sunucu üstte, altında haber görüntüsü; kırmızı etiket + başlık bandı.",
+    group: "social",
+    format: "9:16",
+    stage: VERT,
+    panels: [
+      cam("presenter", "Sunucu", 40, 130, 1000, 1040),
+      {
+        id: "footage",
+        kind: "screen",
+        label: "Haber görüntüsü",
+        rect: { x: 40, y: 1220, w: 1000, h: 520 },
+      },
+    ],
+    backdrop: true,
+    frames: true,
+    captions: false,
+    topTitle: false,
+    lowerThird: { x: 40, y: 1000, w: 1000 },
+    logo: { x: 780, y: 20, w: 260, h: 100 },
+    ticker: true,
+    defaults: opts(BLUE, "BREAKING NEWS", "EXCLUSIVE", TICKER),
+  },
+
+  /* ---------------- 4:5 portrait (1080x1350) and square (1080x1080) ---------------- */
+  {
+    id: "p45-talk",
+    name: "Portre 4:5 konuşma",
+    description: "Instagram/Facebook akışı için iki panel alt alta.",
+    group: "social",
+    format: "4:5",
+    stage: P45,
+    panels: [
+      cam("host", "Sunucu", 40, 130, 1000, 560),
+      guest("guest", "Konuk", 40, 720, 1000, 480),
+    ],
+    backdrop: true,
+    frames: true,
+    captions: false,
+    topTitle: true,
+    logo: { x: 800, y: 8, w: 240, h: 80 },
+    ticker: true,
+    defaults: opts(ORANGE, "CANLI SOHBET", "", TICKER),
+  },
+  {
+    id: "sq-solo",
+    name: "Kare solo",
+    description: "Tam kare kamera, altta bant ve köşede logo.",
+    group: "social",
+    format: "1:1",
+    stage: SQUARE,
+    panels: [cam("host", "Sunucu", 0, 0, 1080, 1080)],
+    backdrop: false,
+    frames: false,
+    captions: false,
+    topTitle: false,
+    lowerThird: { x: 40, y: 780, w: 1000 },
+    logo: { x: 800, y: 40, w: 240, h: 110 },
+    ticker: false,
+    defaults: opts(VIOLET, "BAŞLIK", "CANLI", TICKER),
+  },
+  {
+    id: "sq-duo",
+    name: "Kare ikili",
+    description: "Yan yana iki kişi; üstte başlık, altta kayan yazı.",
+    group: "social",
+    format: "1:1",
+    stage: SQUARE,
+    panels: [
+      cam("host", "Sunucu", 40, 130, 500, 760),
+      guest("guest", "Konuk", 540, 130, 500, 760),
+    ],
+    backdrop: true,
+    frames: true,
+    captions: false,
+    topTitle: true,
+    logo: { x: 800, y: 8, w: 240, h: 80 },
+    ticker: true,
+    defaults: opts(TEAL, "SOHBET", "", TICKER),
+  },
 ] as const;
 
 export function getTemplate(id: string): TemplateDef | undefined {
@@ -315,4 +521,5 @@ export const TEMPLATE_GROUPS = [
   { id: "talk", label: "Konuşma" },
   { id: "demo", label: "Prototip" },
   { id: "learn", label: "Eğitim" },
+  { id: "social", label: "Dikey, 4:5 ve kare (Reels, Shorts, Instagram)" },
 ] as const;

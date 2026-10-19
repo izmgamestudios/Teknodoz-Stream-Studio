@@ -89,6 +89,12 @@ const chroma = z.object({
   spill: num(0, 1),
 });
 
+const fxSchema = z.object({
+  sharpen: num(0, 100),
+  vignette: num(0, 100),
+  warmth: num(-100, 100),
+});
+
 const layerBase = {
   id: z.string().min(1).max(128),
   name,
@@ -98,6 +104,7 @@ const layerBase = {
   blend: z.enum(BLEND_MODES),
   transform,
   filter: cssFilter,
+  fx: fxSchema.optional(),
   chroma,
 };
 

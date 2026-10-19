@@ -37,6 +37,12 @@ const PRESETS = [
   { w: 1920, h: 1080 },
   { w: 2560, h: 1440 },
   { w: 3840, h: 2160 },
+  // vertical / square (Reels, Shorts, TikTok, Instagram)
+  { w: 720, h: 1280 },
+  { w: 1080, h: 1920 },
+  { w: 1080, h: 1350 },
+  { w: 1080, h: 1080 },
+  { w: 1440, h: 1080 },
 ] as const;
 const FPS = [24, 30, 60] as const;
 const AUDIO_KBPS = [96, 128, 160, 192, 256, 320] as const;
@@ -55,7 +61,7 @@ function useSettings() {
 
 export function OutputSection() {
   const t = useT();
-  const { settings, update } = useSettings();
+  const { rt, settings, update } = useSettings();
   const snap = useRuntimeSnapshot();
   const [custom, setCustom] = useState(false);
   const o = settings.output;
@@ -94,12 +100,19 @@ export function OutputSection() {
               }
               setCustom(false);
               const [w, h] = e.target.value.split("x").map(Number);
-              if (w && h) set({ width: w, height: h });
+              if (w && h) rt.setOutputFormat(w, h);
             }}
           >
             {PRESETS.map((p) => (
               <option key={`${p.w}x${p.h}`} value={`${p.w}x${p.h}`}>
-                {p.h}p ({p.w}×{p.h})
+                {p.w === p.h
+                  ? "Kare"
+                  : p.h > p.w
+                    ? "Dikey"
+                    : p.h === 1080 && p.w === 1440
+                      ? "4:3"
+                      : `${p.h}p`}{" "}
+                ({p.w}×{p.h})
               </option>
             ))}
             <option value="custom">

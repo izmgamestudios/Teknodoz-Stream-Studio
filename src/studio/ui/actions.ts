@@ -1,6 +1,6 @@
 // src/studio/ui/actions.ts
 // UI-level helpers that combine the asset store, project store and runtime.
-import { createLayer } from "../defaults";
+import { createLayer, getDefaultStage } from "../defaults";
 import { getActiveScene } from "../project/store";
 import type { StudioRuntime } from "../runtime/runtime";
 import type { AssetType, Layer } from "../types";
@@ -80,10 +80,17 @@ export function addAssetLayer(
       w = Math.max(16, dims.w * k);
       h = Math.max(16, dims.h * k);
     }
+    const stage = getDefaultStage();
     layer = createLayer("image", {
       name: label,
       assetId,
-      transform: { x: (1920 - w) / 2, y: (1080 - h) / 2, w, h, rotation: 0 },
+      transform: {
+        x: (stage.w - w) / 2,
+        y: (stage.h - h) / 2,
+        w,
+        h,
+        rotation: 0,
+      },
     });
   } else {
     layer = createLayer("video", { name: label, assetId });

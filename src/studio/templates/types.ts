@@ -46,13 +46,17 @@ export interface TemplateOptions {
   backgroundAssetId?: string;
 }
 
-export type TemplateGroup = "news" | "talk" | "demo" | "learn";
+export type TemplateGroup = "news" | "talk" | "demo" | "learn" | "social";
 
 export interface TemplateDef {
   id: string;
   name: string;
   description: string;
   group: TemplateGroup;
+  /** output format id (see format.ts); absent = "16:9" */
+  format?: string;
+  /** logical stage the rects are written for; absent = 1920x1080 */
+  stage?: { w: number; h: number };
   panels: readonly PanelSpec[];
   /** Draw the generated dotted backdrop (skipped for full-bleed layouts). */
   backdrop: boolean;

@@ -82,7 +82,21 @@ export function defaultChroma(): ChromaKey {
   };
 }
 
-const FULL: Transform = { x: 0, y: 0, w: LOGICAL_W, h: LOGICAL_H, rotation: 0 };
+let stage = { w: LOGICAL_W, h: LOGICAL_H };
+/** Logical stage used by new layers ("full frame"); set when the output format changes. */
+export function setDefaultStage(s: { w: number; h: number }): void {
+  if (s.w > 0 && s.h > 0) stage = { w: s.w, h: s.h };
+}
+export function getDefaultStage(): { w: number; h: number } {
+  return { ...stage };
+}
+const full = (): Transform => ({
+  x: 0,
+  y: 0,
+  w: stage.w,
+  h: stage.h,
+  rotation: 0,
+});
 
 function box(x: number, y: number, w: number, h: number): Transform {
   return { x, y, w, h, rotation: 0 };
@@ -123,10 +137,10 @@ export function createLayer<K extends LayerKind>(
   let layer: Layer;
   switch (kind) {
     case "webcam":
-      layer = { ...base, kind: "webcam", transform: { ...FULL }, mirror: true };
+      layer = { ...base, kind: "webcam", transform: full(), mirror: true };
       break;
     case "screen":
-      layer = { ...base, kind: "screen", transform: { ...FULL } };
+      layer = { ...base, kind: "screen", transform: full() };
       break;
     case "web":
       layer = {
@@ -159,7 +173,7 @@ export function createLayer<K extends LayerKind>(
       layer = {
         ...base,
         kind: "video",
-        transform: { ...FULL },
+        transform: full(),
         assetId: "",
         loop: true,
         muted: false,

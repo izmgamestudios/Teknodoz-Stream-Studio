@@ -13,8 +13,7 @@ const FRAME_W = 8;
 const TAG_H = 54;
 const BANNER_H = 110;
 const PLATE_H = 86;
-const TICKER_Y = 990;
-const TICKER_H = LOGICAL_H - TICKER_Y;
+const TICKER_BAR = 90;
 const CAPTION_H = 48;
 const TOP_H = 96;
 const MAX_TEXT = 300;
@@ -142,7 +141,9 @@ export function buildTemplateScene(
 ): Scene {
   const o = resolveOptions(def, patch);
   const layers: Layer[] = [];
-  const full: Rect = { x: 0, y: 0, w: LOGICAL_W, h: LOGICAL_H };
+  const SW = def.stage?.w ?? LOGICAL_W;
+  const SH = def.stage?.h ?? LOGICAL_H;
+  const full: Rect = { x: 0, y: 0, w: SW, h: SH };
 
   if (def.backdrop) {
     layers.push(
@@ -192,7 +193,7 @@ export function buildTemplateScene(
 
   if (def.topTitle && o.title) {
     layers.push(
-      bar("Başlık şeridi", { x: 0, y: 0, w: LOGICAL_W, h: TOP_H }, o.title, {
+      bar("Başlık şeridi", { x: 0, y: 0, w: SW, h: TOP_H }, o.title, {
         background: o.accent,
         fontSize: 48,
       }),
@@ -248,7 +249,7 @@ export function buildTemplateScene(
     layers.push(
       bar(
         "Kayan yazı",
-        { x: 0, y: TICKER_Y, w: LOGICAL_W, h: TICKER_H },
+        { x: 0, y: SH - TICKER_BAR, w: SW, h: TICKER_BAR },
         o.ticker,
         { background: BAR_DARK, fontSize: 38, style: "ticker" },
       ),

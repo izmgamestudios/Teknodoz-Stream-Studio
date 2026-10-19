@@ -6,6 +6,7 @@ import type {
   AppSettings,
   BlendMode,
   ChromaKey,
+  LayerFx,
   Layer,
   PrompterSettings,
   ProjectState,
@@ -14,13 +15,16 @@ import type {
   Transition,
   Sponsor,
 } from "../types";
+import { hasFx, normalizeFx } from "../engine/adjust";
+import { fitScenes, stageFor } from "../format";
 import { layerSchema, LIMITS, MAX_SPONSORS, sponsorSchema } from "./schema";
 
 /** Patch for a layer: `id`/`kind` are never patchable; transform/chroma merge one level deep. */
 type PatchOf<L> = L extends Layer
-  ? Partial<Omit<L, "id" | "kind" | "transform" | "chroma">> & {
+  ? Partial<Omit<L, "id" | "kind" | "transform" | "chroma" | "fx">> & {
       transform?: Partial<Transform>;
       chroma?: Partial<ChromaKey>;
+      fx?: Partial<LayerFx>;
     }
   : never;
 export type LayerPatch = PatchOf<Layer>;
@@ -337,12 +341,13 @@ export function createProjectStore(
       patch: LayerPatch,
       coalesceKey?: string,
     ): boolean {
-      const { transform, chroma, ...rest } = patch as Record<
+      const { transform, chroma, fx, ...rest } = patch as Record<
         string,
         unknown
       > & {
         transform?: Partial<Transform>;
         chroma?: Partial<ChromaKey>;
+        fx?: Partial<LayerFx>;
       };
       delete rest["id"];
       delete rest["kind"];
@@ -353,12 +358,18 @@ export function createProjectStore(
         const i = s.layers.findIndex((l) => l.id === layerId);
         const cur = s.layers[i];
         if (!cur) return s;
-        const merged = {
+        const merged: Record<string, unknown> = {
           ...cur,
           ...rest,
           transform: { ...cur.transform, ...(transform ?? {}) },
           chroma: { ...cur.chroma, ...(chroma ?? {}) },
         };
+        if (fx) {
+          const next = normalizeFx({ ...cur.fx, ...fx });
+          // all-zero effects are stored as "absent" so projects stay small and diff-friendly
+          if (hasFx(next)) merged["fx"] = next;
+          else delete merged["fx"];
+        }
         const ok = layerSchema.safeParse(merged);
         if (!ok.success) return s;
         applied = true;
@@ -483,6 +494,21 @@ export function createProjectStore(
     },
     moveSponsor(from: number, to: number): void {
       commit({ ...state, sponsors: move(state.sponsors, from, to) });
+    },
+    /**
+     * Switches the output format (e.g. 1920x1080 -> 1080x1920). With `adapt` every scene is laid
+     * out again for the new stage (see format.ts), otherwise layers keep their coordinates.
+     */
+    setOutputFormat(width: number, height: number, adapt = true) {
+      const out = state.settings.output;
+      if (out.width === width && out.height === height) return;
+      const from = stageFor(out.width, out.height);
+      const to = stageFor(width, height);
+      commit({
+        ...state,
+        scenes: adapt ? fitScenes(state.scenes, from, to) : state.scenes,
+        settings: { ...state.settings, output: { ...out, width, height } },
+      });
     },
     updateSettings(patch: Partial<AppSettings>) {
       commit(

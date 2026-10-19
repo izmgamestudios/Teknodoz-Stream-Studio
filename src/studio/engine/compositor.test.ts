@@ -572,26 +572,41 @@ describe("Compositor layer drawing", () => {
     ]);
   });
 
-  it("letterboxes non-16:9 outputs: uniform scale, centred stage, clipped to it", () => {
-    const scene = createScene("s", [
+  it("non-16:9 outputs get a stage with their own aspect (no black bars)", () => {
+    // square 960x960 -> stage 1080x1080, scale 960/1080
+    const square = createScene("s", [
       layerOf("webcam", "a", {
-        transform: tf(0, 0, 1920, 1080),
+        transform: tf(0, 0, 1080, 1080),
         mirror: false,
       }),
     ]);
-    const { comp, rec } = setup(
-      scene,
+    const sq = setup(
+      square,
       { a: frame("A") },
       {},
       { width: 960, height: 960 },
     );
-    comp.renderOnce(0);
-    const d = rec.named("drawImage")[0];
-    expect(d?.args[5]).toBeCloseTo(0, 6); // x
-    expect(d?.args[6]).toBeCloseTo((960 - 540) / 2, 6); // y offset of the bars
+    sq.comp.renderOnce(0);
+    const d = sq.rec.named("drawImage")[0];
+    expect(d?.args[5]).toBeCloseTo(0, 6);
+    expect(d?.args[6]).toBeCloseTo(0, 6); // no letterbox offset
     expect(d?.args[7]).toBeCloseTo(960, 6);
-    expect(d?.args[8]).toBeCloseTo(540, 6);
-    expect(rec.named("clip").length).toBeGreaterThan(0);
+    expect(d?.args[8]).toBeCloseTo(960, 6);
+
+    // vertical 540x960 -> stage 1080x1920, scale 0.5: a full-frame layer fills the canvas
+    const tall = createScene("t", [
+      layerOf("webcam", "a", {
+        transform: tf(0, 0, 1080, 1920),
+        mirror: false,
+      }),
+    ]);
+    const v = setup(tall, { a: frame("A") }, {}, { width: 540, height: 960 });
+    v.comp.renderOnce(0);
+    const dv = v.rec.named("drawImage")[0];
+    expect(dv?.args[5]).toBeCloseTo(0, 6);
+    expect(dv?.args[6]).toBeCloseTo(0, 6);
+    expect(dv?.args[7]).toBeCloseTo(540, 6);
+    expect(dv?.args[8]).toBeCloseTo(960, 6);
   });
 
   it("mirrors webcams via layer.mirror and lets FrameSource.mirror override it", () => {

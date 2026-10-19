@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { LiveApiError, createLiveApi, type LiveStatus } from "../live/api";
 import { describeApiError, describeCode } from "../live/messages";
-import { QUALITIES, getQuality } from "../live/platforms";
+import { QUALITIES, getQuality, orientQuality } from "../live/platforms";
 import {
   loadLiveSettings,
   loadToken,
@@ -13,7 +13,7 @@ import {
   saveToken,
   type LiveSettings,
 } from "../live/settings";
-import { useLive, useStudio } from "../runtime/use-studio";
+import { useLive, useProject, useStudio } from "../runtime/use-studio";
 import {
   BTN,
   BTN_ACCENT,
@@ -122,7 +122,12 @@ export function LiveApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [server]);
 
-  const quality = getQuality(settings.quality);
+  const out = useProject().settings.output;
+  const quality = orientQuality(
+    getQuality(settings.quality),
+    out.width,
+    out.height,
+  );
   const usable = useMemo(
     () =>
       settings.dests.filter(

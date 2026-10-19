@@ -7,8 +7,17 @@ import { LOGICAL_H, LOGICAL_W } from "../types";
 
 const STEP = 30;
 
-export function backdropAssetId(accent: string): string {
-  return `tpl-bg-${accent.replace("#", "").toLowerCase()}`;
+export interface StageDims {
+  w: number;
+  h: number;
+}
+
+/** Landscape ids stay `tpl-bg-<hex>` (existing projects keep working); other stages add the size. */
+export function backdropAssetId(accent: string, stage?: StageDims): string {
+  const base = `tpl-bg-${accent.replace("#", "").toLowerCase()}`;
+  return stage && (stage.w !== LOGICAL_W || stage.h !== LOGICAL_H)
+    ? `${base}-${stage.w}x${stage.h}`
+    : base;
 }
 
 function rgb(hex: string): [number, number, number] {
@@ -48,9 +57,10 @@ async function toBlob(
 
 export async function renderBackdrop(
   accent: string,
+  stage?: StageDims,
 ): Promise<Blob | undefined> {
-  const w = LOGICAL_W;
-  const h = LOGICAL_H;
+  const w = stage?.w ?? LOGICAL_W;
+  const h = stage?.h ?? LOGICAL_H;
   const canvas = makeCanvas(w, h);
   const ctx = canvas?.getContext("2d") as
     | CanvasRenderingContext2D
@@ -95,11 +105,12 @@ export async function renderBackdrop(
 export async function ensureBackdrop(
   assets: AssetStore,
   accent: string,
+  stage?: StageDims,
 ): Promise<string | undefined> {
-  const id = backdropAssetId(accent);
+  const id = backdropAssetId(accent, stage);
   try {
     if (await assets.get(id)) return id;
-    const blob = await renderBackdrop(accent);
+    const blob = await renderBackdrop(accent, stage);
     if (!blob) return undefined;
     await assets.put(
       blob,

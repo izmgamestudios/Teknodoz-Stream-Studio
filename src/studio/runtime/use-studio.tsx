@@ -15,7 +15,11 @@ import type { PrompterSnapshot } from "../prompter";
 import type { LiveSnapshot } from "../live/streamer";
 import type { RoomSnapshot } from "../room/host-session";
 import type { PeerInfo, ProjectState } from "../types";
-import { StudioRuntime, type RuntimeSnapshot } from "./runtime";
+import {
+  StudioRuntime,
+  type RuntimeSnapshot,
+  type VoiceSnapshot,
+} from "./runtime";
 import type { SourcesSnapshot } from "./sources";
 
 const Ctx = createContext<StudioRuntime | null>(null);
@@ -101,6 +105,15 @@ export function useSources(): SourcesSnapshot {
     rt.sources.subscribe,
     rt.sources.getSnapshot,
     rt.sources.getSnapshot,
+  );
+}
+
+export function useVoice(): VoiceSnapshot {
+  const rt = useStudio();
+  return useSyncExternalStore(
+    rt.subscribeVoice,
+    rt.getVoiceSnapshot,
+    rt.getVoiceSnapshot,
   );
 }
 

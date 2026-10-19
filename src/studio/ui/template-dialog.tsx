@@ -11,7 +11,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { useStudio } from "../runtime/use-studio";
+import { FORMATS } from "../format";
+import { useProject, useStudio } from "../runtime/use-studio";
 import { TEMPLATES, TEMPLATE_GROUPS, getTemplate } from "../templates/catalog";
 import type { TemplateMode, TemplateOptions } from "../templates/types";
 import {
@@ -118,6 +119,13 @@ export function TemplateDialog() {
   const [logo, setLogo] = useState<UploadedImage | null>(null);
   const [bg, setBg] = useState<UploadedImage | null>(null);
   const def = getTemplate(id);
+  const out = useProject().settings.output;
+  const tplFormat = FORMATS.find((f) => f.id === (def?.format ?? "16:9"));
+  const formatChange =
+    tplFormat &&
+    (tplFormat.width !== out.width || tplFormat.height !== out.height)
+      ? tplFormat
+      : null;
 
   // options + the uploaded images, as the builder wants them
   const effective = useMemo<TemplateOptions>(
@@ -224,9 +232,10 @@ export function TemplateDialog() {
         <DialogHeader>
           <DialogTitle>Yayın çerçevesi şablonları</DialogTitle>
           <DialogDescription>
-            Haber, 2'li/4'lü konuşma, mobil/masaüstü test, eğitim ve çift ekran
-            düzenleri. Uygulanan şablon sıradan katmanlardan oluşur; sonradan
-            dilediğin gibi düzenleyebilirsin.
+            Haber, röportaj, 2'li/4'lü konuşma, mobil/masaüstü test, eğitim,
+            çift ekran ve dikey (9:16), 4:5 ile kare sosyal medya düzenleri.
+            Uygulanan şablon sıradan katmanlardan oluşur; sonradan dilediğin
+            gibi düzenleyebilirsin.
           </DialogDescription>
         </DialogHeader>
 
@@ -272,6 +281,17 @@ export function TemplateDialog() {
                 options={effective}
                 assetUrls={assetUrls}
               />
+              {formatChange && (
+                <p
+                  role="status"
+                  className="rounded-md bg-secondary p-2 text-[11px] leading-snug"
+                >
+                  Bu şablon <b>{formatChange.label}</b> ({formatChange.width}×
+                  {formatChange.height}) içindir. Uygulayınca çıktı formatı
+                  değişir ve mevcut sahneler yeni formata uyarlanır (Ctrl+Z ile
+                  geri alınır).
+                </p>
+              )}
               <Field label="Tema rengi">
                 <ColorInput
                   value={opts.accent}

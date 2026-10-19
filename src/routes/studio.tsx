@@ -18,6 +18,8 @@ import { PrototypePanel } from "@/studio/ui/prototype-panel";
 import { RecordBar } from "@/studio/ui/record-bar";
 import { ScenePanel } from "@/studio/ui/scene-panel";
 import { SponsorPanel } from "@/studio/ui/sponsor-panel";
+import { FormatPicker } from "@/studio/ui/format-picker";
+import { VoicePanel } from "@/studio/ui/voice-panel";
 import { SoundLibrary } from "@/studio/ui/sound-library";
 import { SourceBar } from "@/studio/ui/source-bar";
 import { Stage } from "@/studio/ui/stage";
@@ -146,6 +148,7 @@ function StudioApp() {
 
         <main className="order-1 space-y-3 xl:order-2">
           <SourceBar />
+          <FormatPicker />
           <Stage selectedId={selected} onSelect={setSelected} />
           <RecordBar />
           <LivePanel />
@@ -155,6 +158,7 @@ function StudioApp() {
         <div className="order-3 space-y-3">
           <Inspector selectedId={selected} />
           <AudioMixer />
+          <VoicePanel />
           <SoundLibrary />
           <PrompterPanel />
         </div>

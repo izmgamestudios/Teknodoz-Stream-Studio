@@ -19,7 +19,8 @@ import {
 } from "../engine/transform";
 import { getActiveScene } from "../project/store";
 import { useProject, useStudio } from "../runtime/use-studio";
-import { LOGICAL_H, LOGICAL_W, type Transform } from "../types";
+import { stageFor } from "../format";
+import type { Transform } from "../types";
 
 interface Drag {
   kind: "move" | "resize" | "rotate";
@@ -42,6 +43,11 @@ export function Stage({
   const rt = useStudio();
   const project = useProject();
   const scene = getActiveScene(project);
+  const out = project.settings.output;
+  const stage = stageFor(out.width, out.height);
+  const LOGICAL_W = stage.w;
+  const LOGICAL_H = stage.h;
+  const ratio = LOGICAL_W / LOGICAL_H;
   const hostRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<SVGSVGElement>(null);
   const drag = useRef<Drag | null>(null);
@@ -145,7 +151,14 @@ export function Stage({
   const hs = 11;
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-black">
+    <div
+      className="relative mx-auto w-full overflow-hidden rounded-lg border bg-black"
+      style={{
+        aspectRatio: `${LOGICAL_W} / ${LOGICAL_H}`,
+        // tall formats (9:16) must not push the controls off-screen
+        width: `min(100%, ${(78 * ratio).toFixed(2)}vh)`,
+      }}
+    >
       <div ref={hostRef} className="absolute inset-0" />
       <svg
         ref={overlayRef}
