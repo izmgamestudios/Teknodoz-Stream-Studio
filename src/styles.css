@@ -85,3 +85,11 @@
 .tdp-msg { flex-basis: 100%; margin: 0; font-size: 0.8rem; color: #b91c1c; }
 .tdp, .tdp-item, .tdp-head > * { min-width: 0; overflow-wrap: anywhere; }
 .tdp-tag { overflow-wrap: normal; flex-shrink: 0; }
+
+/* Studio: pulse ring when the edited scene is pushed to the live program */
+@keyframes go-live-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 85%, transparent), inset 0 0 0 4px var(--primary); opacity: 1; }
+  100% { box-shadow: 0 0 0 28px transparent, inset 0 0 0 0 transparent; opacity: 0; }
+}
+.go-live-ring { animation: go-live-ring 0.9s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) { .go-live-ring { animation: none; opacity: 0; } }
