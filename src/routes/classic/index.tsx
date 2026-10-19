@@ -2,6 +2,19 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { toMainScene } from "@/classic/sync";
+import { AdjustControls } from "@/studio/ui/adjust-controls";
+import { hasFx } from "@/studio/engine/adjust";
+import { FxProcessor } from "@/studio/engine/fx";
+import {
+  applyVoicePreset,
+  duckStep,
+  loadVoiceSettings,
+  saveVoiceSettings,
+  VoiceProcessor,
+  type VoiceMeter,
+  type VoicePreset,
+  type VoiceSettings,
+} from "@/studio/engine/voice";
 import { sendHandoff } from "@/studio/sync/shared";
 import { ClassicNav } from "@/classic/components/classic-nav";
 import { RemotePanel } from "@/classic/components/remote-panel";
@@ -22,15 +35,17 @@ import {
   type TransitionEngine,
 } from "@/studio/engine/gl-transitions";
 import {
+  ASPECTS,
+  type Aspect,
   type Base,
   type Corner,
   emptyScene,
-  FILTERS,
   H,
   type Item,
   type Layout,
   type Scene,
   type Sources,
+  STAGES,
   uid,
   W,
 } from "@/classic/studio/types";
@@ -58,8 +73,7 @@ export const Route = createFileRoute("/classic/")({
   component: Studio,
 });
 
-const DRAFT_W = 960;
-const DRAFT_H = 540;
+const ASPECT_KEY = "classic.aspect.v1";
 const TPL_KEY = "studio.templates.v1";
 const CORNERS: [Corner, string][] = [
   ["tl", "↖"],
@@ -191,7 +205,32 @@ function Studio() {
   const [editIdx, setEditIdx] = useState(-1);
   const [pane, setPane] = useState<"edit" | "live">("edit");
   const [trackId, setTrackId] = useState<string | null>(null);
+  const [aspect, setAspect] = useState<Aspect>("16:9");
+  const [hd, setHd] = useState(false);
+  const [voice, setVoice] = useState<VoiceSettings>(() => loadVoiceSettings());
+  const [meter, setMeter] = useState<VoiceMeter>({ open: true, db: -100 });
   const { register, publish, guest } = useRemoteHost();
+  const stage = STAGES[aspect];
+  const outScale = hd ? 1.5 : 1;
+  const prog = {
+    w: Math.round(stage.w * outScale),
+    h: Math.round(stage.h * outScale),
+  };
+  const draftDims = {
+    w: Math.round(stage.w * 0.75),
+    h: Math.round(stage.h * 0.75),
+  };
+  const ratio = stage.w / stage.h;
+  const aspectRef = useRef(aspect);
+  aspectRef.current = aspect;
+  const fxRef = useRef<FxProcessor | null>(null);
+  const voiceRef = useRef(new VoiceProcessor());
+  const micState = useRef<"none" | "pending" | "ready">("none");
+  const voiceSettingsRef = useRef(voice);
+  voiceSettingsRef.current = voice;
+  const duckMul = useRef(1);
+  const bgVolRef = useRef(0.3);
+  const trackIdRef = useRef<string | null>(null);
   const guestRef = useRef<HTMLVideoElement>(null);
 
   const dirty = useMemo(
@@ -264,10 +303,64 @@ function Studio() {
 
   const prepareAudio = useCallback(() => {
     mixer.ensure();
-    mixer.connectStream(camStream.current);
+    const mic = camStream.current;
+    if (mic && micState.current === "none" && mic.getAudioTracks().length) {
+      // the mic goes through the voice chain (gate / EQ / compressor / limiter); raw on failure
+      micState.current = "pending";
+      voiceRef.current
+        .attach(new MediaStream(mic.getAudioTracks()), voiceSettingsRef.current)
+        .then((processed) => {
+          mixer.connectStream(processed);
+          micState.current = "ready";
+        })
+        .catch(() => {
+          mixer.connectStream(mic);
+          micState.current = "ready";
+        });
+    }
     mixer.connectElement(bgaRef.current);
     mixer.connectElement(bgvRef.current);
   }, [mixer]);
+
+  // voice settings: persist, apply to the live chain, follow the gate meter
+  useEffect(() => {
+    saveVoiceSettings(voice);
+    voiceRef.current.update(voice);
+  }, [voice]);
+  useEffect(() => voiceRef.current.subscribe(setMeter), []);
+  useEffect(() => () => voiceRef.current.detach(), []);
+
+  // automatic music ducking: lower music while the mic is speaking
+  useEffect(() => {
+    if (!voice.ducking.enabled) {
+      duckMul.current = 1;
+      return;
+    }
+    let last = performance.now();
+    const id = setInterval(() => {
+      const now = performance.now();
+      const m = voiceRef.current.getMeter();
+      const speaking = voiceSettingsRef.current.enabled
+        ? m.open && m.db > voice.ducking.thresholdDb
+        : m.db > voice.ducking.thresholdDb;
+      duckMul.current = duckStep(
+        duckMul.current,
+        speaking,
+        voice.ducking,
+        now - last,
+      );
+      last = now;
+      const level = bgVolRef.current * duckMul.current;
+      if (bgaRef.current) bgaRef.current.volume = Math.min(1, level);
+      if (bgvRef.current) bgvRef.current.volume = Math.min(1, level);
+      if (trackIdRef.current) mixer.music().setVolume(level);
+    }, 50);
+    return () => {
+      clearInterval(id);
+      duckMul.current = 1;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voice.ducking]);
 
   // one render loop: draft preview + live program (with WebGL transition)
   useEffect(() => {
@@ -275,8 +368,11 @@ function Studio() {
     const toC = document.createElement("canvas");
     fromC.width = toC.width = W;
     fromC.height = toC.height = H;
+    fxRef.current = new FxProcessor();
     let raf = 0;
     const loop = () => {
+      const st = STAGES[aspectRef.current];
+      const fxp = fxRef.current;
       const t = performance.now() / 1000;
       const src: Sources = {
         cam: camRef.current,
@@ -287,20 +383,38 @@ function Studio() {
       };
 
       const dctx = draftCanvas.current?.getContext("2d");
-      if (dctx) drawScene(dctx, draftRef.current, src, t, DRAFT_W, DRAFT_H);
+      const dcv = draftCanvas.current;
+      if (dctx && dcv)
+        drawScene(
+          dctx,
+          draftRef.current,
+          src,
+          t,
+          dcv.width,
+          dcv.height,
+          st,
+          fxp,
+        );
 
-      const pctx = progCanvas.current?.getContext("2d");
-      if (pctx) {
+      const pcv = progCanvas.current;
+      const pctx = pcv?.getContext("2d");
+      if (pctx && pcv) {
+        const PW = pcv.width;
+        const PH = pcv.height;
+        if (fromC.width !== PW || fromC.height !== PH) {
+          fromC.width = toC.width = PW;
+          fromC.height = toC.height = PH;
+        }
         const tr = transRef.current;
         const eng = engineRef.current;
         const p = tr ? (performance.now() - tr.start) / tr.dur : 1;
         if (tr && p < 1 && eng) {
           const f = fromC.getContext("2d")!,
             g = toC.getContext("2d")!;
-          drawScene(f, tr.from, src, t, W, H);
-          drawScene(g, tr.to, src, t, W, H);
-          if (eng.render(tr.name, fromC, toC, ease(p), W, H))
-            pctx.drawImage(eng.canvas, 0, 0, W, H);
+          drawScene(f, tr.from, src, t, PW, PH, st, fxp);
+          drawScene(g, tr.to, src, t, PW, PH, st, fxp);
+          if (eng.render(tr.name, fromC, toC, ease(p), PW, PH))
+            pctx.drawImage(eng.canvas, 0, 0, PW, PH);
           else {
             pctx.globalAlpha = 1;
             pctx.drawImage(fromC, 0, 0);
@@ -310,13 +424,16 @@ function Studio() {
           }
         } else {
           transRef.current = null;
-          drawScene(pctx, programRef.current, src, t, W, H);
+          drawScene(pctx, programRef.current, src, t, PW, PH, st, fxp);
         }
       }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      fxRef.current?.dispose();
+    };
   }, []);
 
   // recording timer
@@ -328,10 +445,33 @@ function Studio() {
   }, [recording]);
 
   useEffect(() => {
-    if (bgaRef.current) bgaRef.current.volume = bgVol;
-    if (bgvRef.current) bgvRef.current.volume = bgVol;
-    if (trackId) mixer.music().setVolume(bgVol);
+    bgVolRef.current = bgVol;
+    trackIdRef.current = trackId;
+    const level = bgVol * duckMul.current;
+    if (bgaRef.current) bgaRef.current.volume = Math.min(1, level);
+    if (bgvRef.current) bgvRef.current.volume = Math.min(1, level);
+    if (trackId) mixer.music().setVolume(level);
   }, [bgVol, trackId]);
+
+  // output aspect: remembered, locked while recording (the recorder owns the canvas size)
+  useEffect(() => {
+    try {
+      const a = localStorage.getItem(ASPECT_KEY) as Aspect | null;
+      if (a && a in STAGES) setAspect(a);
+    } catch {
+      /* storage blocked */
+    }
+  }, []);
+  const chooseAspect = (a: Aspect) => {
+    if (recording || a === aspect) return;
+    setAspect(a);
+    // programs already on air keep their look; the program is re-drawn for the new stage
+    try {
+      localStorage.setItem(ASPECT_KEY, a);
+    } catch {
+      /* storage blocked */
+    }
+  };
 
   // ---------- scene editing ----------
   const patch = (p: Partial<Scene>) => setDraft((d) => ({ ...d, ...p }));
@@ -574,8 +714,12 @@ function Studio() {
 
   // ---------- sync to the main Studio ----------
   function exportToMain() {
-    const results = rundown.map((r) => toMainScene(r.scene, r.name));
-    const ok = sendHandoff(results.map((r) => r.scene));
+    const results = rundown.map((r) => toMainScene(r.scene, r.name, aspect));
+    const ok = sendHandoff(
+      results.map((r) => r.scene),
+      "classic",
+      results[0]?.stage,
+    );
     const skipped = new Set(results.flatMap((r) => r.skipped));
     setSyncNote(
       ok
@@ -810,19 +954,23 @@ function Studio() {
 
           <div
             ref={stageRef}
-            className="relative aspect-video w-full overflow-hidden rounded-lg bg-background"
+            className="relative mx-auto w-full overflow-hidden rounded-lg bg-background"
+            style={{
+              aspectRatio: `${stage.w} / ${stage.h}`,
+              width: `min(100%, ${(70 * ratio).toFixed(2)}vh)`,
+            }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={onStageDrop}
             onPointerDown={() => setSelected(null)}
           >
             <canvas
               ref={draftCanvas}
-              width={DRAFT_W}
-              height={DRAFT_H}
+              width={draftDims.w}
+              height={draftDims.h}
               className="pointer-events-none absolute inset-0 h-full w-full"
             />
             {draft.items.map((it) => {
-              const b = itemBoxPct(it, images.current);
+              const b = itemBoxPct(it, images.current, stage);
               return (
                 <div
                   key={it.id}
@@ -979,20 +1127,50 @@ function Studio() {
                     ))}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <label className="flex items-center gap-2">
-                    Görüntü efekti
-                    <select
-                      value={draft.filter}
-                      onChange={(e) => patch({ filter: e.target.value })}
-                      className="rounded bg-background px-2 py-1"
-                    >
-                      {Object.entries(FILTERS).map(([k, v]) => (
-                        <option key={k} value={v}>
-                          {k}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="flex w-full flex-wrap items-center gap-2">
+                    <span className="font-semibold">Format</span>
+                    {ASPECTS.map((a) => (
+                      <button
+                        key={a.id}
+                        title={`${a.label}: ${a.hint}`}
+                        disabled={recording}
+                        onClick={() => chooseAspect(a.id)}
+                        className={`${btn} ${aspect === a.id ? on : ""} disabled:opacity-50`}
+                      >
+                        {a.id}
+                      </button>
+                    ))}
+                    <label className="ml-auto flex items-center gap-1.5 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={hd}
+                        disabled={recording}
+                        onChange={(e) => setHd(e.target.checked)}
+                      />
+                      Full HD çıkış (daha ağır)
+                    </label>
+                  </div>
+                  <details className="w-full rounded-lg border p-2" open>
+                    <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Görüntü ayarları (parlaklık, kontrast, netlik…)
+                    </summary>
+                    <div className="mt-2">
+                      <AdjustControls
+                        filter={draft.filter}
+                        fx={draft.fx}
+                        onChange={(n) =>
+                          setDraft((d) => {
+                            const { fx: _old, ...rest } = d;
+                            return {
+                              ...rest,
+                              filter: n.filter,
+                              ...(hasFx(n.fx) ? { fx: n.fx } : {}),
+                            };
+                          })
+                        }
+                      />
+                    </div>
+                  </details>
                   <label className="flex items-center gap-2">
                     Çerçeve
                     <input
@@ -1200,9 +1378,13 @@ function Studio() {
           <div className="relative">
             <canvas
               ref={progCanvas}
-              width={W}
-              height={H}
-              className="aspect-video w-full rounded-lg bg-background"
+              width={prog.w}
+              height={prog.h}
+              className="mx-auto block w-full rounded-lg bg-background"
+              style={{
+                aspectRatio: `${stage.w} / ${stage.h}`,
+                width: `min(100%, ${(70 * ratio).toFixed(2)}vh)`,
+              }}
             />
             {liveTick > 0 && (
               <div
@@ -1399,6 +1581,64 @@ function Studio() {
                 </button>
               ))}
             </div>
+          </div>
+          <div className="mt-3 space-y-2 rounded-lg bg-secondary p-3 text-sm">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold">🎙 Ses iyileştirme</p>
+              <span
+                className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+                aria-live="polite"
+              >
+                <span
+                  className={`inline-block size-2.5 rounded-full ${voice.enabled && voice.gate ? (meter.open ? "bg-speaker-b" : "bg-speaker-a") : "bg-muted-foreground"}`}
+                />
+                {voice.enabled && voice.gate
+                  ? meter.open
+                    ? "ses algılandı"
+                    : "gürültü bastırılıyor"
+                  : "kapı kapalı"}
+              </span>
+            </div>
+            <div
+              className="flex flex-wrap gap-1"
+              role="group"
+              aria-label="Ses ayarları"
+            >
+              {(
+                [
+                  ["off", "Kapalı"],
+                  ["speech", "Konuşma"],
+                  ["podcast", "Podcast"],
+                  ["noisy", "Gürültülü ortam"],
+                ] as [Exclude<VoicePreset, "custom">, string][]
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  aria-pressed={voice.preset === id}
+                  onClick={() => setVoice((v) => applyVoicePreset(v, id))}
+                  className={`${btn} ${voice.preset === id ? on : ""}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={voice.ducking.enabled}
+                onChange={(e) =>
+                  setVoice((v) => ({
+                    ...v,
+                    ducking: { ...v.ducking, enabled: e.target.checked },
+                  }))
+                }
+              />
+              Konuşurken müziği kıs (ducking)
+            </label>
+            <p className="text-[11px] text-muted-foreground">
+              Gürültü kapısı, EQ, sıkıştırıcı ve limiter mikrofon sesine
+              uygulanır; ayarlar Stüdyo ile ortaktır.
+            </p>
           </div>
           <RemotePanel className="mt-3" />
           <p className="mt-2 text-sm text-muted-foreground">

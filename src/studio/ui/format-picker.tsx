@@ -8,12 +8,14 @@ import {
   useStudio,
 } from "../runtime/use-studio";
 import { PANEL } from "./fields";
+import { setSafeZones, useSafeZones } from "./safe-zones";
 
 export function FormatPicker({ compact = false }: { compact?: boolean }) {
   const rt = useStudio();
   const out = useProject().settings.output;
   const recording = useRuntimeSnapshot().recorder?.status === "recording";
   const cur = formatOf(out.width, out.height);
+  const zones = useSafeZones();
 
   return (
     <div
@@ -42,6 +44,18 @@ export function FormatPicker({ compact = false }: { compact?: boolean }) {
             {f.short}
           </button>
         ))}
+        <label
+          className="ml-auto flex items-center gap-1.5 text-muted-foreground"
+          title="Platform arayüzünün kapatacağı bölgeleri gösterir (çıktıya girmez)"
+        >
+          <input
+            type="checkbox"
+            className="size-3.5"
+            checked={zones}
+            onChange={(e) => setSafeZones(e.target.checked)}
+          />
+          Güvenli bölge
+        </label>
         {!cur && (
           <span className="text-muted-foreground">
             özel {out.width}×{out.height}

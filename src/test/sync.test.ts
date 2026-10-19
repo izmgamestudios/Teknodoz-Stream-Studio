@@ -58,6 +58,57 @@ describe("handoff inbox", () => {
   });
 });
 
+describe("classic -> main conversion per aspect", () => {
+  const ASPECTS = ["16:9", "9:16", "4:5", "1:1"] as const;
+  it("every template converts for every aspect, inside the main stage", () => {
+    for (const aspect of ASPECTS)
+      for (const t of TEMPLATES) {
+        const { scene, stage } = toMainScene(t.build(), t.name, aspect);
+        const parsed = parseProject({
+          ...defaultProject(),
+          scenes: [scene],
+          activeSceneId: scene.id,
+        });
+        expect(parsed.ok, `${t.id}/${aspect}`).toBe(true);
+        expect(stage).toEqual(
+          aspect === "16:9"
+            ? { w: 1920, h: 1080 }
+            : aspect === "9:16"
+              ? { w: 1080, h: 1920 }
+              : aspect === "4:5"
+                ? { w: 1080, h: 1350 }
+                : { w: 1080, h: 1080 },
+        );
+        for (const l of scene.layers) {
+          const b = l.transform;
+          expect(b.x, `${t.id}/${aspect}/${l.name}`).toBeGreaterThanOrEqual(-2);
+          expect(b.y).toBeGreaterThanOrEqual(-2);
+          expect(b.x + b.w).toBeLessThanOrEqual(stage.w + 4);
+          expect(b.y + b.h).toBeLessThanOrEqual(stage.h + 4);
+        }
+      }
+  });
+  it("keeps scene filter and fx on the base layer", () => {
+    const sc: Scene = {
+      ...emptyScene(),
+      filter: "contrast(1.2)",
+      fx: { sharpen: 30, vignette: 0, warmth: 10 },
+    };
+    const { scene } = toMainScene(sc, "fx", "9:16");
+    const cam = scene.layers[0]!;
+    expect(cam.filter).toBe("contrast(1.2)");
+    expect(cam.fx).toEqual({ sharpen: 30, vignette: 0, warmth: 10 });
+    expect(cam.transform).toMatchObject({ w: 1080, h: 1920 });
+  });
+  it("split stacks in vertical formats", () => {
+    const sc: Scene = { ...emptyScene(), base: "screen", layout: "split" };
+    const { scene } = toMainScene(sc, "split", "9:16");
+    const [bg, a, b] = scene.layers;
+    expect(bg?.kind).toBe("shape");
+    expect(b!.transform.y).toBeGreaterThan(a!.transform.y + a!.transform.h - 2);
+  });
+});
+
 describe("classic -> main scene conversion", () => {
   it("converts every template into a scene the project schema accepts", () => {
     for (const t of TEMPLATES) {

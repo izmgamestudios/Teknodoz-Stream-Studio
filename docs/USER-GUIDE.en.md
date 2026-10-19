@@ -10,6 +10,8 @@
 - [📜 Prompter](#prompter)
 - [🎬 Studio: scenes and layers](#studio)
 - [▦ Templates and logo](#templates)
+- [📱 Vertical format (Reels, Shorts, TikTok) and safe zones](#vertical)
+- [🎚 Camera adjustments, voice enhancement and ducking](#camera-audio)
 - [🎧 Sound library and transitions](#sound)
 - [🎛️ Classic Studio and sync](#classic)
 - [🚪 Room: inviting guests](#room)
@@ -86,6 +88,42 @@ Ready-made broadcast frames for news, talks, tutorials and demos; with your own 
 > 💡 **Tip:** A template is built from ordinary layers; edit it freely after applying.
 
 > 💡 **Tip:** Guest panels start empty: the guest lands in the first free panel when you press “Yayına al” (put on air).
+
+<a name="vertical"></a>
+
+## 📱 Vertical format (Reels, Shorts, TikTok) and safe zones
+
+16:9, 9:16, 4:5, 1:1 and 4:3 output in the same studio: scenes adapt automatically, and live streaming and recording use the same size.
+
+1. In the Studio pick 9:16 (vertical), 4:5 (portrait) or 1:1 (square) from the “Format” bar above the stage.
+2. Scenes are re-laid out: full-frame layers stay full-frame, cameras and logos keep their aspect ratio. Undo with Ctrl+Z.
+3. In the “▦ Şablon” (template) window, templates in the “Dikey, 4:5 ve kare” group set the output format themselves.
+4. Turn on “Güvenli bölge” (safe zone): areas covered by platform UI are shaded red and the safe area is outlined in green (never part of the output).
+5. Live streaming (/live) follows the format: in vertical, the 1080p option sends 1080×1920.
+6. Pick a countdown (3 / 5 / 10 s) before recording; pressing again during the countdown cancels it.
+
+> 💡 **Tip:** The format cannot change while recording (the recorder locks the canvas).
+
+> 💡 **Tip:** Classic Studio has the same formats (Kaynak & Görüntü tab); sending scenes to the main Studio fits them to the target format.
+
+<a name="camera-audio"></a>
+
+## 🎚 Camera adjustments, voice enhancement and ducking
+
+Brightness, contrast, sharpness, blur, vignette and warmth; for the microphone a noise gate, EQ, compressor and automatic music ducking while you speak.
+
+1. Select a camera, screen, video or image layer; find “Görüntü ayarları” (image adjustments) in Properties on the right.
+2. Pick a preset (Doğal, Aydınlık, Canlı, Sinema, Podcast, Yumuşak, Sıcak, Soğuk, Retro, Siyah-beyaz, Gece, Loş ışık) or move the sliders by hand.
+3. Brightness, contrast, saturation, hue, sharpness, blur, warmth and vignette apply instantly to the live preview; “Ayarları sıfırla” clears them all.
+4. In the “Ses iyileştirme” (voice enhancement) panel choose Konuşma (speech), Podcast or Gürültülü ortam (noisy room); tune the gate threshold, reduction, EQ + compression amount and rumble filter.
+5. Stay silent and press “Ortam gürültüsünü ölç” (measure room noise): the gate threshold is set just above the measured noise.
+6. Turn on “Konuşurken müziği kıs” (duck music while speaking): music channels are lowered while you talk and come back smoothly; moving the slider by hand sets the new base level.
+
+> 💡 **Tip:** The browser's noise suppression, echo cancellation and auto gain are already on when the mic opens; the panel works on top of that.
+
+> 💡 **Tip:** Headphones prevent echo best. Everything runs in the browser, no server CPU is used.
+
+> 💡 **Tip:** Effects such as sharpness and vignette work only partly in Safari (no ctx.filter).
 
 <a name="sound"></a>
 

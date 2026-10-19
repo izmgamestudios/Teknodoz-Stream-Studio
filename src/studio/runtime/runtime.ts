@@ -2,7 +2,7 @@
 // The glue: one StudioRuntime owns the project store, asset store, audio bus, prompter engine,
 // media sources, compositor and recorder, and exposes the actions the UI needs.
 // Browser-only: create it inside an effect (see use-studio.tsx), never at module scope.
-import { FORMATS, stageFor } from "../format";
+import { FORMATS, fitScene, stageFor } from "../format";
 import { Compositor } from "../engine/compositor";
 import { AudioBus } from "../engine/audio-bus";
 import {
@@ -100,6 +100,7 @@ import { SourceManager } from "./sources";
 
 const EXPOSURE_KEY = "sponsors:exposure:v1";
 const GEN_CHANNEL = "music:gen";
+const COUNTDOWN_KEY = "studio.countdown.v1";
 
 export interface VoiceSnapshot {
   readonly settings: VoiceSettings;
@@ -118,6 +119,8 @@ export interface RuntimeSnapshot {
   };
   /** last user-facing runtime error code (recording / compositor) */
   readonly error: string | null;
+  /** seconds left before a recording starts (0 = no countdown running) */
+  readonly countdown: number;
 }
 
 const EMPTY_PEERS: readonly PeerInfo[] = Object.freeze([]);
@@ -128,6 +131,7 @@ const INITIAL: RuntimeSnapshot = {
   micMuted: false,
   voice: { active: false, speaking: false, error: null },
   error: null,
+  countdown: 0,
 };
 
 export class StudioRuntime {
@@ -171,6 +175,7 @@ export class StudioRuntime {
   };
   private voiceListeners = new Set<() => void>();
   private duckTimer: ReturnType<typeof setInterval> | null = null;
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
   private duckMul = 1;
   private duckLast = 0;
   private duckBase = new Map<string, { base: number; set: number }>();
@@ -924,8 +929,12 @@ export class StudioRuntime {
     });
     if (!parsed.ok) return 0;
     let n = 0;
+    const out = base.settings.output;
+    const here = stageFor(out.width, out.height);
     for (const sc of parsed.project.scenes) {
-      if (this.project.appendScene({ ...sc, name: `↪ ${sc.name}` })) n++;
+      // scenes written for another stage (e.g. a vertical classic scene) are fitted to ours
+      const fitted = h.stage ? fitScene(sc, h.stage, here) : sc;
+      if (this.project.appendScene({ ...fitted, name: `↪ ${sc.name}` })) n++;
     }
     return n;
   }
@@ -1126,8 +1135,58 @@ export class StudioRuntime {
   }
 
   toggleRecording(): void {
-    if (this.recorder) void this.stopRecording();
-    else void this.startRecording();
+    if (this.recorder) {
+      void this.stopRecording();
+      return;
+    }
+    // a second press during the countdown cancels it
+    if (this.countdownTimer) {
+      this.cancelCountdown();
+      return;
+    }
+    const secs = this.getCountdownSec();
+    if (secs <= 0) {
+      void this.startRecording();
+      return;
+    }
+    let left = secs;
+    this.patch({ countdown: left });
+    this.countdownTimer = setInterval(() => {
+      left -= 1;
+      if (left <= 0) {
+        this.cancelCountdown();
+        void this.startRecording();
+      } else {
+        this.patch({ countdown: left });
+      }
+    }, 1000);
+  }
+
+  cancelCountdown(): void {
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
+    this.countdownTimer = null;
+    if (this.snap.countdown !== 0) this.patch({ countdown: 0 });
+  }
+
+  /** Seconds counted down before recording starts (0 = immediately); remembered. */
+  getCountdownSec(): number {
+    try {
+      const n = Number(localStorage.getItem(COUNTDOWN_KEY));
+      return Number.isFinite(n) ? Math.min(30, Math.max(0, Math.round(n))) : 0;
+    } catch {
+      return 0;
+    }
+  }
+  setCountdownSec(sec: number): void {
+    try {
+      localStorage.setItem(
+        COUNTDOWN_KEY,
+        String(Math.min(30, Math.max(0, Math.round(sec)))),
+      );
+    } catch {
+      /* storage blocked */
+    }
+    this.patch({}); // re-render subscribers
   }
 
   addMarker(label?: string): boolean {
@@ -1292,6 +1351,7 @@ export class StudioRuntime {
     for (const el of this.music.values()) el.pause();
     this.music.clear();
     if (this.duckTimer) clearInterval(this.duckTimer);
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
     this.micFx.detach();
     for (const u of this.syncUnsubs) u();
     this.syncUnsubs = [];

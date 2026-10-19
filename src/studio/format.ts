@@ -172,3 +172,54 @@ export function orientedSize(
   if (ratio >= 1) return { width: even(short * ratio), height: even(short) };
   return { width: even(short), height: even(short / ratio) };
 }
+
+export interface SafeZone {
+  /** the area where text and faces are safe from platform UI / cropping */
+  safe: { x: number; y: number; w: number; h: number };
+  /** regions typically covered by platform UI (shaded in the editor) */
+  unsafe: { x: number; y: number; w: number; h: number }[];
+  label: string;
+}
+
+/**
+ * Safe areas per stage. Vertical video (Reels / Shorts / TikTok) loses the top ~13% to the
+ * profile bar and the bottom ~22% (+ the right edge) to caption and action buttons; wide video
+ * uses the classic 90% title-safe area.
+ */
+export function safeZoneFor(stage: StageSize): SafeZone {
+  const { w, h } = stage;
+  const r = (x: number, y: number, rw: number, rh: number) => ({
+    x: Math.round(x),
+    y: Math.round(y),
+    w: Math.round(rw),
+    h: Math.round(rh),
+  });
+  if (h > w * 1.5) {
+    const top = h * 0.13;
+    const bottom = h * 0.22;
+    const side = w * 0.04;
+    const right = w * 0.14;
+    return {
+      safe: r(side, top, w - side - right, h - top - bottom),
+      unsafe: [
+        r(0, 0, w, top),
+        r(0, h - bottom, w, bottom),
+        r(w - right, top, right, h - top - bottom),
+      ],
+      label: "Reels / Shorts / TikTok güvenli bölgesi",
+    };
+  }
+  const m = w >= h * 1.5 ? 0.05 : 0.06;
+  const mx = w * m;
+  const my = h * m;
+  return {
+    safe: r(mx, my, w - mx * 2, h - my * 2),
+    unsafe: [
+      r(0, 0, w, my),
+      r(0, h - my, w, my),
+      r(0, my, mx, h - my * 2),
+      r(w - mx, my, mx, h - my * 2),
+    ],
+    label: w >= h * 1.5 ? "Başlık güvenli bölgesi (%90)" : "Güvenli bölge",
+  };
+}

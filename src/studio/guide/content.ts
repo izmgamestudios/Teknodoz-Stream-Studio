@@ -183,6 +183,86 @@ export const GUIDE: readonly GuideSection[] = [
     },
   },
   {
+    id: "vertical",
+    icon: "📱",
+    to: "/studio",
+    tr: {
+      title: "Dikey format (Reels, Shorts, TikTok) ve güvenli bölge",
+      summary:
+        "Aynı stüdyoda 16:9, 9:16, 4:5, 1:1 ve 4:3 çıkış: sahneler yeni formata otomatik uyarlanır, canlı yayın ve kayıt aynı boyutta çıkar.",
+      steps: [
+        "Stüdyo'da sahnenin üstündeki “Format” çubuğundan 9:16 (dikey), 4:5 (portre) ya da 1:1 (kare) seç.",
+        "Sahneler yeni formata uyarlanır: tam ekran katmanlar tam ekran kalır, kamera ve logolar oranını korur. Beğenmezsen Ctrl+Z ile geri al.",
+        "“▦ Şablon” penceresinde “Dikey, 4:5 ve kare” grubundaki şablonlar çıktı formatını kendileri ayarlar.",
+        "“Güvenli bölge”yi aç: platform arayüzünün örteceği alanlar kırmızı, güvenli alan yeşil kesikli çizgiyle gösterilir (çıktıya girmez).",
+        "Canlı yayın (/live) kalitesi formata uyar: dikeyde 1080p seçeneği 1080×1920 gönderir.",
+        "Kayıt başlamadan önce Geri sayım (3 / 5 / 10 sn) seçebilirsin; sayaç sırasında tekrar basmak iptal eder.",
+      ],
+      tips: [
+        "Kayıt sürerken format değiştirilemez (kaydedici tuvali kilitler).",
+        "Klasik Stüdyo'da da aynı formatlar var (Kaynak & Görüntü sekmesi); ana Stüdyo'ya gönderince sahneler hedef formata uyarlanır.",
+      ],
+    },
+    en: {
+      title: "Vertical format (Reels, Shorts, TikTok) and safe zones",
+      summary:
+        "16:9, 9:16, 4:5, 1:1 and 4:3 output in the same studio: scenes adapt automatically, and live streaming and recording use the same size.",
+      steps: [
+        "In the Studio pick 9:16 (vertical), 4:5 (portrait) or 1:1 (square) from the “Format” bar above the stage.",
+        "Scenes are re-laid out: full-frame layers stay full-frame, cameras and logos keep their aspect ratio. Undo with Ctrl+Z.",
+        "In the “▦ Şablon” (template) window, templates in the “Dikey, 4:5 ve kare” group set the output format themselves.",
+        "Turn on “Güvenli bölge” (safe zone): areas covered by platform UI are shaded red and the safe area is outlined in green (never part of the output).",
+        "Live streaming (/live) follows the format: in vertical, the 1080p option sends 1080×1920.",
+        "Pick a countdown (3 / 5 / 10 s) before recording; pressing again during the countdown cancels it.",
+      ],
+      tips: [
+        "The format cannot change while recording (the recorder locks the canvas).",
+        "Classic Studio has the same formats (Kaynak & Görüntü tab); sending scenes to the main Studio fits them to the target format.",
+      ],
+    },
+  },
+  {
+    id: "camera-audio",
+    icon: "🎚",
+    to: "/studio",
+    tr: {
+      title: "Kamera ayarları, ses iyileştirme ve ducking",
+      summary:
+        "Parlaklık, kontrast, netlik, bulanıklık, vinyet ve sıcaklık; mikrofon için gürültü kapısı, EQ, sıkıştırıcı ve konuşurken müziği kısma.",
+      steps: [
+        "Bir kamera, ekran, video veya görsel katmanı seç; sağdaki Özellikler'de “Görüntü ayarları”nı bul.",
+        "Doğal, Aydınlık, Canlı, Sinema, Podcast, Yumuşak, Sıcak, Soğuk, Retro, Siyah-beyaz, Gece, Loş ışık ön ayarlarından birini seç ya da sürgüleri elle ayarla.",
+        "Parlaklık, kontrast, doygunluk, ton, netlik/keskinlik, bulanıklık, sıcaklık ve vinyet sürgüleri anında canlı önizlemeye yansır; “Ayarları sıfırla” hepsini temizler.",
+        "“Ses iyileştirme” panelinde Konuşma, Podcast ya da Gürültülü ortam ön ayarını seç; gürültü kapısı eşiğini, bastırma miktarını, EQ+sıkıştırma gücünü ve uğultu filtresini ayarla.",
+        "Sessiz kalıp “Ortam gürültüsünü ölç” düğmesine bas: kapı eşiği ölçülen gürültünün hemen üstüne ayarlanır.",
+        "“Konuşurken müziği kıs”ı aç: sen konuşurken müzik kanalları kısılır, bitince yumuşakça geri gelir; sürgüyü elle oynatırsan o değer yeni taban olur.",
+      ],
+      tips: [
+        "Tarayıcının gürültü engelleme, yankı önleme ve otomatik kazancı mikrofon açılırken zaten etkindir; panel onun üstüne çalışır.",
+        "Kulaklık kullanmak yankıyı en iyi şekilde önler. Sunucu CPU'su yerine tarayıcı çalıştığı için ek bir hesap gerekmez.",
+        "Netlik ve vinyet gibi efektler Safari'de (ctx.filter yok) kısmen çalışır.",
+      ],
+    },
+    en: {
+      title: "Camera adjustments, voice enhancement and ducking",
+      summary:
+        "Brightness, contrast, sharpness, blur, vignette and warmth; for the microphone a noise gate, EQ, compressor and automatic music ducking while you speak.",
+      steps: [
+        "Select a camera, screen, video or image layer; find “Görüntü ayarları” (image adjustments) in Properties on the right.",
+        "Pick a preset (Doğal, Aydınlık, Canlı, Sinema, Podcast, Yumuşak, Sıcak, Soğuk, Retro, Siyah-beyaz, Gece, Loş ışık) or move the sliders by hand.",
+        "Brightness, contrast, saturation, hue, sharpness, blur, warmth and vignette apply instantly to the live preview; “Ayarları sıfırla” clears them all.",
+        "In the “Ses iyileştirme” (voice enhancement) panel choose Konuşma (speech), Podcast or Gürültülü ortam (noisy room); tune the gate threshold, reduction, EQ + compression amount and rumble filter.",
+        "Stay silent and press “Ortam gürültüsünü ölç” (measure room noise): the gate threshold is set just above the measured noise.",
+        "Turn on “Konuşurken müziği kıs” (duck music while speaking): music channels are lowered while you talk and come back smoothly; moving the slider by hand sets the new base level.",
+      ],
+      tips: [
+        "The browser's noise suppression, echo cancellation and auto gain are already on when the mic opens; the panel works on top of that.",
+        "Headphones prevent echo best. Everything runs in the browser, no server CPU is used.",
+        "Effects such as sharpness and vignette work only partly in Safari (no ctx.filter).",
+      ],
+    },
+  },
+  {
     id: "sound",
     icon: "🎧",
     to: "/studio",

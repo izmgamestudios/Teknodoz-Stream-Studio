@@ -18,8 +18,13 @@ import {
   type HandleId,
 } from "../engine/transform";
 import { getActiveScene } from "../project/store";
-import { useProject, useStudio } from "../runtime/use-studio";
-import { stageFor } from "../format";
+import {
+  useProject,
+  useRuntimeSnapshot,
+  useStudio,
+} from "../runtime/use-studio";
+import { safeZoneFor, stageFor } from "../format";
+import { useSafeZones } from "./safe-zones";
 import type { Transform } from "../types";
 
 interface Drag {
@@ -48,6 +53,8 @@ export function Stage({
   const LOGICAL_W = stage.w;
   const LOGICAL_H = stage.h;
   const ratio = LOGICAL_W / LOGICAL_H;
+  const showZones = useSafeZones();
+  const countdown = useRuntimeSnapshot().countdown;
   const hostRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<SVGSVGElement>(null);
   const drag = useRef<Drag | null>(null);
@@ -171,6 +178,35 @@ export function Stage({
         onPointerCancel={endDrag}
         aria-label="Sahne düzenleme alanı"
       >
+        {showZones && (
+          <g pointerEvents="none" aria-hidden="true">
+            {safeZoneFor(stage).unsafe.map((u, i) => (
+              <rect
+                key={i}
+                x={u.x}
+                y={u.y}
+                width={u.w}
+                height={u.h}
+                fill="rgba(239,68,68,0.16)"
+              />
+            ))}
+            {(() => {
+              const z = safeZoneFor(stage).safe;
+              return (
+                <rect
+                  x={z.x}
+                  y={z.y}
+                  width={z.w}
+                  height={z.h}
+                  fill="none"
+                  stroke="rgba(34,197,94,0.85)"
+                  strokeWidth={3}
+                  strokeDasharray="14 10"
+                />
+              );
+            })()}
+          </g>
+        )}
         {guides.map((g, i) =>
           g.axis === "x" ? (
             <line
@@ -242,6 +278,17 @@ export function Stage({
           </g>
         )}
       </svg>
+      {countdown > 0 && (
+        <div
+          role="status"
+          aria-live="assertive"
+          className="pointer-events-none absolute inset-0 grid place-items-center bg-black/50"
+        >
+          <span className="text-[min(40vw,16rem)] font-black leading-none text-primary drop-shadow-lg">
+            {countdown}
+          </span>
+        </div>
+      )}
       <span className="pointer-events-none absolute bottom-1 right-2 text-[10px] text-white/50">
         Shift: oran/15° · Alt: merkezden
       </span>

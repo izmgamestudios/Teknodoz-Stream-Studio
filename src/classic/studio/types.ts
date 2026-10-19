@@ -1,6 +1,24 @@
-// src/lib/studio/types.ts
+// src/classic/studio/types.ts
+import type { LayerFx } from "@/studio/types";
 export const W = 1280;
 export const H = 720;
+
+/** Output aspect: the classic stage keeps the short side at 720 px. */
+export type Aspect = "16:9" | "9:16" | "4:5" | "1:1";
+export type Stage = { w: number; h: number };
+export const STAGES: Record<Aspect, Stage> = {
+  "16:9": { w: 1280, h: 720 },
+  "9:16": { w: 720, h: 1280 },
+  "4:5": { w: 720, h: 900 },
+  "1:1": { w: 720, h: 720 },
+};
+export const ASPECTS: { id: Aspect; label: string; hint: string }[] = [
+  { id: "16:9", label: "Yatay 16:9", hint: "YouTube, Twitch, toplantı" },
+  { id: "9:16", label: "Dikey 9:16", hint: "Reels, Shorts, TikTok" },
+  { id: "4:5", label: "Portre 4:5", hint: "Instagram akışı" },
+  { id: "1:1", label: "Kare 1:1", hint: "Instagram, LinkedIn" },
+];
+export const stageOf = (a: Aspect): Stage => STAGES[a];
 
 export type Base = "camera" | "screen" | "video" | "guest";
 export type Layout = "full" | "pip" | "split";
@@ -23,6 +41,8 @@ export type Item = {
 
 export type Scene = {
   base: Base;
+  /** extra effects beyond the CSS filter (sharpen, vignette, warmth) */
+  fx?: LayerFx;
   layout: Layout;
   corner: Corner;
   filter: string;

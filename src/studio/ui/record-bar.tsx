@@ -41,8 +41,29 @@ export function RecordBar() {
           onClick={() => rt.toggleRecording()}
           title="Kaydı başlat/bitir (Shift+R)"
         >
-          {live ? "■ Kaydı bitir" : "● Kayda başla"}
+          {live
+            ? "■ Kaydı bitir"
+            : snap.countdown > 0
+              ? `${snap.countdown}… iptal`
+              : "● Kayda başla"}
         </button>
+        {!live && (
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            Geri sayım
+            <select
+              className="rounded-md border bg-background px-1.5 py-1 text-xs text-foreground"
+              value={rt.getCountdownSec()}
+              onChange={(e) => rt.setCountdownSec(Number(e.target.value))}
+              aria-label="Kayıt öncesi geri sayım"
+            >
+              {[0, 3, 5, 10].map((n) => (
+                <option key={n} value={n}>
+                  {n === 0 ? "Yok" : `${n} sn`}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <span className="font-mono text-sm tabular-nums" aria-live="off">
           {formatMs(live ? now : 0)}
         </span>

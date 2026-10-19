@@ -60,6 +60,8 @@ export interface Handoff {
   from: SyncSource;
   /** scene objects in the main Studio's format; validated again by the importer */
   scenes: unknown[];
+  /** logical stage the scenes were written for (the importer fits them to its own) */
+  stage?: { w: number; h: number };
 }
 
 function store(): Storage | null {
@@ -119,6 +121,16 @@ export function subscribeScript(cb: (m: ScriptMessage) => void): () => void {
   return () => window.removeEventListener("storage", on);
 }
 
+const validStage = (s: unknown): s is { w: number; h: number } =>
+  typeof s === "object" &&
+  s !== null &&
+  Number.isFinite((s as { w?: number }).w) &&
+  Number.isFinite((s as { h?: number }).h) &&
+  (s as { w: number }).w >= 200 &&
+  (s as { w: number }).w <= 8000 &&
+  (s as { h: number }).h >= 200 &&
+  (s as { h: number }).h <= 8000;
+
 export function parseHandoff(raw: string | null): Handoff | null {
   if (!raw || raw.length > MAX_HANDOFF_BYTES) return null;
   try {
@@ -129,6 +141,7 @@ export function parseHandoff(raw: string | null): Handoff | null {
       at: typeof v.at === "number" ? v.at : 0,
       from: v.from === "main" ? "main" : "classic",
       scenes: v.scenes.slice(0, 50),
+      ...(validStage(v.stage) ? { stage: { w: v.stage.w, h: v.stage.h } } : {}),
     };
   } catch {
     return null;
@@ -139,6 +152,7 @@ export function parseHandoff(raw: string | null): Handoff | null {
 export function sendHandoff(
   scenes: unknown[],
   from: SyncSource = "classic",
+  stage?: { w: number; h: number },
 ): boolean {
   const s = store();
   if (!s || scenes.length === 0) return false;
@@ -148,6 +162,7 @@ export function sendHandoff(
       at: Date.now(),
       from,
       scenes,
+      ...(stage && validStage(stage) ? { stage } : {}),
     };
     const json = JSON.stringify(h);
     if (json.length > MAX_HANDOFF_BYTES) return false;

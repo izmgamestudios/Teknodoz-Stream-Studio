@@ -1,13 +1,22 @@
 // src/lib/studio/render.ts
-import { H, type Item, type Scene, type Sources, W } from "./types";
+import { hasFx } from "@/studio/engine/adjust";
+import type { FxEngine } from "@/studio/engine/fx";
+
+import { H, type Item, type Scene, type Sources, type Stage, W } from "./types";
+
+const LANDSCAPE: Stage = { w: W, h: H };
 
 type Rect = { x: number; y: number; w: number; h: number };
 
 const FONT = '"Space Grotesk", system-ui, sans-serif';
 
 /** Item box in 1280x720 stage pixels (center-based x/y converted to top-left). */
-export function itemRect(it: Item, images: Sources["images"]): Rect {
-  const w = (it.w / 100) * W;
+export function itemRect(
+  it: Item,
+  images: Sources["images"],
+  stage: Stage = LANDSCAPE,
+): Rect {
+  const w = (it.w / 100) * stage.w;
   const size = it.size ?? 30;
   let h = size * 1.6;
   if (it.kind === "image") {
@@ -17,17 +26,26 @@ export function itemRect(it: Item, images: Sources["images"]): Rect {
         ? (w * im.naturalHeight) / im.naturalWidth
         : w * 0.6;
   } else if (it.kind === "lower") h = size * 2.6;
-  return { x: (it.x / 100) * W - w / 2, y: (it.y / 100) * H - h / 2, w, h };
+  return {
+    x: (it.x / 100) * stage.w - w / 2,
+    y: (it.y / 100) * stage.h - h / 2,
+    w,
+    h,
+  };
 }
 
 /** Same box as percentages, for the editor's drag handles. */
-export function itemBoxPct(it: Item, images: Sources["images"]) {
-  const r = itemRect(it, images);
+export function itemBoxPct(
+  it: Item,
+  images: Sources["images"],
+  stage: Stage = LANDSCAPE,
+) {
+  const r = itemRect(it, images, stage);
   return {
-    left: (r.x / W) * 100,
-    top: (r.y / H) * 100,
-    width: (r.w / W) * 100,
-    height: (r.h / H) * 100,
+    left: (r.x / stage.w) * 100,
+    top: (r.y / stage.h) * 100,
+    width: (r.w / stage.w) * 100,
+    height: (r.h / stage.h) * 100,
   };
 }
 
@@ -66,8 +84,9 @@ function drawItem(
   it: Item,
   images: Sources["images"],
   t: number,
+  stage: Stage,
 ) {
-  const r = itemRect(it, images);
+  const r = itemRect(it, images, stage);
   const size = it.size ?? 30;
   const color = it.color ?? "#e0483c";
   ctx.save();
@@ -149,21 +168,40 @@ function drawItem(
   ctx.restore();
 }
 
-function pipRect(corner: Scene["corner"]): Rect {
-  const w = 340,
-    h = 191,
+export function pipRect(corner: Scene["corner"], stage: Stage): Rect {
+  // about a quarter of the stage width, 16:9 (3:4 would crop faces in tall formats)
+  const w = Math.round(Math.min(340, stage.w * 0.34)),
+    h = Math.round((w * 9) / 16),
     m = 30;
   return {
-    x: corner === "bl" || corner === "tl" ? m : W - w - m,
-    y: corner === "tl" || corner === "tr" ? m : H - h - m,
+    x: corner === "bl" || corner === "tl" ? m : stage.w - w - m,
+    y: corner === "tl" || corner === "tr" ? m : stage.h - h - m,
     w,
     h,
   };
 }
 
+/** Split layout: base + camera side by side (wide stage) or stacked (tall / square stage). */
+export function splitRects(stage: Stage): [Rect, Rect] {
+  const SW = stage.w;
+  const SH = stage.h;
+  if (SW >= SH) {
+    const m = SW * 0.025;
+    const bw = SW * 0.625;
+    const a: Rect = { x: m, y: SH * 0.125, w: bw, h: (bw * 9) / 16 };
+    return [a, { x: m * 2 + bw, y: a.y, w: SW - m * 3 - bw, h: a.h }];
+  }
+  const m = SW * 0.04;
+  const bw = SW - m * 2;
+  const bh = Math.min((bw * 9) / 16, SH * 0.38);
+  const a: Rect = { x: m, y: SH * 0.07, w: bw, h: bh };
+  const y2 = a.y + bh + m;
+  return [a, { x: m, y: y2, w: bw, h: Math.min(SH - y2 - m, bw * 0.95) }];
+}
+
 /**
- * Renders a scene onto ctx. The canvas can be any 16:9 size; geometry is
- * authored on a 1280x720 stage and scaled here.
+ * Renders a scene onto ctx. Geometry is authored on `stage` (1280x720 for 16:9, 720x1280 for
+ * 9:16...) and scaled to the canvas size; `fxp` (optional) renders sharpen / vignette / warmth.
  */
 export function drawScene(
   ctx: CanvasRenderingContext2D,
@@ -172,12 +210,17 @@ export function drawScene(
   t: number,
   cw: number,
   ch: number,
+  stage: Stage = LANDSCAPE,
+  fxp?: FxEngine | null,
 ) {
-  const k = cw / W;
+  const kx = cw / stage.w;
+  const ky = ch / stage.h;
+  const SW = stage.w;
+  const SH = stage.h;
   ctx.save();
-  ctx.scale(k, ch / H);
+  ctx.scale(kx, ky);
   ctx.fillStyle = "#111";
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, SW, SH);
 
   const baseEl =
     sc.base === "screen"
@@ -188,28 +231,51 @@ export function drawScene(
           ? src.guest
           : src.cam;
   const mirrorBase = sc.base === "camera";
-  const full: Rect = { x: 0, y: 0, w: W, h: H };
+  const full: Rect = { x: 0, y: 0, w: SW, h: SH };
   const frameRects: Rect[] = [];
 
+  /** Draws the base picture with the scene's filter (+ fx when set). */
+  const drawBase = (r: Rect) => {
+    if (fxp && hasFx(sc.fx) && baseEl && baseEl.readyState >= 2) {
+      const out = fxp.process(
+        "classic-base",
+        r.w * kx,
+        r.h * ky,
+        sc.filter,
+        sc.fx,
+        (c, w, h) =>
+          cover(
+            c as CanvasRenderingContext2D,
+            baseEl,
+            { x: 0, y: 0, w, h },
+            mirrorBase,
+          ),
+        true,
+      );
+      if (out) {
+        ctx.drawImage(out, r.x, r.y, r.w, r.h);
+        return;
+      }
+    }
+    ctx.filter = sc.filter;
+    cover(ctx, baseEl, r, mirrorBase);
+    ctx.filter = "none";
+  };
+
   if (sc.layout === "split") {
-    const g = ctx.createLinearGradient(0, 0, W, H);
+    const g = ctx.createLinearGradient(0, 0, SW, SH);
     g.addColorStop(0, sc.bg[0]);
     g.addColorStop(1, sc.bg[1]);
     ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-    const left: Rect = { x: 32, y: 90, w: 800, h: 450 };
-    const right: Rect = { x: 856, y: 90, w: 392, h: 450 };
-    ctx.filter = sc.filter;
-    cover(ctx, baseEl, left, mirrorBase);
-    ctx.filter = "none";
-    cover(ctx, src.cam, right, true);
-    frameRects.push(left, right);
+    ctx.fillRect(0, 0, SW, SH);
+    const [a, b] = splitRects(stage);
+    drawBase(a);
+    cover(ctx, src.cam, b, true);
+    frameRects.push(a, b);
   } else {
-    ctx.filter = sc.filter;
-    cover(ctx, baseEl, full, mirrorBase);
-    ctx.filter = "none";
+    drawBase(full);
     if (sc.layout === "pip" && sc.base !== "camera") {
-      const p = pipRect(sc.corner);
+      const p = pipRect(sc.corner, stage);
       cover(ctx, src.cam, p, true);
       frameRects.push(p);
       if (!sc.frame) {
@@ -218,7 +284,7 @@ export function drawScene(
         ctx.strokeRect(p.x, p.y, p.w, p.h);
       }
     }
-    if (sc.frame) frameRects.push({ x: 6, y: 6, w: W - 12, h: H - 12 });
+    if (sc.frame) frameRects.push({ x: 6, y: 6, w: SW - 12, h: SH - 12 });
   }
 
   if (sc.frame) {
@@ -230,6 +296,6 @@ export function drawScene(
     ctx.shadowBlur = 0;
   }
 
-  for (const it of sc.items) drawItem(ctx, it, src.images, t);
+  for (const it of sc.items) drawItem(ctx, it, src.images, t, stage);
   ctx.restore();
 }

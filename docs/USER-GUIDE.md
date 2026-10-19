@@ -10,6 +10,8 @@
 - [📜 Prompter](#prompter)
 - [🎬 Stüdyo: sahneler ve katmanlar](#studio)
 - [▦ Şablonlar ve logo](#templates)
+- [📱 Dikey format (Reels, Shorts, TikTok) ve güvenli bölge](#vertical)
+- [🎚 Kamera ayarları, ses iyileştirme ve ducking](#camera-audio)
 - [🎧 Ses kütüphanesi ve geçişler](#sound)
 - [🎛️ Klasik Stüdyo ve senkron](#classic)
 - [🚪 Oda: konuk daveti](#room)
@@ -86,6 +88,42 @@ Haber, konuşma, eğitim ve demo için hazır yayın çerçeveleri; kendi logon 
 > 💡 **İpucu:** Şablon sıradan katmanlardan kurulur; uyguladıktan sonra dilediğin gibi düzenleyebilirsin.
 
 > 💡 **İpucu:** Konuk panelleri boş gelir: konuğu “Yayına al”dığında ilk boş panele yerleşir.
+
+<a name="vertical"></a>
+
+## 📱 Dikey format (Reels, Shorts, TikTok) ve güvenli bölge
+
+Aynı stüdyoda 16:9, 9:16, 4:5, 1:1 ve 4:3 çıkış: sahneler yeni formata otomatik uyarlanır, canlı yayın ve kayıt aynı boyutta çıkar.
+
+1. Stüdyo'da sahnenin üstündeki “Format” çubuğundan 9:16 (dikey), 4:5 (portre) ya da 1:1 (kare) seç.
+2. Sahneler yeni formata uyarlanır: tam ekran katmanlar tam ekran kalır, kamera ve logolar oranını korur. Beğenmezsen Ctrl+Z ile geri al.
+3. “▦ Şablon” penceresinde “Dikey, 4:5 ve kare” grubundaki şablonlar çıktı formatını kendileri ayarlar.
+4. “Güvenli bölge”yi aç: platform arayüzünün örteceği alanlar kırmızı, güvenli alan yeşil kesikli çizgiyle gösterilir (çıktıya girmez).
+5. Canlı yayın (/live) kalitesi formata uyar: dikeyde 1080p seçeneği 1080×1920 gönderir.
+6. Kayıt başlamadan önce Geri sayım (3 / 5 / 10 sn) seçebilirsin; sayaç sırasında tekrar basmak iptal eder.
+
+> 💡 **İpucu:** Kayıt sürerken format değiştirilemez (kaydedici tuvali kilitler).
+
+> 💡 **İpucu:** Klasik Stüdyo'da da aynı formatlar var (Kaynak & Görüntü sekmesi); ana Stüdyo'ya gönderince sahneler hedef formata uyarlanır.
+
+<a name="camera-audio"></a>
+
+## 🎚 Kamera ayarları, ses iyileştirme ve ducking
+
+Parlaklık, kontrast, netlik, bulanıklık, vinyet ve sıcaklık; mikrofon için gürültü kapısı, EQ, sıkıştırıcı ve konuşurken müziği kısma.
+
+1. Bir kamera, ekran, video veya görsel katmanı seç; sağdaki Özellikler'de “Görüntü ayarları”nı bul.
+2. Doğal, Aydınlık, Canlı, Sinema, Podcast, Yumuşak, Sıcak, Soğuk, Retro, Siyah-beyaz, Gece, Loş ışık ön ayarlarından birini seç ya da sürgüleri elle ayarla.
+3. Parlaklık, kontrast, doygunluk, ton, netlik/keskinlik, bulanıklık, sıcaklık ve vinyet sürgüleri anında canlı önizlemeye yansır; “Ayarları sıfırla” hepsini temizler.
+4. “Ses iyileştirme” panelinde Konuşma, Podcast ya da Gürültülü ortam ön ayarını seç; gürültü kapısı eşiğini, bastırma miktarını, EQ+sıkıştırma gücünü ve uğultu filtresini ayarla.
+5. Sessiz kalıp “Ortam gürültüsünü ölç” düğmesine bas: kapı eşiği ölçülen gürültünün hemen üstüne ayarlanır.
+6. “Konuşurken müziği kıs”ı aç: sen konuşurken müzik kanalları kısılır, bitince yumuşakça geri gelir; sürgüyü elle oynatırsan o değer yeni taban olur.
+
+> 💡 **İpucu:** Tarayıcının gürültü engelleme, yankı önleme ve otomatik kazancı mikrofon açılırken zaten etkindir; panel onun üstüne çalışır.
+
+> 💡 **İpucu:** Kulaklık kullanmak yankıyı en iyi şekilde önler. Sunucu CPU'su yerine tarayıcı çalıştığı için ek bir hesap gerekmez.
+
+> 💡 **İpucu:** Netlik ve vinyet gibi efektler Safari'de (ctx.filter yok) kısmen çalışır.
 
 <a name="sound"></a>
 

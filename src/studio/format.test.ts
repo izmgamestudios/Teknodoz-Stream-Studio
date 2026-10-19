@@ -8,6 +8,7 @@ import {
   formatOf,
   orientationOf,
   orientedSize,
+  safeZoneFor,
   stageFor,
 } from "./format";
 import { createProjectStore } from "./project/store";
@@ -141,5 +142,36 @@ describe("live quality follows the format", () => {
       width: 1080,
       height: 1350,
     });
+  });
+});
+
+describe("safe zones", () => {
+  const inside = (
+    z: ReturnType<typeof safeZoneFor>,
+    st: { w: number; h: number },
+  ) =>
+    z.safe.x >= 0 &&
+    z.safe.y >= 0 &&
+    z.safe.x + z.safe.w <= st.w &&
+    z.safe.y + z.safe.h <= st.h;
+  it("stay inside the stage for every format", () => {
+    for (const f of FORMATS) {
+      const st = stageFor(f.width, f.height);
+      const z = safeZoneFor(st);
+      expect(inside(z, st), f.id).toBe(true);
+      expect(z.safe.w).toBeGreaterThan(st.w * 0.5);
+      expect(z.unsafe.length).toBeGreaterThan(0);
+    }
+  });
+  it("vertical video reserves more at the bottom than at the top", () => {
+    const st = stageFor(1080, 1920);
+    const z = safeZoneFor(st);
+    expect(z.safe.y).toBeGreaterThan(st.h * 0.1);
+    expect(st.h - (z.safe.y + z.safe.h)).toBeGreaterThan(z.safe.y);
+    expect(z.label).toMatch(/Reels/);
+  });
+  it("wide video uses the 90% title-safe area", () => {
+    const z = safeZoneFor({ w: 1920, h: 1080 });
+    expect(z.safe).toEqual({ x: 96, y: 54, w: 1728, h: 972 });
   });
 });

@@ -229,6 +229,137 @@ export const TEMPLATES: Template[] = [
         ],
       ),
   },
+  {
+    id: "reels",
+    name: "Reels / Shorts",
+    emoji: "📱",
+    hint: "Dikey: tam ekran kamera, üstte rozet, altta altyazı (güvenli bölge)",
+    build: () =>
+      make(
+        {
+          filter: "contrast(1.08) saturate(1.12)",
+          fx: { sharpen: 20, vignette: 20, warmth: 8 },
+        },
+        [
+          {
+            kind: "badge",
+            text: "CANLI",
+            x: 18,
+            y: 6,
+            w: 28,
+            color: "#e0483c",
+            size: 26,
+          },
+          {
+            kind: "subtitle",
+            text: "Altyazı burada görünür",
+            x: 50,
+            y: 74,
+            w: 90,
+            size: 34,
+          },
+          {
+            kind: "lower",
+            text: "Ad Soyad",
+            sub: "@kullanici",
+            x: 50,
+            y: 84,
+            w: 90,
+            color: "#f5c04a",
+            size: 32,
+          },
+        ],
+      ),
+  },
+  {
+    id: "v-split",
+    name: "Dikey ekran + kamera",
+    emoji: "🧩",
+    hint: "Üstte ekran/video, altta kamera; başlık ve kayan yazı",
+    build: () =>
+      make({ base: "screen", layout: "split", bg: ["#1e1b4b", "#0f172a"] }, [
+        {
+          kind: "text",
+          text: "CANLI DEMO",
+          x: 50,
+          y: 3.5,
+          w: 70,
+          color: "#7c3aed",
+          size: 30,
+        },
+        {
+          kind: "ticker",
+          text: "Takip et · Beğen · Yorum yaz · Teknodoz",
+          x: 50,
+          y: 97,
+          w: 100,
+          color: "#111111",
+          size: 24,
+        },
+      ]),
+  },
+  {
+    id: "square",
+    name: "Kare duyuru",
+    emoji: "⬛",
+    hint: "1:1: kamera, büyük başlık ve alt bant",
+    build: () =>
+      make({ frame: "#38bdf8" }, [
+        {
+          kind: "text",
+          text: "BAŞLIK BURAYA",
+          x: 50,
+          y: 10,
+          w: 80,
+          color: "#0ea5e9",
+          size: 34,
+        },
+        {
+          kind: "lower",
+          text: "Konuşmacı",
+          sub: "Unvan · Şirket",
+          x: 50,
+          y: 86,
+          w: 88,
+          color: "#38bdf8",
+          size: 30,
+        },
+      ]),
+  },
+  {
+    id: "podcast-night",
+    name: "Gece podcast",
+    emoji: "🌙",
+    hint: "Loş ışık düzeltmesi, sıcak ton, vinyet",
+    build: () =>
+      make(
+        {
+          filter: "brightness(1.18) contrast(1.1) saturate(0.95)",
+          fx: { sharpen: 25, vignette: 40, warmth: 15 },
+        },
+        [
+          {
+            kind: "badge",
+            text: "CANLI",
+            x: 9,
+            y: 9,
+            w: 12,
+            color: "#e0483c",
+            size: 26,
+          },
+          {
+            kind: "lower",
+            text: "Konuk Adı",
+            sub: "Unvan",
+            x: 27,
+            y: 84,
+            w: 44,
+            color: "#f5c04a",
+            size: 34,
+          },
+        ],
+      ),
+  },
 ];
 
 export const ITEM_PRESETS: Record<string, Omit<Item, "id">> = {

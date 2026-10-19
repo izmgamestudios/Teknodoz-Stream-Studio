@@ -10,3 +10,9 @@
 - [ ] Sahne geçişi sırasında otomatik whoosh efekti
 - [x] Klasik Stüdyo (`/classic`): solda düzenle / sağda canlı, 8 şablon, sahne listesi, PeerJS telefon kumandası (`/classic/remote`), konuk daveti (`/classic/join`), mobil prompter (`/classic/prompter`)
 - [x] Senkron: prompter metni (ana Stüdyo ⇄ Klasik ⇄ diğer sekmeler) ve Klasik sahnelerini ana Stüdyo'ya aktarma (anında, açık sekmeye)
+- [x] Dikey/kare/portre çıkış (9:16, 4:5, 1:1, 4:3): sahneler otomatik uyarlanır, güvenli bölge, kayıt öncesi geri sayım, canlı yayın kalitesi formata uyar; Klasik Stüdyo'da da
+- [x] Kamera/görüntü ayarları (parlaklık, kontrast, doygunluk, ton, netlik, bulanıklık, sıcaklık, vinyet) + 12 ön ayar
+- [x] Ses iyileştirme: gürültü kapısı (AudioWorklet), EQ, sıkıştırıcı, limiter, ortam gürültüsü ölçümü, otomatik müzik kısma (ducking)
+- [x] 10 yeni şablon (röportaj, radyo, 5 dikey, 4:5, 2 kare) + 4 yeni Klasik şablon
+- [ ] Yapay zeka tabanlı gürültü bastırma (RNNoise/WASM) ve arka plan bulanıklaştırma (segmentasyon): model dosyaları bu ortamdan indirilemedi
+

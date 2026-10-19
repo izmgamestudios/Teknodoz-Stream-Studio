@@ -1,17 +1,32 @@
 // src/classic/sync.ts
-// Classic scene -> main Studio scene (1920x1080 logical px, layer based).
+// Classic scene -> main Studio scene. The main stage follows the output aspect (1920x1080,
+// 1080x1920, 1080x1350, 1080x1080); the classic stage keeps its short side at 720.
 import { createLayer, createScene } from "@/studio/defaults";
+import { FORMATS, stageFor } from "@/studio/format";
+import { hasFx, normalizeFx } from "@/studio/engine/adjust";
 import type { Layer, Scene as MainScene } from "@/studio/types";
 
-import type { Corner, Item, Scene } from "./studio/types";
-
-const K = 1920 / 1280; // classic stage is 1280x720
-const FULL = { x: 0, y: 0, w: 1920, h: 1080, rotation: 0 };
+import { pipRect, splitRects } from "./studio/render";
+import {
+  type Aspect,
+  type Item,
+  type Scene,
+  STAGES,
+  type Stage,
+} from "./studio/types";
 
 export interface ConvertResult {
   scene: MainScene;
+  /** the main-Studio stage the scene was written for */
+  stage: Stage;
   /** things that cannot be carried over (images are in-memory blobs, video needs an asset) */
   skipped: string[];
+}
+
+/** Main-Studio stage for a classic aspect. */
+export function mainStageFor(aspect: Aspect): Stage {
+  const f = FORMATS.find((x) => x.id === aspect) ?? FORMATS[0]!;
+  return stageFor(f.width, f.height);
 }
 
 const round = (n: number) => Math.round(n);
@@ -23,28 +38,21 @@ const box = (x: number, y: number, w: number, h: number) => ({
   rotation: 0,
 });
 
-function pipBox(corner: Corner) {
-  const w = 510,
-    h = 287,
-    m = 45;
-  return box(
-    corner === "bl" || corner === "tl" ? m : 1920 - w - m,
-    corner === "tl" || corner === "tr" ? m : 1080 - h - m,
-    w,
-    h,
-  );
+interface Ctx {
+  K: number;
+  main: Stage;
 }
 
-function itemHeight(it: Item): number {
+function itemHeight(it: Item, K: number): number {
   const size = (it.size ?? 30) * K;
   return it.kind === "lower" ? size * 2.6 : size * 1.6;
 }
 
-function itemLayers(it: Item): Layer[] {
-  const w = (it.w / 100) * 1920;
-  const h = itemHeight(it);
-  const x = (it.x / 100) * 1920 - w / 2;
-  const y = (it.y / 100) * 1080 - h / 2;
+function itemLayers(it: Item, { K, main }: Ctx): Layer[] {
+  const w = (it.w / 100) * main.w;
+  const h = itemHeight(it, K);
+  const x = (it.x / 100) * main.w - w / 2;
+  const y = (it.y / 100) * main.h - h / 2;
   const size = round((it.size ?? 30) * K);
   const color = it.color ?? "#e0483c";
   const text = it.text ?? "";
@@ -130,10 +138,23 @@ function itemLayers(it: Item): Layer[] {
   }
 }
 
-export function toMainScene(sc: Scene, name: string): ConvertResult {
+export function toMainScene(
+  sc: Scene,
+  name: string,
+  aspect: Aspect = "16:9",
+): ConvertResult {
   const skipped: string[] = [];
   const layers: Layer[] = [];
+  const cs = STAGES[aspect];
+  const main = mainStageFor(aspect);
+  const K = main.w / cs.w;
+  const ctx: Ctx = { K, main };
+  const scale = (r: { x: number; y: number; w: number; h: number }) =>
+    box(r.x * K, r.y * K, r.w * K, r.h * K);
+  const filter = sc.filter;
+  const fx = hasFx(sc.fx) ? normalizeFx(sc.fx) : undefined;
   const split = sc.layout === "split";
+  const [splitA, splitB] = splitRects(cs);
 
   if (split) {
     layers.push(
@@ -144,39 +165,24 @@ export function toMainScene(sc: Scene, name: string): ConvertResult {
         stroke: "#ffffff",
         strokeWidth: 0,
         radius: 0,
-        transform: { ...FULL },
+        transform: { x: 0, y: 0, w: main.w, h: main.h, rotation: 0 },
       }),
     );
   }
 
-  const baseBox = split ? box(48, 135, 1200, 675) : { ...FULL };
+  const baseBox = split
+    ? scale(splitA)
+    : { x: 0, y: 0, w: main.w, h: main.h, rotation: 0 };
+  const common = { filter, ...(fx ? { fx } : {}), transform: baseBox };
   switch (sc.base) {
     case "camera":
-      layers.push(
-        createLayer("webcam", {
-          name: "Kamera",
-          filter: sc.filter,
-          transform: baseBox,
-        }),
-      );
+      layers.push(createLayer("webcam", { name: "Kamera", ...common }));
       break;
     case "screen":
-      layers.push(
-        createLayer("screen", {
-          name: "Ekran",
-          filter: sc.filter,
-          transform: baseBox,
-        }),
-      );
+      layers.push(createLayer("screen", { name: "Ekran", ...common }));
       break;
     case "guest":
-      layers.push(
-        createLayer("guest", {
-          name: "Konuk",
-          filter: sc.filter,
-          transform: baseBox,
-        }),
-      );
+      layers.push(createLayer("guest", { name: "Konuk", ...common }));
       break;
     case "video":
       skipped.push(
@@ -187,16 +193,13 @@ export function toMainScene(sc: Scene, name: string): ConvertResult {
 
   if (split)
     layers.push(
-      createLayer("webcam", {
-        name: "Kamera (yan)",
-        transform: box(1284, 135, 588, 675),
-      }),
+      createLayer("webcam", { name: "Kamera (yan)", transform: scale(splitB) }),
     );
   else if (sc.layout === "pip" && sc.base !== "camera")
     layers.push(
       createLayer("webcam", {
         name: "Kamera (PiP)",
-        transform: pipBox(sc.corner),
+        transform: scale(pipRect(sc.corner, cs)),
       }),
     );
 
@@ -209,7 +212,7 @@ export function toMainScene(sc: Scene, name: string): ConvertResult {
         stroke: sc.frame,
         strokeWidth: 12,
         radius: 0,
-        transform: box(9, 9, 1902, 1062),
+        transform: box(9, 9, main.w - 18, main.h - 18),
       }),
     );
   }
@@ -217,8 +220,8 @@ export function toMainScene(sc: Scene, name: string): ConvertResult {
   for (const it of sc.items) {
     if (it.kind === "image")
       skipped.push("Logo/görsel (Ana Stüdyo'ya dosyayı yeniden ekleyin)");
-    else layers.push(...itemLayers(it));
+    else layers.push(...itemLayers(it, ctx));
   }
 
-  return { scene: createScene(name, layers), skipped };
+  return { scene: createScene(name, layers), stage: main, skipped };
 }
