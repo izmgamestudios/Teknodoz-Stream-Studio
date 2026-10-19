@@ -40,7 +40,7 @@ PM2 `restart` (yoksa `start`) → `/studio` için 200 sağlık kontrolü. Kontro
 | `502 Bad Gateway` | Süreç çalışmıyor ya da port farklı. `pm2 status`, `ss -tlnp \| grep node`; `PORT` değeri App Port ile aynı mı? |
 | `pm2: Process or Namespace not found` | İlk kez başlatılıyor: `deploy.sh` bunu kendisi `start` ile halleder. |
 | Liste boş / sunucu yeniden başlayınca site düşüyor | `pm2 startup` + `pm2 save` yapılmamış. |
-| `git pull` "local changes" hatası | `git status`; sunucuda elle düzenleme yoksa `git checkout -- .` (script `bun.lock`'u kendisi sıfırlar). |
+| `git pull` "local changes" hatası | `git status`; sunucuda elle düzenleme yoksa `git checkout -- .`. Script üretilen dosyaları (`bun.lock`, `src/routeTree.gen.ts`) kendisi sıfırlar; eski bir sürümle takılırsan bir kere `git checkout -- src/routeTree.gen.ts bun.lock` çalıştır. |
 | Kamera / mikrofon izni hiç sorulmuyor | Site HTTPS değil. |
 | Build "mammoth" bulamıyor | `bun install` tamamlanmamış; ağ/izin hatası olup olmadığına bak. |
 
