@@ -1,7 +1,7 @@
 // src/studio/ui/sound-library.tsx
 // Built-in, licence-free sounds: procedural lo-fi / ambient music (WebAudio) and synthesized
 // effects (ZzFX, MIT). Everything is generated in the browser; nothing is downloaded.
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { TRACKS } from "../engine/music";
 import { SFX_PRESETS } from "../engine/sfx-presets";
@@ -13,6 +13,8 @@ const TILE = "rounded-md px-2 py-1.5 text-left text-xs transition-colors";
 export function SoundLibrary() {
   const rt = useStudio();
   useAudioState(); // re-render when the generated-music channel changes
+  const [whoosh, setWhoosh] = useState(true);
+  useEffect(() => setWhoosh(rt.getAutoWhoosh()), [rt]);
 
   // 1-8 on Alt: fire the first eight effects (plain digits already switch scenes)
   useEffect(() => {
@@ -35,6 +37,19 @@ export function SoundLibrary() {
       <p className="mb-2 text-[11px] text-muted-foreground">
         Müzik ve efektler kodla üretilir: dosya yok, telif yok. Kayıda ve canlı yayına karışır.
       </p>
+
+      <label className="mb-3 flex items-center justify-between gap-2 rounded-md bg-secondary px-2 py-1.5 text-xs">
+        <span>💨 Sahne geçişinde whoosh çal</span>
+        <input
+          type="checkbox"
+          className="size-4"
+          checked={whoosh}
+          onChange={(e) => {
+            setWhoosh(e.target.checked);
+            rt.setAutoWhoosh(e.target.checked);
+          }}
+        />
+      </label>
 
       <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Müzik</p>
       <ul className="mb-3 grid grid-cols-1 gap-1 sm:grid-cols-2 xl:grid-cols-1">

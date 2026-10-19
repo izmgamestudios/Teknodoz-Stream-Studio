@@ -87,6 +87,7 @@ import { SourceManager } from "./sources";
 
 const EXPOSURE_KEY = "sponsors:exposure:v1";
 const GEN_CHANNEL = "music:gen";
+const AUTO_WHOOSH_KEY = "studio.autoWhoosh.v1";
 
 export interface RuntimeSnapshot {
   readonly recorder: RecorderSnapshot | null;
@@ -419,7 +420,30 @@ export class StudioRuntime {
 
   /** Switch the live scene (with the scene's transition). */
   switchScene(id: string): boolean {
-    return this.project.setActiveScene(id);
+    const st = this.project.getState();
+    const changing = id !== st.activeSceneId;
+    const type = st.scenes.find((s) => s.id === id)?.transition.type;
+    const ok = this.project.setActiveScene(id);
+    if (ok && changing && type && type !== "cut" && this.getAutoWhoosh()) {
+      void this.playPresetEffect("whoosh");
+    }
+    return ok;
+  }
+
+  /** Plays a "whoosh" effect on every non-cut scene transition (preference, default on). */
+  getAutoWhoosh(): boolean {
+    try {
+      return localStorage.getItem(AUTO_WHOOSH_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  }
+  setAutoWhoosh(on: boolean): void {
+    try {
+      localStorage.setItem(AUTO_WHOOSH_KEY, on ? "1" : "0");
+    } catch {
+      /* storage blocked: stays on for this session only */
+    }
   }
   switchSceneByIndex(index: number): boolean {
     const s = this.project.getState().scenes[index];

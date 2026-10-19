@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { toMainScene } from "@/classic/sync";
 import { sendHandoff } from "@/studio/sync/shared";
+import { ClassicNav } from "@/classic/components/classic-nav";
 import { RemotePanel } from "@/classic/components/remote-panel";
 import { RundownBar, type RundownEntry } from "@/classic/components/rundown-bar";
 import { useRemoteHost } from "@/classic/remote/host";
@@ -35,13 +36,13 @@ import { useAudioMixer } from "@/classic/studio/use-audio-mixer";
 export const Route = createFileRoute("/classic/")({
   head: () => ({
     meta: [
-      { title: "Stüdyo — PodPrompter" },
+      { title: "Klasik Stüdyo — Teknodoz" },
       {
         name: "description",
         content:
           "Solda düzenle, sağda canlı yayını izle: şablonlar, geçiş efektleri, ses efektleri ve kayıt.",
       },
-      { property: "og:title", content: "Stüdyo — PodPrompter" },
+      { property: "og:title", content: "Klasik Stüdyo — Teknodoz" },
       {
         property: "og:description",
         content:
@@ -690,8 +691,9 @@ function Studio() {
         >
           ← Prompter
         </Link>
-        <h1 className="text-2xl font-bold">Stüdyo</h1>
+        <h1 className="text-2xl font-bold">Klasik Stüdyo</h1>
         {camErr && <span className="text-sm text-destructive">{camErr}</span>}
+        <ClassicNav className="w-full sm:ml-auto sm:w-auto" />
       </header>
 
       <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1 text-sm font-semibold xl:hidden" role="tablist">

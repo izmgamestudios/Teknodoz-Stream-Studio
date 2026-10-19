@@ -155,7 +155,7 @@ export const GUIDE: readonly GuideSection[] = [
         "Haber, konuşma, eğitim ve demo için hazır yayın çerçeveleri; kendi logon ve arka planınla.",
       steps: [
         "Sahne panelinde “▦ Şablon” düğmesine bas.",
-        "Haber / Breaking News, solo, mobil test, masaüstü prototip, 2'li / 3'lü / 4'lü konuşma, eğitim, çift ekran ve sunum şablonlarından birini seç.",
+        "Haber / Breaking News, solo, mobil test, masaüstü prototip, 2'li / 3'lü / 4'lü konuşma, yan yana, oyun yayını, eğitim, çift ekran ve sunum şablonlarından birini seç.",
         "Tema rengini, başlığı, etiketi ve kayan yazıyı yaz; önizleme anında güncellenir.",
         "İstersen logonu ve özel arka plan görselini yükle (PNG, JPEG, WebP, GIF, AVIF; en çok 12 MB).",
         "“Yeni sahne olarak ekle” ya da “Aktif sahnenin katmanlarını değiştir”i seç ve uygula.",
@@ -171,7 +171,7 @@ export const GUIDE: readonly GuideSection[] = [
         "Ready-made broadcast frames for news, talks, tutorials and demos; with your own logo and background.",
       steps: [
         "Press “▦ Şablon” in the scene panel.",
-        "Pick one of News / Breaking News, solo, mobile test, desktop prototype, 2-, 3- and 4-person talk, tutorial, dual screen or presentation.",
+        "Pick one of News / Breaking News, solo, mobile test, desktop prototype, 2-, 3- and 4-person talk, side by side, gaming, tutorial, dual screen or presentation.",
         "Type the accent color, title, tag and ticker text; the preview updates instantly.",
         "Optionally upload your logo and a custom background image (PNG, JPEG, WebP, GIF, AVIF; up to 12 MB).",
         "Choose “Yeni sahne olarak ekle” (new scene) or “Aktif sahnenin katmanlarını değiştir” (replace the active scene's layers) and apply.",
@@ -179,6 +179,82 @@ export const GUIDE: readonly GuideSection[] = [
       tips: [
         "A template is built from ordinary layers; edit it freely after applying.",
         "Guest panels start empty: the guest lands in the first free panel when you press “Yayına al” (put on air).",
+      ],
+    },
+  },
+  {
+    id: "sound",
+    icon: "🎧",
+    to: "/studio",
+    tr: {
+      title: "Ses kütüphanesi ve geçişler",
+      summary:
+        "Telifsiz, kodla üretilen müzik ve ses efektleri; 28 WebGL sahne geçişi. Dosya indirmen gerekmez.",
+      steps: [
+        "Stüdyo'da sağ sütundaki “Ses kütüphanesi” panelinden bir müzik parçası seç (Lo-fi Sabah, Gece Sürüşü, Yağmurlu Kafe, Podcast Açılışı, Ambient Fon); aynı düğmeyle durdur.",
+        "Efektleri tıkla ya da Alt+1…8 kısayoluyla çal (whoosh, ding, alkış, davul roll…).",
+        "Ses mikserinde müziğin seviyesini ayarla; müzik ve efektler kayda ve canlı yayına karışır.",
+        "Sahne panelinde “Geçiş türü” listesinden ✦ (WebGL) işaretli bir geçiş seç; süreyi ms olarak yaz.",
+        "“Sahne geçişinde whoosh çal” kutusu açıkken kesme dışındaki her geçişte whoosh duyulur.",
+      ],
+      tips: [
+        "WebGL kullanılamıyorsa geçiş otomatik olarak yumuşak geçişe (fade) düşer.",
+        "Müzik ve efektler tarayıcıda sentezlenir; telif veya lisans takibi gerekmez.",
+      ],
+    },
+    en: {
+      title: "Sound library and transitions",
+      summary:
+        "Royalty-free, code-generated music and sound effects; 28 WebGL scene transitions. Nothing to download.",
+      steps: [
+        "In the Studio, pick a track from the “Ses kütüphanesi” (sound library) panel in the right column (Lo-fi Sabah, Gece Sürüşü, Yağmurlu Kafe, Podcast Açılışı, Ambient Fon); press the same button to stop.",
+        "Click an effect or press Alt+1…8 (whoosh, ding, applause, drum roll…).",
+        "Set the music level in the audio mixer; music and effects are mixed into the recording and the live stream.",
+        "In the scene panel choose a ✦ (WebGL) entry under “Geçiş türü” (transition type) and set the duration in ms.",
+        "With “Sahne geçişinde whoosh çal” (play whoosh on scene change) enabled, every non-cut transition plays a whoosh.",
+      ],
+      tips: [
+        "If WebGL is unavailable, the transition falls back to a plain fade.",
+        "Music and effects are synthesized in the browser; there is no licence to track.",
+      ],
+    },
+  },
+  {
+    id: "classic",
+    icon: "🎛️",
+    to: "/studio",
+    tr: {
+      title: "Klasik Stüdyo ve senkron",
+      summary:
+        "Solda düzenle, sağda canlıyı izle: taslağı “Yayına al” ile geçişli olarak canlıya aktar. Prompter metni ve sahneler ana Stüdyo ile eşleşir.",
+      steps: [
+        "Yan menüden “Klasik Stüdyo”yu (/classic) aç; 8 şablondan biriyle başla.",
+        "Taslağı soldaki alanda düzenle; “Yayına al →” ile sağdaki canlı ekrana geçiş efektiyle aktar.",
+        "“+ Taslağı ekle” ile sahne listesi (rundown) oluştur; N / P ile sıradaki ve önceki sahneye geç.",
+        "“⇄ Ana Stüdyo'ya gönder” sahneleri ana Stüdyo'ya “↪ ad” olarak ekler (ana Stüdyo açıksa anında).",
+        "Klasik prompter'daki (/classic/prompter) metin, ana Stüdyo'nun prompter metniyle iki yönlü senkrondur.",
+      ],
+      tips: [
+        "Senkron aynı tarayıcıda çalışır; başka cihazla paylaşmak için Oda'yı kullan.",
+        "Logolar ve arka plan videosu sahne aktarımına dahil değildir; ana Stüdyo'da yeniden ekle.",
+        "Klasik Stüdyo'nun kendi telefon kumandası (/classic/remote) ve konuk daveti (/classic/join) vardır.",
+      ],
+    },
+    en: {
+      title: "Classic Studio and sync",
+      summary:
+        "Edit on the left, watch the live program on the right: push the draft live with a transition. Prompter text and scenes stay in sync with the main Studio.",
+      steps: [
+        "Open “Classic Studio” (/classic) from the side menu; start from one of the 8 templates.",
+        "Edit the draft on the left; press “Yayına al →” (go live) to push it to the live screen on the right with a transition.",
+        "Build a scene list (rundown) with “+ Taslağı ekle” (add draft); N / P jump to the next / previous scene.",
+        "“⇄ Ana Stüdyo'ya gönder” (send to main Studio) adds the scenes to the main Studio as “↪ name” (instantly if it is open).",
+        "The text in the classic prompter (/classic/prompter) is kept in two-way sync with the main Studio's prompter text.",
+      ],
+      tips: [
+        "Sync works inside one browser; use the Room to share with another device.",
+        "Logos and background videos are not carried over; add them again in the main Studio.",
+        "Classic Studio has its own phone remote (/classic/remote) and guest invite (/classic/join).",
       ],
     },
   },

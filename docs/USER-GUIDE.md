@@ -10,6 +10,8 @@
 - [📜 Prompter](#prompter)
 - [🎬 Stüdyo: sahneler ve katmanlar](#studio)
 - [▦ Şablonlar ve logo](#templates)
+- [🎧 Ses kütüphanesi ve geçişler](#sound)
+- [🎛️ Klasik Stüdyo ve senkron](#classic)
 - [🚪 Oda: konuk daveti](#room)
 - [💬 Moderasyonlu sohbet](#chat)
 - [📡 Canlı yayın (RTMP / RTMPS)](#live)
@@ -76,7 +78,7 @@ Sınırsız sahne, katmanlı kompozisyon, kayıt.
 Haber, konuşma, eğitim ve demo için hazır yayın çerçeveleri; kendi logon ve arka planınla.
 
 1. Sahne panelinde “▦ Şablon” düğmesine bas.
-2. Haber / Breaking News, solo, mobil test, masaüstü prototip, 2'li / 3'lü / 4'lü konuşma, eğitim, çift ekran ve sunum şablonlarından birini seç.
+2. Haber / Breaking News, solo, mobil test, masaüstü prototip, 2'li / 3'lü / 4'lü konuşma, yan yana, oyun yayını, eğitim, çift ekran ve sunum şablonlarından birini seç.
 3. Tema rengini, başlığı, etiketi ve kayan yazıyı yaz; önizleme anında güncellenir.
 4. İstersen logonu ve özel arka plan görselini yükle (PNG, JPEG, WebP, GIF, AVIF; en çok 12 MB).
 5. “Yeni sahne olarak ekle” ya da “Aktif sahnenin katmanlarını değiştir”i seç ve uygula.
@@ -84,6 +86,40 @@ Haber, konuşma, eğitim ve demo için hazır yayın çerçeveleri; kendi logon 
 > 💡 **İpucu:** Şablon sıradan katmanlardan kurulur; uyguladıktan sonra dilediğin gibi düzenleyebilirsin.
 
 > 💡 **İpucu:** Konuk panelleri boş gelir: konuğu “Yayına al”dığında ilk boş panele yerleşir.
+
+<a name="sound"></a>
+
+## 🎧 Ses kütüphanesi ve geçişler
+
+Telifsiz, kodla üretilen müzik ve ses efektleri; 28 WebGL sahne geçişi. Dosya indirmen gerekmez.
+
+1. Stüdyo'da sağ sütundaki “Ses kütüphanesi” panelinden bir müzik parçası seç (Lo-fi Sabah, Gece Sürüşü, Yağmurlu Kafe, Podcast Açılışı, Ambient Fon); aynı düğmeyle durdur.
+2. Efektleri tıkla ya da Alt+1…8 kısayoluyla çal (whoosh, ding, alkış, davul roll…).
+3. Ses mikserinde müziğin seviyesini ayarla; müzik ve efektler kayda ve canlı yayına karışır.
+4. Sahne panelinde “Geçiş türü” listesinden ✦ (WebGL) işaretli bir geçiş seç; süreyi ms olarak yaz.
+5. “Sahne geçişinde whoosh çal” kutusu açıkken kesme dışındaki her geçişte whoosh duyulur.
+
+> 💡 **İpucu:** WebGL kullanılamıyorsa geçiş otomatik olarak yumuşak geçişe (fade) düşer.
+
+> 💡 **İpucu:** Müzik ve efektler tarayıcıda sentezlenir; telif veya lisans takibi gerekmez.
+
+<a name="classic"></a>
+
+## 🎛️ Klasik Stüdyo ve senkron
+
+Solda düzenle, sağda canlıyı izle: taslağı “Yayına al” ile geçişli olarak canlıya aktar. Prompter metni ve sahneler ana Stüdyo ile eşleşir.
+
+1. Yan menüden “Klasik Stüdyo”yu (/classic) aç; 8 şablondan biriyle başla.
+2. Taslağı soldaki alanda düzenle; “Yayına al →” ile sağdaki canlı ekrana geçiş efektiyle aktar.
+3. “+ Taslağı ekle” ile sahne listesi (rundown) oluştur; N / P ile sıradaki ve önceki sahneye geç.
+4. “⇄ Ana Stüdyo'ya gönder” sahneleri ana Stüdyo'ya “↪ ad” olarak ekler (ana Stüdyo açıksa anında).
+5. Klasik prompter'daki (/classic/prompter) metin, ana Stüdyo'nun prompter metniyle iki yönlü senkrondur.
+
+> 💡 **İpucu:** Senkron aynı tarayıcıda çalışır; başka cihazla paylaşmak için Oda'yı kullan.
+
+> 💡 **İpucu:** Logolar ve arka plan videosu sahne aktarımına dahil değildir; ana Stüdyo'da yeniden ekle.
+
+> 💡 **İpucu:** Klasik Stüdyo'nun kendi telefon kumandası (/classic/remote) ve konuk daveti (/classic/join) vardır.
 
 <a name="room"></a>
 

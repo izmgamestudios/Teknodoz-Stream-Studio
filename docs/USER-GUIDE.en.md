@@ -10,6 +10,8 @@
 - [📜 Prompter](#prompter)
 - [🎬 Studio: scenes and layers](#studio)
 - [▦ Templates and logo](#templates)
+- [🎧 Sound library and transitions](#sound)
+- [🎛️ Classic Studio and sync](#classic)
 - [🚪 Room: inviting guests](#room)
 - [💬 Moderated chat](#chat)
 - [📡 Live streaming (RTMP / RTMPS)](#live)
@@ -76,7 +78,7 @@ Unlimited scenes, layered compositions, recording.
 Ready-made broadcast frames for news, talks, tutorials and demos; with your own logo and background.
 
 1. Press “▦ Şablon” in the scene panel.
-2. Pick one of News / Breaking News, solo, mobile test, desktop prototype, 2-, 3- and 4-person talk, tutorial, dual screen or presentation.
+2. Pick one of News / Breaking News, solo, mobile test, desktop prototype, 2-, 3- and 4-person talk, side by side, gaming, tutorial, dual screen or presentation.
 3. Type the accent color, title, tag and ticker text; the preview updates instantly.
 4. Optionally upload your logo and a custom background image (PNG, JPEG, WebP, GIF, AVIF; up to 12 MB).
 5. Choose “Yeni sahne olarak ekle” (new scene) or “Aktif sahnenin katmanlarını değiştir” (replace the active scene's layers) and apply.
@@ -84,6 +86,40 @@ Ready-made broadcast frames for news, talks, tutorials and demos; with your own 
 > 💡 **Tip:** A template is built from ordinary layers; edit it freely after applying.
 
 > 💡 **Tip:** Guest panels start empty: the guest lands in the first free panel when you press “Yayına al” (put on air).
+
+<a name="sound"></a>
+
+## 🎧 Sound library and transitions
+
+Royalty-free, code-generated music and sound effects; 28 WebGL scene transitions. Nothing to download.
+
+1. In the Studio, pick a track from the “Ses kütüphanesi” (sound library) panel in the right column (Lo-fi Sabah, Gece Sürüşü, Yağmurlu Kafe, Podcast Açılışı, Ambient Fon); press the same button to stop.
+2. Click an effect or press Alt+1…8 (whoosh, ding, applause, drum roll…).
+3. Set the music level in the audio mixer; music and effects are mixed into the recording and the live stream.
+4. In the scene panel choose a ✦ (WebGL) entry under “Geçiş türü” (transition type) and set the duration in ms.
+5. With “Sahne geçişinde whoosh çal” (play whoosh on scene change) enabled, every non-cut transition plays a whoosh.
+
+> 💡 **Tip:** If WebGL is unavailable, the transition falls back to a plain fade.
+
+> 💡 **Tip:** Music and effects are synthesized in the browser; there is no licence to track.
+
+<a name="classic"></a>
+
+## 🎛️ Classic Studio and sync
+
+Edit on the left, watch the live program on the right: push the draft live with a transition. Prompter text and scenes stay in sync with the main Studio.
+
+1. Open “Classic Studio” (/classic) from the side menu; start from one of the 8 templates.
+2. Edit the draft on the left; press “Yayına al →” (go live) to push it to the live screen on the right with a transition.
+3. Build a scene list (rundown) with “+ Taslağı ekle” (add draft); N / P jump to the next / previous scene.
+4. “⇄ Ana Stüdyo'ya gönder” (send to main Studio) adds the scenes to the main Studio as “↪ name” (instantly if it is open).
+5. The text in the classic prompter (/classic/prompter) is kept in two-way sync with the main Studio's prompter text.
+
+> 💡 **Tip:** Sync works inside one browser; use the Room to share with another device.
+
+> 💡 **Tip:** Logos and background videos are not carried over; add them again in the main Studio.
+
+> 💡 **Tip:** Classic Studio has its own phone remote (/classic/remote) and guest invite (/classic/join).
 
 <a name="room"></a>
 

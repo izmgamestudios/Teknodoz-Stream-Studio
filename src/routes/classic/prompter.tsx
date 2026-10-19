@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { publishScript, readSharedScript, subscribeScript } from "@/studio/sync/shared";
 
 import { Prompter, type Line } from "@/classic/components/prompter";
+import { ClassicNav } from "@/classic/components/classic-nav";
 import { RemotePanel } from "@/classic/components/remote-panel";
 
 export const Route = createFileRoute("/classic/prompter")({
   head: () => ({
     meta: [
-      { title: "PodPrompter — Podcast Kamera Prompter" },
+      { title: "Klasik Prompter — Teknodoz" },
       { name: "description", content: "Kamerayla çekerken A/B diyaloglarını ekranda okuyabileceğin podcast prompter uygulaması." },
       { property: "og:title", content: "PodPrompter — Podcast Kamera Prompter" },
       { property: "og:description", content: "Word, metin dosyası veya yapıştırma ile diyalog yükle, kameraya bakarak oku." },
@@ -96,6 +97,7 @@ function Index() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 pb-28 sm:px-5 sm:py-10 md:pb-10">
+      <ClassicNav className="mb-4" />
       <header className="mb-8">
         <p className="text-sm uppercase tracking-[0.3em] text-speaker-a">PodPrompter</p>
         <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Podcast kamera prompter</h1>

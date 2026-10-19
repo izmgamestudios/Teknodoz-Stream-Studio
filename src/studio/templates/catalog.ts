@@ -252,6 +252,51 @@ export const TEMPLATES: readonly TemplateDef[] = [
     ticker: false,
     defaults: opts(ORANGE, "SUNUM BAŞLIĞI", "KONUŞMACI", TICKER),
   },
+  {
+    id: "side-by-side",
+    name: "Yan yana (ekran + kamera)",
+    description: "Solda büyük ekran/video, sağda dikey kamera; üstte başlık, altta alt bant.",
+    group: "talk",
+    panels: [
+      {
+        id: "screen",
+        kind: "screen",
+        label: "Ekran / video",
+        rect: { x: 40, y: 130, w: 1200, h: 675 },
+      },
+      cam("host", "Sunucu", 1280, 130, 600, 675),
+    ],
+    backdrop: true,
+    frames: true,
+    captions: false,
+    topTitle: true,
+    lowerThird: { x: 40, y: 850, w: 1200 },
+    logo: { x: 1640, y: 8, w: 260, h: 80 },
+    ticker: false,
+    defaults: opts(VIOLET, "YAN YANA", "CANLI", TICKER),
+  },
+  {
+    id: "gaming",
+    name: "Oyun yayını",
+    description: "Büyük oyun ekranı, sağda yayıncı kamerası ve logo, altta kayan yazı.",
+    group: "demo",
+    panels: [
+      {
+        id: "game",
+        kind: "screen",
+        label: "Oyun ekranı",
+        rect: { x: 40, y: 40, w: 1380, h: 776 },
+      },
+      cam("streamer", "Yayıncı", 1460, 40, 420, 420),
+    ],
+    backdrop: true,
+    frames: true,
+    captions: false,
+    topTitle: false,
+    logo: { x: 1460, y: 500, w: 420, h: 150 },
+    ticker: true,
+    defaults: opts(VIOLET, "", "", "Takip et • Beğen • Yorum yaz • Teknodoz Studio"),
+  },
 ] as const;
 
 export function getTemplate(id: string): TemplateDef | undefined {

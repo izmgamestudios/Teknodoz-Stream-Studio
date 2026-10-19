@@ -171,8 +171,8 @@ export function LiveApp() {
         </p>
       </header>
 
-      <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-[1fr_380px]">
-        <div className="space-y-4">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0 space-y-4">
           {server === "checking" && (
             <section className={PANEL}>
               <p className="text-sm text-muted-foreground">
