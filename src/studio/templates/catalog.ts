@@ -255,7 +255,8 @@ export const TEMPLATES: readonly TemplateDef[] = [
   {
     id: "side-by-side",
     name: "Yan yana (ekran + kamera)",
-    description: "Solda büyük ekran/video, sağda dikey kamera; üstte başlık, altta alt bant.",
+    description:
+      "Solda büyük ekran/video, sağda dikey kamera; üstte başlık, altta alt bant.",
     group: "talk",
     panels: [
       {
@@ -278,7 +279,8 @@ export const TEMPLATES: readonly TemplateDef[] = [
   {
     id: "gaming",
     name: "Oyun yayını",
-    description: "Büyük oyun ekranı, sağda yayıncı kamerası ve logo, altta kayan yazı.",
+    description:
+      "Büyük oyun ekranı, sağda yayıncı kamerası ve logo, altta kayan yazı.",
     group: "demo",
     panels: [
       {
@@ -295,7 +297,12 @@ export const TEMPLATES: readonly TemplateDef[] = [
     topTitle: false,
     logo: { x: 1460, y: 500, w: 420, h: 150 },
     ticker: true,
-    defaults: opts(VIOLET, "", "", "Takip et • Beğen • Yorum yaz • Teknodoz Studio"),
+    defaults: opts(
+      VIOLET,
+      "",
+      "",
+      "Takip et • Beğen • Yorum yaz • Teknodoz Studio",
+    ),
   },
 ] as const;
 

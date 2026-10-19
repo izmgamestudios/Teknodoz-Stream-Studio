@@ -5,7 +5,10 @@
 import { Compositor } from "../engine/compositor";
 import { AudioBus } from "../engine/audio-bus";
 import {
+  decideStartup,
   publishScript,
+  readLastSynced,
+  writeLastSynced,
   readSharedScript,
   subscribeHandoff,
   subscribeScript,
@@ -826,11 +829,9 @@ export class StudioRuntime {
     const script = () => this.project.getState().prompter.script;
 
     const shared = readSharedScript();
-    if (shared && shared.text !== script() && script().trim() === "") {
-      this.adoptScript(shared);
-    } else if (script().trim() !== "" && shared?.text !== script()) {
-      this.pushScript();
-    }
+    const action = decideStartup(script(), shared, readLastSynced());
+    if (action === "adopt" && shared) this.adoptScript(shared);
+    else if (action === "push") this.pushScript();
     this.lastSyncedScript = script();
 
     this.syncUnsubs.push(
@@ -851,13 +852,16 @@ export class StudioRuntime {
   private adoptScript(m: ScriptMessage): void {
     this.lastSyncAt = m.at;
     this.lastSyncedScript = m.text;
+    writeLastSynced(m.text);
     this.project.setPrompterScript(m.text);
   }
 
   private pushScript(): void {
     const at = Date.now();
+    const text = this.project.getState().prompter.script;
     this.lastSyncAt = at;
-    publishScript(this.project.getState().prompter.script, "main", at);
+    writeLastSynced(text);
+    publishScript(text, "main", at);
   }
 
   /** Scenes queued by the Classic studio; validated through the project schema before use. */
@@ -865,7 +869,11 @@ export class StudioRuntime {
     const h = takeHandoff();
     if (!h) return 0;
     const base = this.project.getState();
-    const parsed = parseProject({ ...base, scenes: h.scenes, activeSceneId: "" });
+    const parsed = parseProject({
+      ...base,
+      scenes: h.scenes,
+      activeSceneId: "",
+    });
     if (!parsed.ok) return 0;
     let n = 0;
     for (const sc of parsed.project.scenes) {
@@ -890,7 +898,12 @@ export class StudioRuntime {
     if (!this.gen) {
       const ctx = new AudioContext();
       const dest = ctx.createMediaStreamDestination();
-      this.gen = { ctx, player: createMusicPlayer(ctx, dest), stream: dest.stream, trackId: null };
+      this.gen = {
+        ctx,
+        player: createMusicPlayer(ctx, dest),
+        stream: dest.stream,
+        trackId: null,
+      };
     }
     const gen = this.gen;
     await gen.ctx.resume();
@@ -899,9 +912,12 @@ export class StudioRuntime {
     gen.trackId = trackId;
     // Re-adding the channel also notifies audio-state subscribers (UI) about the track change.
     const label = TRACKS.find((t) => t.id === trackId)?.name ?? "Müzik listesi";
-    const gain = bus.getState().channels.find((c) => c.id === GEN_CHANNEL)?.gain ?? 0.5;
+    const gain =
+      bus.getState().channels.find((c) => c.id === GEN_CHANNEL)?.gain ?? 0.5;
     bus.removeChannel(GEN_CHANNEL);
-    bus.addChannel({ id: GEN_CHANNEL, label, kind: "music" }, gen.stream, { gain });
+    bus.addChannel({ id: GEN_CHANNEL, label, kind: "music" }, gen.stream, {
+      gain,
+    });
     return true;
   }
 

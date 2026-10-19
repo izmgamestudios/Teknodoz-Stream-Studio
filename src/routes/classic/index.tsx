@@ -5,7 +5,10 @@ import { toMainScene } from "@/classic/sync";
 import { sendHandoff } from "@/studio/sync/shared";
 import { ClassicNav } from "@/classic/components/classic-nav";
 import { RemotePanel } from "@/classic/components/remote-panel";
-import { RundownBar, type RundownEntry } from "@/classic/components/rundown-bar";
+import {
+  RundownBar,
+  type RundownEntry,
+} from "@/classic/components/rundown-bar";
 import { useRemoteHost } from "@/classic/remote/host";
 import type { Command } from "@/classic/remote/protocol";
 import { TRACKS } from "@/studio/engine/music";
@@ -84,7 +87,11 @@ const stripImages = (sc: Scene): Scene => ({
 const defaultRundown = (): RundownScene[] =>
   ["podcast", "split", "news", "clean"].map((id, i) => {
     const t = TEMPLATES.find((x) => x.id === id)!;
-    return { id: uid(), name: ["Açılış", "Sohbet", "Haber", "Kapanış"][i]!, scene: t.build() };
+    return {
+      id: uid(),
+      name: ["Açılış", "Sohbet", "Haber", "Kapanış"][i]!,
+      scene: t.build(),
+    };
   });
 function loadRundown(): RundownScene[] {
   try {
@@ -218,7 +225,9 @@ function Studio() {
     try {
       localStorage.setItem(
         RUNDOWN_KEY,
-        JSON.stringify(rundown.map((r) => ({ ...r, scene: stripImages(r.scene) }))),
+        JSON.stringify(
+          rundown.map((r) => ({ ...r, scene: stripImages(r.scene) })),
+        ),
       );
     } catch {
       /* storage blocked */
@@ -230,7 +239,8 @@ function Studio() {
     const el = guestRef.current;
     if (el) el.srcObject = guest?.stream ?? null;
     if (guest) mixer.connectStream(guest.stream, true);
-    if (!guest) setDraft((d) => (d.base === "guest" ? { ...d, base: "camera" } : d));
+    if (!guest)
+      setDraft((d) => (d.base === "guest" ? { ...d, base: "camera" } : d));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guest]);
 
@@ -480,8 +490,10 @@ function Studio() {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.key === "Delete" && selected) return removeItem(selected);
       const n = Number(e.key);
-      if (e.key === "n" || e.key === "N") return cmdRef.current({ cmd: "next" });
-      if (e.key === "p" || e.key === "P") return cmdRef.current({ cmd: "prev" });
+      if (e.key === "n" || e.key === "N")
+        return cmdRef.current({ cmd: "next" });
+      if (e.key === "p" || e.key === "P")
+        return cmdRef.current({ cmd: "prev" });
       if (n >= 1 && n <= Math.min(8, SFX_PRESETS.length))
         void playPresetRef.current(SFX_PRESETS[n - 1]!.id);
     };
@@ -493,7 +505,9 @@ function Studio() {
   const stepScene = (dir: 1 | -1) => {
     if (!rundown.length) return;
     const from = liveIdx >= 0 ? liveIdx : editIdx;
-    playScene(Math.min(rundown.length - 1, Math.max(0, from < 0 ? 0 : from + dir)));
+    playScene(
+      Math.min(rundown.length - 1, Math.max(0, from < 0 ? 0 : from + dir)),
+    );
   };
   function playScene(i: number) {
     const r = rundown[i];
@@ -514,15 +528,29 @@ function Studio() {
   function addScene() {
     const name = window.prompt("Sahne adı?", `Sahne ${rundown.length + 1}`);
     if (!name?.trim()) return;
-    setRundown((r) => [...r, { id: uid(), name: name.trim(), scene: structuredClone(draftRef.current) }]);
+    setRundown((r) => [
+      ...r,
+      {
+        id: uid(),
+        name: name.trim(),
+        scene: structuredClone(draftRef.current),
+      },
+    ]);
     setEditIdx(rundown.length);
   }
   function updateScene() {
-    setRundown((r) => r.map((x, i) => (i === editIdx ? { ...x, scene: structuredClone(draftRef.current) } : x)));
+    setRundown((r) =>
+      r.map((x, i) =>
+        i === editIdx ? { ...x, scene: structuredClone(draftRef.current) } : x,
+      ),
+    );
   }
   function renameScene(i: number) {
     const name = window.prompt("Sahne adı?", rundown[i]?.name);
-    if (name?.trim()) setRundown((r) => r.map((x, k) => (k === i ? { ...x, name: name.trim() } : x)));
+    if (name?.trim())
+      setRundown((r) =>
+        r.map((x, k) => (k === i ? { ...x, name: name.trim() } : x)),
+      );
   }
   function moveScene(i: number, dir: -1 | 1) {
     const j = i + dir;
@@ -573,14 +601,22 @@ function Studio() {
   const cmdRef = useRef<(c: Command) => void>(() => {});
   cmdRef.current = (c) => {
     switch (c.cmd) {
-      case "next": return stepScene(1);
-      case "prev": return stepScene(-1);
-      case "golive": return void goLive();
-      case "rec": return toggleRec();
-      case "scene": return playScene(Number(c.arg));
-      case "edit": return editScene(Number(c.arg));
-      case "sfx": return void playPreset(String(c.arg));
-      case "music": return c.arg === "stop" ? stopMusic() : playTrack(String(c.arg));
+      case "next":
+        return stepScene(1);
+      case "prev":
+        return stepScene(-1);
+      case "golive":
+        return void goLive();
+      case "rec":
+        return toggleRec();
+      case "scene":
+        return playScene(Number(c.arg));
+      case "edit":
+        return editScene(Number(c.arg));
+      case "sfx":
+        return void playPreset(String(c.arg));
+      case "music":
+        return c.arg === "stop" ? stopMusic() : playTrack(String(c.arg));
     }
   };
   useEffect(() => register((c) => cmdRef.current(c)), [register]);
@@ -595,10 +631,25 @@ function Studio() {
       recSecs,
       music: trackId,
       tracks: TRACKS.map((t) => ({ id: t.id, name: t.name })),
-      sfx: SFX_PRESETS.map((p) => ({ id: p.id, label: p.label, emoji: p.emoji })),
+      sfx: SFX_PRESETS.map((p) => ({
+        id: p.id,
+        label: p.label,
+        emoji: p.emoji,
+      })),
       guest: !!guest,
     });
-  }, [publish, rundown, liveIdx, editIdx, live, dirty, recording, recSecs, trackId, guest]);
+  }, [
+    publish,
+    rundown,
+    liveIdx,
+    editIdx,
+    live,
+    dirty,
+    recording,
+    recSecs,
+    trackId,
+    guest,
+  ]);
   useEffect(() => () => publish({ page: "idle" }), [publish]);
 
   // ---------- go live / record ----------
@@ -696,9 +747,26 @@ function Studio() {
         <ClassicNav className="w-full sm:ml-auto sm:w-auto" />
       </header>
 
-      <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1 text-sm font-semibold xl:hidden" role="tablist">
-        <button role="tab" aria-selected={pane === "edit"} onClick={() => setPane("edit")} className={`rounded-md py-2 ${pane === "edit" ? "bg-speaker-b text-background" : ""}`}>✎ Düzenle</button>
-        <button role="tab" aria-selected={pane === "live"} onClick={() => setPane("live")} className={`rounded-md py-2 ${pane === "live" ? "bg-primary text-primary-foreground" : ""}`}>● Canlı{recording ? ` · ${mmss}` : ""}</button>
+      <div
+        className="mb-3 grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1 text-sm font-semibold xl:hidden"
+        role="tablist"
+      >
+        <button
+          role="tab"
+          aria-selected={pane === "edit"}
+          onClick={() => setPane("edit")}
+          className={`rounded-md py-2 ${pane === "edit" ? "bg-speaker-b text-background" : ""}`}
+        >
+          ✎ Düzenle
+        </button>
+        <button
+          role="tab"
+          aria-selected={pane === "live"}
+          onClick={() => setPane("live")}
+          className={`rounded-md py-2 ${pane === "live" ? "bg-primary text-primary-foreground" : ""}`}
+        >
+          ● Canlı{recording ? ` · ${mmss}` : ""}
+        </button>
       </div>
 
       <RundownBar
@@ -720,7 +788,9 @@ function Studio() {
 
       <div className="grid gap-4 xl:grid-cols-2">
         {/* ============ EDIT (left) ============ */}
-        <section className={`rounded-xl border bg-card p-3 ${pane === "edit" ? "" : "hidden xl:block"}`}>
+        <section
+          className={`rounded-xl border bg-card p-3 ${pane === "edit" ? "" : "hidden xl:block"}`}
+        >
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="font-semibold text-speaker-b">
               ✎ DÜZENLE{" "}
@@ -841,15 +911,17 @@ function Studio() {
             {tab === "source" && (
               <>
                 <div className="flex flex-wrap gap-2">
-                  {SOURCES.filter(([b]) => b !== "guest" || guest).map(([b, l]) => (
-                    <button
-                      key={b}
-                      onClick={() => patch({ base: b })}
-                      className={`${btn} ${draft.base === b ? on : ""}`}
-                    >
-                      {l}
-                    </button>
-                  ))}
+                  {SOURCES.filter(([b]) => b !== "guest" || guest).map(
+                    ([b, l]) => (
+                      <button
+                        key={b}
+                        onClick={() => patch({ base: b })}
+                        className={`${btn} ${draft.base === b ? on : ""}`}
+                      >
+                        {l}
+                      </button>
+                    ),
+                  )}
                   <button onClick={() => void shareScreen()} className={btn}>
                     {hasScreen ? "Ekranı kapat" : "🖥 Ekran paylaş"}
                   </button>
@@ -1102,7 +1174,9 @@ function Studio() {
         </section>
 
         {/* ============ LIVE (right) ============ */}
-        <section className={`rounded-xl border bg-card p-3 ${pane === "live" ? "" : "hidden xl:block"}`}>
+        <section
+          className={`rounded-xl border bg-card p-3 ${pane === "live" ? "" : "hidden xl:block"}`}
+        >
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 font-semibold text-primary">
               <span
@@ -1305,10 +1379,22 @@ function Studio() {
             </div>
           </div>
           <div className="mt-3 space-y-2 rounded-lg bg-secondary p-3 text-sm">
-            <p className="font-semibold">🎧 Müzik listesi <span className="font-normal text-muted-foreground">(kodla üretilir, telifsiz)</span></p>
+            <p className="font-semibold">
+              🎧 Müzik listesi{" "}
+              <span className="font-normal text-muted-foreground">
+                (kodla üretilir, telifsiz)
+              </span>
+            </p>
             <div className="flex flex-wrap gap-2">
               {TRACKS.map((t) => (
-                <button key={t.id} onClick={() => (trackId === t.id ? stopMusic() : playTrack(t.id))} title={t.mood} className={`${btn} ${trackId === t.id ? on : ""}`}>
+                <button
+                  key={t.id}
+                  onClick={() =>
+                    trackId === t.id ? stopMusic() : playTrack(t.id)
+                  }
+                  title={t.mood}
+                  className={`${btn} ${trackId === t.id ? on : ""}`}
+                >
                   {trackId === t.id ? "■" : "♪"} {t.name}
                 </button>
               ))}
@@ -1325,10 +1411,35 @@ function Studio() {
 
       {/* mobile action bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t bg-card/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur xl:hidden">
-        <button onClick={() => stepScene(-1)} disabled={!rundown.length} aria-label="Önceki sahne" className="min-h-12 rounded-lg bg-secondary px-3 disabled:opacity-40">⏮</button>
-        <button onClick={() => void goLive()} className={`min-h-12 flex-1 rounded-lg bg-speaker-b px-3 font-bold text-background ${dirty ? "animate-pulse" : "opacity-80"}`}>Yayına al →</button>
-        <button onClick={() => stepScene(1)} disabled={!rundown.length} aria-label="Sonraki sahne" className="min-h-12 rounded-lg bg-secondary px-3 disabled:opacity-40">⏭</button>
-        <button onClick={toggleRec} aria-label={recording ? "Kaydı bitir" : "Kayda başla"} className={`min-h-12 rounded-lg px-4 font-bold text-primary-foreground ${recording ? "animate-pulse bg-destructive" : "bg-primary"}`}>{recording ? "■" : "●"}</button>
+        <button
+          onClick={() => stepScene(-1)}
+          disabled={!rundown.length}
+          aria-label="Önceki sahne"
+          className="min-h-12 rounded-lg bg-secondary px-3 disabled:opacity-40"
+        >
+          ⏮
+        </button>
+        <button
+          onClick={() => void goLive()}
+          className={`min-h-12 flex-1 rounded-lg bg-speaker-b px-3 font-bold text-background ${dirty ? "animate-pulse" : "opacity-80"}`}
+        >
+          Yayına al →
+        </button>
+        <button
+          onClick={() => stepScene(1)}
+          disabled={!rundown.length}
+          aria-label="Sonraki sahne"
+          className="min-h-12 rounded-lg bg-secondary px-3 disabled:opacity-40"
+        >
+          ⏭
+        </button>
+        <button
+          onClick={toggleRec}
+          aria-label={recording ? "Kaydı bitir" : "Kayda başla"}
+          className={`min-h-12 rounded-lg px-4 font-bold text-primary-foreground ${recording ? "animate-pulse bg-destructive" : "bg-primary"}`}
+        >
+          {recording ? "■" : "●"}
+        </button>
       </div>
     </div>
   );

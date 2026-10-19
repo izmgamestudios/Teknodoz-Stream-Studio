@@ -6,6 +6,7 @@ import { emptyScene, type Scene } from "@/classic/studio/types";
 import { parseProject } from "@/studio/project/schema";
 import { defaultProject } from "@/studio/defaults";
 import {
+  decideStartup,
   HANDOFF_KEY,
   parseHandoff,
   parseScriptMessage,
@@ -21,8 +22,19 @@ beforeEach(() => localStorage.clear());
 describe("shared script", () => {
   it("round-trips and rejects malformed messages", () => {
     expect(publishScript("A: Merhaba", "classic", 123)).toBe(true);
-    expect(readSharedScript()).toEqual({ text: "A: Merhaba", at: 123, from: "classic" });
-    for (const bad of [null, "", "{", "[]", '{"text":1,"at":1,"from":"main"}', '{"text":"x","at":1,"from":"evil"}'])
+    expect(readSharedScript()).toEqual({
+      text: "A: Merhaba",
+      at: 123,
+      from: "classic",
+    });
+    for (const bad of [
+      null,
+      "",
+      "{",
+      "[]",
+      '{"text":1,"at":1,"from":"main"}',
+      '{"text":"x","at":1,"from":"evil"}',
+    ])
       expect(parseScriptMessage(bad)).toBeNull();
   });
   it("caps very long scripts", () => {
@@ -51,9 +63,16 @@ describe("classic -> main scene conversion", () => {
     for (const t of TEMPLATES) {
       const { scene } = toMainScene(t.build(), t.name);
       expect(scene.layers.length).toBeGreaterThan(0);
-      const parsed = parseProject({ ...defaultProject(), scenes: [scene], activeSceneId: scene.id });
+      const parsed = parseProject({
+        ...defaultProject(),
+        scenes: [scene],
+        activeSceneId: scene.id,
+      });
       expect(parsed.ok).toBe(true);
-      if (parsed.ok) expect(parsed.project.scenes[0]?.layers).toHaveLength(scene.layers.length);
+      if (parsed.ok)
+        expect(parsed.project.scenes[0]?.layers).toHaveLength(
+          scene.layers.length,
+        );
     }
   });
   it("maps layout and items", () => {
@@ -64,7 +83,17 @@ describe("classic -> main scene conversion", () => {
       corner: "bl",
       frame: "#38bdf8",
       items: [
-        { id: "1", kind: "lower", text: "Ad", sub: "Unvan", x: 30, y: 84, w: 44, color: "#f5c04a", size: 34 },
+        {
+          id: "1",
+          kind: "lower",
+          text: "Ad",
+          sub: "Unvan",
+          x: 30,
+          y: 84,
+          w: 44,
+          color: "#f5c04a",
+          size: 34,
+        },
         { id: "2", kind: "image", src: "blob:x", x: 10, y: 10, w: 10 },
       ],
     };
@@ -80,5 +109,26 @@ describe("classic -> main scene conversion", () => {
   it("skips video bases with a note", () => {
     const { skipped } = toMainScene({ ...emptyScene(), base: "video" }, "V");
     expect(skipped.join(" ")).toMatch(/video/i);
+  });
+});
+
+describe("startup script decision", () => {
+  const shared = (text: string) => ({ text, at: 5, from: "classic" as const });
+  it("publishes ours when nothing is shared", () => {
+    expect(decideStartup("A: x", null, null)).toBe("push");
+    expect(decideStartup("  ", null, null)).toBe("none");
+  });
+  it("does nothing when equal", () => {
+    expect(decideStartup("A: x", shared("A: x"), null)).toBe("none");
+  });
+  it("adopts when ours is empty or unchanged since the last sync", () => {
+    expect(decideStartup("", shared("A: new"), null)).toBe("adopt");
+    expect(decideStartup("A: old", shared("A: new"), "A: old")).toBe("adopt");
+  });
+  it("keeps ours when both sides changed independently (never overwrites an edit)", () => {
+    expect(decideStartup("A: mine", shared("A: theirs"), "A: base")).toBe(
+      "none",
+    );
+    expect(decideStartup("A: mine", shared("A: theirs"), null)).toBe("none");
   });
 });

@@ -10,7 +10,15 @@ describe("remote protocol", () => {
     for (let i = 0; i < 20; i++) expect(isRoomId(newRoomId())).toBe(true);
   });
   it("rejects malformed room ids", () => {
-    for (const bad of ["", null, undefined, "tkd-", "tkd-ABCDEFGH", "room-12345678", "tkd-1234567890"])
+    for (const bad of [
+      "",
+      null,
+      undefined,
+      "tkd-",
+      "tkd-ABCDEFGH",
+      "room-12345678",
+      "tkd-1234567890",
+    ])
       expect(isRoomId(bad)).toBe(false);
   });
   it("only accepts known message shapes", () => {
@@ -38,7 +46,8 @@ describe("studio libraries", () => {
   });
   it("templates build fresh scenes with unique item ids", () => {
     for (const t of TEMPLATES) {
-      const a = t.build(), b = t.build();
+      const a = t.build(),
+        b = t.build();
       expect(a).not.toBe(b);
       expect(new Set(a.items.map((i) => i.id)).size).toBe(a.items.length);
     }

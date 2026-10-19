@@ -21,7 +21,13 @@ const httpsOnly = (value: string | undefined) => {
   }
 };
 
-function SafeLink({ href, children }: { href?: string; children: string }) {
+function SafeLink({
+  href,
+  children,
+}: {
+  href?: string | undefined;
+  children: string;
+}) {
   const safe = httpsOnly(href);
   return safe ? (
     <a href={safe} target="_blank" rel="noopener noreferrer">
@@ -48,7 +54,8 @@ function PrivateProject({ project }: { project: ProjectItem }) {
         body: JSON.stringify({ id: project.id, password }),
       });
       setPassword("");
-      if (res.status === 429) return setMessage("Çok fazla deneme. Biraz bekle.");
+      if (res.status === 429)
+        return setMessage("Çok fazla deneme. Biraz bekle.");
       if (!res.ok) return setMessage("Şifre hatalı.");
       const safe = httpsOnly(((await res.json()) as { url?: string }).url);
       if (safe) window.open(safe, "_blank", "noopener,noreferrer");
@@ -59,7 +66,12 @@ function PrivateProject({ project }: { project: ProjectItem }) {
 
   return (
     <>
-      <button type="button" className="tdp-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+      <button
+        type="button"
+        className="tdp-toggle"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
         🔒 Şifreyle aç
       </button>
       {open && (
@@ -93,8 +105,13 @@ export function TeknodozProjects({ current }: { current: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`${PROJECTS_API}/v1/projects?current=${encodeURIComponent(current)}`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+    fetch(
+      `${PROJECTS_API}/v1/projects?current=${encodeURIComponent(current)}`,
+      { signal: controller.signal },
+    )
+      .then((res) =>
+        res.ok ? res.json() : Promise.reject(new Error(String(res.status))),
+      )
       .then((data: { projects: ProjectItem[] }) => setProjects(data.projects))
       .catch((err: Error) => {
         if (err.name !== "AbortError") setFailed(true);
@@ -110,8 +127,18 @@ export function TeknodozProjects({ current }: { current: string }) {
         {projects?.map((p) => (
           <li className="tdp-item" key={p.id}>
             <div className="tdp-head">
-              {p.locked ? <span className="tdp-name">{p.name}</span> : <SafeLink href={p.url}>{p.name}</SafeLink>}
-              <span className={p.locked ? "tdp-tag tdp-private" : "tdp-tag tdp-open"}>{p.locked ? "Özel" : "Açık Kaynak"}</span>
+              {p.locked ? (
+                <span className="tdp-name">{p.name}</span>
+              ) : (
+                <SafeLink href={p.url}>{p.name}</SafeLink>
+              )}
+              <span
+                className={
+                  p.locked ? "tdp-tag tdp-private" : "tdp-tag tdp-open"
+                }
+              >
+                {p.locked ? "Özel" : "Açık Kaynak"}
+              </span>
             </div>
             {p.description && <div className="tdp-desc">{p.description}</div>}
             {!p.locked && p.repo && (

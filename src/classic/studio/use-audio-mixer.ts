@@ -95,5 +95,13 @@ export function useAudioMixer() {
     [],
   );
 
-  return { music, stopMusic, ensure, connectStream, connectElement, playBuffer, decode };
+  return {
+    music,
+    stopMusic,
+    ensure,
+    connectStream,
+    connectElement,
+    playBuffer,
+    decode,
+  };
 }

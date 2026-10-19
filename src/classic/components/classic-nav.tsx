@@ -14,9 +14,16 @@ const LINKS = [
 
 export function ClassicNav({ className = "" }: { className?: string }) {
   return (
-    <nav aria-label="Modüller" className={`flex gap-1.5 overflow-x-auto pb-1 text-xs [scrollbar-width:thin] ${className}`}>
+    <nav
+      aria-label="Modüller"
+      className={`flex gap-1.5 overflow-x-auto pb-1 text-xs [scrollbar-width:thin] ${className}`}
+    >
       {LINKS.map((l) => (
-        <Link key={l.to} to={l.to} className="shrink-0 whitespace-nowrap rounded-md bg-secondary px-2.5 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground">
+        <Link
+          key={l.to}
+          to={l.to}
+          className="shrink-0 whitespace-nowrap rounded-md bg-secondary px-2.5 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
           {l.label}
         </Link>
       ))}

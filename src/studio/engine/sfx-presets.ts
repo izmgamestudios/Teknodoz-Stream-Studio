@@ -247,7 +247,10 @@ export async function buildSfxBuffer(preset: SfxPreset): Promise<AudioBuffer> {
   const { ZZFX } = await import("zzfx");
   const args = ORDER.map((k) => preset.params[k]);
   const samples: number[] = ZZFX.buildSamples(...args);
-  const buf = new AudioBuffer({ length: samples.length, sampleRate: ZZFX.sampleRate });
+  const buf = new AudioBuffer({
+    length: samples.length,
+    sampleRate: ZZFX.sampleRate,
+  });
   buf.getChannelData(0).set(samples);
   return buf;
 }

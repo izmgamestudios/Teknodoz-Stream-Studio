@@ -28,7 +28,11 @@ import {
   type WebLayer,
 } from "../types";
 import { resolveBlend, sanitizeCssFilter } from "./blend";
-import { glName, isGlTransition, type TransitionEngine } from "./gl-transitions";
+import {
+  glName,
+  isGlTransition,
+  type TransitionEngine,
+} from "./gl-transitions";
 import {
   ChromaProcessor,
   chromaParamsFromLayer,

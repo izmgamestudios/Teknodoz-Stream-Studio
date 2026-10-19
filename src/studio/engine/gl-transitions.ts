@@ -158,9 +158,7 @@ export async function createTransitionEngine(): Promise<TransitionEngine | null>
     }
   };
 
-  const available = GL_TRANSITIONS.map(([n]) => n).filter((n) =>
-    getProgram(n),
-  );
+  const available = GL_TRANSITIONS.map(([n]) => n).filter((n) => getProgram(n));
 
   return {
     canvas,

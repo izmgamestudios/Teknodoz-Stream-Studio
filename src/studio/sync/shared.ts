@@ -9,6 +9,42 @@ export const HANDOFF_KEY = "studio.sync.handoff.v1";
 export const MAX_SCRIPT_CHARS = 200_000;
 export const MAX_HANDOFF_BYTES = 2_000_000;
 
+export const LAST_SYNCED_KEY = "studio.sync.main.last.v1";
+
+export type StartupAction = "adopt" | "push" | "none";
+
+/**
+ * What the main Studio does with the shared script when it starts. `lastSynced` is the text it
+ * last published/adopted itself. Never overwrites an edit that exists only on one side:
+ * - nothing shared yet -> publish ours (if any)
+ * - same text -> nothing
+ * - ours is empty, or unchanged since the last sync (so the shared text is simply newer) -> adopt
+ * - both sides changed independently -> keep ours and publish nothing; the next edit wins
+ */
+export function decideStartup(
+  local: string,
+  shared: ScriptMessage | null,
+  lastSynced: string | null,
+): StartupAction {
+  if (!shared) return local.trim() === "" ? "none" : "push";
+  if (shared.text === local) return "none";
+  if (local.trim() === "") return "adopt";
+  if (lastSynced !== null && lastSynced === local) return "adopt";
+  return "none";
+}
+
+export function readLastSynced(): string | null {
+  return store()?.getItem(LAST_SYNCED_KEY) ?? null;
+}
+
+export function writeLastSynced(text: string): void {
+  try {
+    store()?.setItem(LAST_SYNCED_KEY, text.slice(0, MAX_SCRIPT_CHARS));
+  } catch {
+    /* storage blocked */
+  }
+}
+
 export type SyncSource = "main" | "classic";
 
 export interface ScriptMessage {
@@ -38,7 +74,8 @@ export function parseScriptMessage(raw: string | null): ScriptMessage | null {
   if (!raw) return null;
   try {
     const v = JSON.parse(raw) as Partial<ScriptMessage> | null;
-    if (!v || typeof v.text !== "string" || typeof v.at !== "number") return null;
+    if (!v || typeof v.text !== "string" || typeof v.at !== "number")
+      return null;
     if (v.from !== "main" && v.from !== "classic") return null;
     return { text: v.text.slice(0, MAX_SCRIPT_CHARS), at: v.at, from: v.from };
   } catch {
@@ -50,11 +87,19 @@ export function readSharedScript(): ScriptMessage | null {
   return parseScriptMessage(store()?.getItem(SCRIPT_KEY) ?? null);
 }
 
-export function publishScript(text: string, from: SyncSource, at = Date.now()): boolean {
+export function publishScript(
+  text: string,
+  from: SyncSource,
+  at = Date.now(),
+): boolean {
   const s = store();
   if (!s) return false;
   try {
-    const msg: ScriptMessage = { text: text.slice(0, MAX_SCRIPT_CHARS), at, from };
+    const msg: ScriptMessage = {
+      text: text.slice(0, MAX_SCRIPT_CHARS),
+      at,
+      from,
+    };
     s.setItem(SCRIPT_KEY, JSON.stringify(msg));
     return true;
   } catch {
@@ -91,11 +136,19 @@ export function parseHandoff(raw: string | null): Handoff | null {
 }
 
 /** Queue scenes for the main Studio (picked up on its next start or immediately if open). */
-export function sendHandoff(scenes: unknown[], from: SyncSource = "classic"): boolean {
+export function sendHandoff(
+  scenes: unknown[],
+  from: SyncSource = "classic",
+): boolean {
   const s = store();
   if (!s || scenes.length === 0) return false;
   try {
-    const h: Handoff = { id: `h${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, at: Date.now(), from, scenes };
+    const h: Handoff = {
+      id: `h${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      at: Date.now(),
+      from,
+      scenes,
+    };
     const json = JSON.stringify(h);
     if (json.length > MAX_HANDOFF_BYTES) return false;
     s.setItem(HANDOFF_KEY, json);

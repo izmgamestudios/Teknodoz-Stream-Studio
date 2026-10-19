@@ -35,7 +35,8 @@ export function SoundLibrary() {
     <section className={PANEL} aria-label="Ses kütüphanesi">
       <PanelTitle>Ses kütüphanesi</PanelTitle>
       <p className="mb-2 text-[11px] text-muted-foreground">
-        Müzik ve efektler kodla üretilir: dosya yok, telif yok. Kayıda ve canlı yayına karışır.
+        Müzik ve efektler kodla üretilir: dosya yok, telif yok. Kayıda ve canlı
+        yayına karışır.
       </p>
 
       <label className="mb-3 flex items-center justify-between gap-2 rounded-md bg-secondary px-2 py-1.5 text-xs">
@@ -51,7 +52,9 @@ export function SoundLibrary() {
         />
       </label>
 
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Müzik</p>
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+        Müzik
+      </p>
       <ul className="mb-3 grid grid-cols-1 gap-1 sm:grid-cols-2 xl:grid-cols-1">
         {TRACKS.map((t) => {
           const on = rt.isTrackPlaying(t.id);
@@ -62,8 +65,12 @@ export function SoundLibrary() {
                 aria-pressed={on}
                 onClick={() => void rt.toggleTrack(t.id)}
               >
-                <span className="font-semibold">{on ? "■" : "♪"} {t.name}</span>
-                <span className="block opacity-70">{t.mood} · {t.bpm} bpm</span>
+                <span className="font-semibold">
+                  {on ? "■" : "♪"} {t.name}
+                </span>
+                <span className="block opacity-70">
+                  {t.mood} · {t.bpm} bpm
+                </span>
               </button>
             </li>
           );

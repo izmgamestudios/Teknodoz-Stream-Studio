@@ -8,8 +8,12 @@
   font-style: normal;
   font-display: swap;
   font-weight: 300 700;
-  src: url("/fonts/space-grotesk-latin-ext-wght-normal.woff2") format("woff2-variations");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  src: url("/fonts/space-grotesk-latin-ext-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
 @font-face {
@@ -17,10 +21,13 @@
   font-style: normal;
   font-display: swap;
   font-weight: 300 700;
-  src: url("/fonts/space-grotesk-latin-wght-normal.woff2") format("woff2-variations");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url("/fonts/space-grotesk-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
 }
-
 
 @custom-variant dark (&:is(.dark *));
 
@@ -75,7 +82,9 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  * {
+    border-color: var(--color-border);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -85,31 +94,128 @@
 
 /* Diğer Teknodoz Projeleri (shared sidebar block) */
 /* Inherits colors from the host page; no inline styles are used so strict CSPs (style-src 'self') keep working. */
-.tdp { margin: 1rem 0; font-size: 0.9rem; }
-.tdp-title { font-size: 0.95rem; margin: 0 0 0.5rem; }
-.tdp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
-.tdp-item { border: 1px solid color-mix(in srgb, currentColor 22%, transparent); border-radius: 10px; padding: 0.5rem 0.6rem; }
-.tdp-head { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; }
-.tdp-head a { font-weight: 600; color: inherit; }
-.tdp-name { font-weight: 600; }
-.tdp-tag { font-size: 0.72rem; border-radius: 999px; padding: 0.05rem 0.5rem; border: 1px solid currentColor; white-space: nowrap; }
-.tdp-open { color: #15803d; }
-.tdp-private { color: #b45309; }
-.tdp-desc { font-size: 0.8rem; opacity: 0.8; margin-top: 0.15rem; }
-.tdp-desc a { color: inherit; }
-.tdp-toggle { margin-top: 0.4rem; font: inherit; background: none; border: 1px dashed currentColor; border-radius: 8px; padding: 0.2rem 0.5rem; color: inherit; cursor: pointer; }
-.tdp-form { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
-.tdp-form[hidden] { display: none; }
-.tdp-form input { flex: 1 1 8rem; min-width: 0; font: inherit; padding: 0.25rem 0.4rem; }
-.tdp-form button { font: inherit; padding: 0.25rem 0.7rem; cursor: pointer; }
-.tdp-msg { flex-basis: 100%; margin: 0; font-size: 0.8rem; color: #b91c1c; }
-.tdp, .tdp-item, .tdp-head > * { min-width: 0; overflow-wrap: anywhere; }
-.tdp-tag { overflow-wrap: normal; flex-shrink: 0; }
+.tdp {
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+.tdp-title {
+  font-size: 0.95rem;
+  margin: 0 0 0.5rem;
+}
+.tdp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.tdp-item {
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 10px;
+  padding: 0.5rem 0.6rem;
+}
+.tdp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+.tdp-head a {
+  font-weight: 600;
+  color: inherit;
+}
+.tdp-name {
+  font-weight: 600;
+}
+.tdp-tag {
+  font-size: 0.72rem;
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.tdp-open {
+  color: #15803d;
+}
+.tdp-private {
+  color: #b45309;
+}
+.tdp-desc {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-top: 0.15rem;
+}
+.tdp-desc a {
+  color: inherit;
+}
+.tdp-toggle {
+  margin-top: 0.4rem;
+  font: inherit;
+  background: none;
+  border: 1px dashed currentColor;
+  border-radius: 8px;
+  padding: 0.2rem 0.5rem;
+  color: inherit;
+  cursor: pointer;
+}
+.tdp-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+.tdp-form[hidden] {
+  display: none;
+}
+.tdp-form input {
+  flex: 1 1 8rem;
+  min-width: 0;
+  font: inherit;
+  padding: 0.25rem 0.4rem;
+}
+.tdp-form button {
+  font: inherit;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+}
+.tdp-msg {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+.tdp,
+.tdp-item,
+.tdp-head > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tdp-tag {
+  overflow-wrap: normal;
+  flex-shrink: 0;
+}
 
 /* Studio: pulse ring when the edited scene is pushed to the live program */
 @keyframes go-live-ring {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 85%, transparent), inset 0 0 0 4px var(--primary); opacity: 1; }
-  100% { box-shadow: 0 0 0 28px transparent, inset 0 0 0 0 transparent; opacity: 0; }
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--primary) 85%, transparent),
+      inset 0 0 0 4px var(--primary);
+    opacity: 1;
+  }
+  100% {
+    box-shadow:
+      0 0 0 28px transparent,
+      inset 0 0 0 0 transparent;
+    opacity: 0;
+  }
 }
-.go-live-ring { animation: go-live-ring 0.9s ease-out forwards; }
-@media (prefers-reduced-motion: reduce) { .go-live-ring { animation: none; opacity: 0; } }
+.go-live-ring {
+  animation: go-live-ring 0.9s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .go-live-ring {
+    animation: none;
+    opacity: 0;
+  }
+}

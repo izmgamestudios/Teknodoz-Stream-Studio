@@ -180,7 +180,13 @@ export function drawScene(
   ctx.fillRect(0, 0, W, H);
 
   const baseEl =
-    sc.base === "screen" ? src.scr : sc.base === "video" ? src.bgv : sc.base === "guest" ? src.guest : src.cam;
+    sc.base === "screen"
+      ? src.scr
+      : sc.base === "video"
+        ? src.bgv
+        : sc.base === "guest"
+          ? src.guest
+          : src.cam;
   const mirrorBase = sc.base === "camera";
   const full: Rect = { x: 0, y: 0, w: W, h: H };
   const frameRects: Rect[] = [];

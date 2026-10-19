@@ -8,8 +8,16 @@ import { defaultProject } from "../defaults";
 
 describe("gl transition ids", () => {
   it("accepts curated names and rejects anything else", () => {
-    for (const [id] of GL_TRANSITIONS) expect(isGlTransition(`gl:${id}`)).toBe(true);
-    for (const bad of ["fade", "gl:", "gl:../x", "gl:a b", `gl:${"x".repeat(41)}`, "GL:fade"])
+    for (const [id] of GL_TRANSITIONS)
+      expect(isGlTransition(`gl:${id}`)).toBe(true);
+    for (const bad of [
+      "fade",
+      "gl:",
+      "gl:../x",
+      "gl:a b",
+      `gl:${"x".repeat(41)}`,
+      "GL:fade",
+    ])
       expect(isGlTransition(bad)).toBe(false);
     expect(glName("gl:CrossZoom")).toBe("CrossZoom");
   });
@@ -21,7 +29,9 @@ describe("gl transition ids", () => {
     const base = defaultProject();
     const withType = (type: string) => ({
       ...base,
-      scenes: base.scenes.map((s, i) => (i === 0 ? { ...s, transition: { type, ms: 500 } } : s)),
+      scenes: base.scenes.map((s, i) =>
+        i === 0 ? { ...s, transition: { type, ms: 500 } } : s,
+      ),
     });
     const typeOf = (type: string) => {
       const r = parseProject(withType(type));
