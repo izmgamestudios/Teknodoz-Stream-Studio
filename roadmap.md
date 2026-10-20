@@ -14,6 +14,7 @@
 - [x] Kamera/görüntü ayarları (parlaklık, kontrast, doygunluk, ton, netlik, bulanıklık, sıcaklık, vinyet) + 12 ön ayar
 - [x] Ses iyileştirme: gürültü kapısı (AudioWorklet), EQ, sıkıştırıcı, limiter, ortam gürültüsü ölçümü, otomatik müzik kısma (ducking)
 - [x] 10 yeni şablon (röportaj, radyo, 5 dikey, 4:5, 2 kare) + 4 yeni Klasik şablon
-- [ ] Yapay zeka tabanlı gürültü bastırma (RNNoise/WASM) ve arka plan bulanıklaştırma (segmentasyon): model dosyaları bu ortamdan indirilemedi
+- [x] Yapay zeka gürültü bastırma: RNNoise (WASM, Apache-2.0 @timephy/rnnoise-wasm) tarayıcıda yerel; NVIDIA Broadcast / RTX Voice / Krisp mikrofon algılama + mikrofon seçimi; NVIDIA Broadcast MCP gateway istemcisi (araçları keşfeder)
+- [ ] Arka plan bulanıklaştırma (segmentasyon modeli bu ortamdan indirilemedi; NVIDIA Broadcast sanal kamerası şimdilik çözüm)
 - [x] Sahne otomatik sırası (süreli rundown), "Benim şablonlarım" (formatlar arası uyarlama), Sistem sağlığı paneli (fps, çizim süresi, ses kırpılması), kayıt dosya adında format
 - [x] Erişilebilirlik: axe taramasında 10 sayfada 0 ihlal (ana içerik landmark'ı, içeriğe geç bağlantısı, kontrast, etiketler)

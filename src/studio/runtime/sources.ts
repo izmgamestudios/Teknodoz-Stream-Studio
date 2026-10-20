@@ -2,6 +2,11 @@
 // Owns every live media source (camera, screen, prototype capture, guests, asset images/videos)
 // and resolves a Layer to a drawable FrameSource for the compositor. Browser-only: construct it
 // inside an effect, never at module scope.
+import {
+  aiDeviceKind,
+  audioConstraints,
+  type AiDeviceKind,
+} from "../engine/audio-devices";
 import type { VoiceProcessor, VoiceSettings } from "../engine/voice";
 import type { AudioBus, ChannelHandle } from "../engine/audio-bus";
 import { captureSurface, type CaptureHandle } from "../proto";
@@ -29,6 +34,8 @@ export interface SourcesSnapshot {
   readonly webCaptures: readonly string[];
   /** peer ids with a live guest stream */
   readonly guests: readonly string[];
+  /** the active microphone is an AI device (NVIDIA Broadcast...): browser processing is off */
+  readonly micAi: AiDeviceKind | null;
   readonly error: SourceError | null;
 }
 
@@ -77,10 +84,12 @@ export class SourceManager {
     screen: false,
     webCaptures: [],
     guests: [],
+    micAi: null,
     error: null,
   };
   private listeners = new Set<() => void>();
   private disposed = false;
+  private micAi: AiDeviceKind | null = null;
 
   constructor(
     private readonly assets: AssetStore,
@@ -106,6 +115,7 @@ export class SourceManager {
       screen: this.screen !== null,
       webCaptures: [...this.captures.keys()],
       guests: [...this.guests.keys()],
+      micAi: this.micAi,
       error: error === undefined ? this.snapshot.error : error,
     };
     for (const l of [...this.listeners]) l();
@@ -138,6 +148,15 @@ export class SourceManager {
       return false;
     }
     this.stopWebcam();
+    let aiHint = false;
+    if (audioDeviceId) {
+      const devs = await navigator.mediaDevices
+        .enumerateDevices()
+        .catch(() => []);
+      aiHint = !!aiDeviceKind(
+        devs.find((d) => d.deviceId === audioDeviceId)?.label,
+      );
+    }
     try {
       await this.audio.ensureRunning();
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -147,13 +166,21 @@ export class SourceManager {
           height: { ideal: 1080 },
           frameRate: { ideal: 60 },
         },
-        audio: {
-          ...(audioDeviceId ? { deviceId: { exact: audioDeviceId } } : {}),
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
+        audio: audioConstraints(audioDeviceId, aiHint),
       });
+      // labels are only known after permission: re-check the real track and switch the browser's
+      // own processing off for AI microphones (NVIDIA Broadcast...) so the signal is cleaned once
+      const track = stream.getAudioTracks()[0];
+      this.micAi = aiDeviceKind(track?.label);
+      if (track && this.micAi && !aiHint) {
+        await track
+          .applyConstraints({
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+          })
+          .catch(() => undefined);
+      }
       if (this.disposed) {
         stream.getTracks().forEach((t) => t.stop());
         return false;
@@ -207,6 +234,7 @@ export class SourceManager {
     if (!this.webcam) return;
     this.webcam.stop();
     this.webcam = null;
+    this.micAi = null;
     this.publish();
   }
 

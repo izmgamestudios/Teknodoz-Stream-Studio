@@ -8,7 +8,8 @@ import { GATE_PROCESSOR_NAME, GATE_WORKLET_SOURCE } from "./voice-dsp";
 /* Settings                                                            */
 /* ------------------------------------------------------------------ */
 
-export type VoicePreset = "off" | "speech" | "podcast" | "noisy" | "custom";
+export type VoicePreset =
+  "off" | "speech" | "podcast" | "noisy" | "nvidia" | "custom";
 
 export interface DuckingSettings {
   enabled: boolean;
@@ -23,6 +24,8 @@ export interface DuckingSettings {
 export interface VoiceSettings {
   enabled: boolean;
   preset: VoicePreset;
+  /** AI noise suppression (RNNoise, open source, runs locally in the browser) */
+  ai: boolean;
   /** high-pass (rumble / wind / handling noise), Hz */
   hpf: number;
   gate: boolean;
@@ -47,6 +50,7 @@ export const DEFAULT_DUCKING: Readonly<DuckingSettings> = {
 export const DEFAULT_VOICE: Readonly<VoiceSettings> = {
   enabled: false,
   preset: "off",
+  ai: false,
   hpf: 80,
   gate: false,
   gateDb: -52,
@@ -59,10 +63,11 @@ export const DEFAULT_VOICE: Readonly<VoiceSettings> = {
 export const VOICE_PRESETS: Readonly<
   Record<Exclude<VoicePreset, "custom">, Partial<VoiceSettings>>
 > = {
-  off: { enabled: false, gate: false, enhance: 0 },
+  off: { enabled: false, ai: false, gate: false, enhance: 0 },
   /** clean voice, light touch */
   speech: {
     enabled: true,
+    ai: false,
     hpf: 80,
     gate: true,
     gateDb: -54,
@@ -72,15 +77,26 @@ export const VOICE_PRESETS: Readonly<
   /** broadcast sound: warmer, more presence, tighter dynamics */
   podcast: {
     enabled: true,
+    ai: false,
     hpf: 90,
     gate: true,
     gateDb: -50,
     reductionDb: 18,
     enhance: 70,
   },
+  /** AI mic (NVIDIA Broadcast...) already cleaned the signal: no second gate, light EQ + limiter */
+  nvidia: {
+    enabled: true,
+    ai: false,
+    hpf: 50,
+    gate: false,
+    reductionDb: 12,
+    enhance: 20,
+  },
   /** fans, street, keyboard: aggressive gate, stronger rumble cut */
   noisy: {
     enabled: true,
+    ai: true,
     hpf: 120,
     gate: true,
     gateDb: -42,
@@ -110,6 +126,7 @@ export function sanitizeVoiceSettings(raw: unknown): VoiceSettings {
     "speech",
     "podcast",
     "noisy",
+    "nvidia",
     "custom",
   ];
   return {
@@ -117,6 +134,7 @@ export function sanitizeVoiceSettings(raw: unknown): VoiceSettings {
     preset: presets.includes(o["preset"] as VoicePreset)
       ? (o["preset"] as VoicePreset)
       : "off",
+    ai: o["ai"] === true,
     hpf: clamp(o["hpf"], 30, 300, DEFAULT_VOICE.hpf),
     gate: o["gate"] === true,
     gateDb: clamp(o["gateDb"], -80, -15, DEFAULT_VOICE.gateDb),
@@ -233,7 +251,16 @@ export interface VoiceMeter {
 
 type Listener = (m: VoiceMeter) => void;
 
+export type AiState = "off" | "loading" | "ready" | "error";
+
 export class VoiceProcessor {
+  /** RNNoise stage: "off" until enabled, then loading -> ready (or error) */
+  aiState: AiState = "off";
+  /** why the AI stage failed to load (shown to the user for troubleshooting) */
+  aiError = "";
+  private aiNode: AudioWorkletNode | null = null;
+  private aiBypass: GainNode | null = null;
+  private aiWet: GainNode | null = null;
   private ctx: AudioContext | null = null;
   private nodes: {
     source: MediaStreamAudioSourceNode;
@@ -269,7 +296,11 @@ export class VoiceProcessor {
   ): Promise<MediaStream> {
     this.detach();
     this.settings = settings;
-    const ctx = new AudioContext({ latencyHint: "interactive" });
+    // RNNoise works on 48 kHz frames
+    const ctx = new AudioContext({
+      latencyHint: "interactive",
+      sampleRate: 48000,
+    });
     this.ctx = ctx;
     await ctx.resume().catch(() => undefined);
 
@@ -325,9 +356,21 @@ export class VoiceProcessor {
     limiter.release.value = 0.08;
     const dest = ctx.createMediaStreamDestination();
 
+    // optional AI stage: source -> (bypass | RNNoise) -> pre -> chain
+    const pre = ctx.createGain();
+    const aiBypass = ctx.createGain();
+    const aiWet = ctx.createGain();
+    aiWet.gain.value = 0;
+    this.aiBypass = aiBypass;
+    this.aiWet = aiWet;
+    this.aiState = "off";
+
     source.connect(dry);
     dry.connect(dest);
-    source.connect(hpf);
+    source.connect(aiBypass);
+    aiBypass.connect(pre);
+    aiWet.connect(pre);
+    pre.connect(hpf);
     let tail: AudioNode = hpf;
     if (gate) {
       tail.connect(gate);
@@ -388,6 +431,63 @@ export class VoiceProcessor {
       threshold: p.gateThreshold,
       floor: p.gateFloor,
     });
+    this.applyAi(settings.enabled && settings.ai);
+  }
+
+  /** Switches RNNoise on/off (the WASM worklet is loaded the first time it is needed). */
+  private applyAi(on: boolean): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.aiBypass || !this.aiWet) return;
+    if (
+      on &&
+      !this.aiNode &&
+      this.aiState !== "loading" &&
+      this.aiState !== "error"
+    ) {
+      this.aiState = "loading";
+      this.emit();
+      void this.loadAi(ctx).then(() =>
+        this.applyAi(this.settings.enabled && this.settings.ai),
+      );
+      return;
+    }
+    const live = on && this.aiNode !== null;
+    const t = ctx.currentTime;
+    this.aiBypass.gain.setTargetAtTime(live ? 0 : 1, t, 0.03);
+    this.aiWet.gain.setTargetAtTime(live ? 1 : 0, t, 0.03);
+    if (this.aiNode) {
+      const next: AiState = on ? "ready" : "off";
+      if (next !== this.aiState) {
+        this.aiState = next;
+        this.emit();
+      }
+    }
+  }
+
+  private async loadAi(ctx: AudioContext): Promise<void> {
+    try {
+      const [{ NoiseSuppressorWorklet_Name }, url] = await Promise.all([
+        import("@timephy/rnnoise-wasm"),
+        import("@timephy/rnnoise-wasm/NoiseSuppressorWorklet?worker&url").then(
+          (m) => m.default as string,
+        ),
+      ]);
+      await ctx.audioWorklet.addModule(url);
+      if (ctx !== this.ctx || !this.nodes) return; // detached while loading
+      const node = new AudioWorkletNode(ctx, NoiseSuppressorWorklet_Name);
+      this.nodes.source.connect(node);
+      node.connect(this.aiWet!);
+      this.aiNode = node;
+      this.aiState = "ready";
+    } catch (e) {
+      this.aiState = "error";
+      this.aiError = e instanceof Error ? e.message : String(e);
+    }
+    this.emit();
+  }
+
+  private emit(): void {
+    for (const l of [...this.listeners]) l(this.meter);
   }
 
   detach(): void {
@@ -399,6 +499,10 @@ export class VoiceProcessor {
     void this.ctx?.close().catch(() => undefined);
     this.ctx = null;
     this.nodes = null;
+    this.aiNode = null;
+    this.aiBypass = null;
+    this.aiWet = null;
+    this.aiState = "off";
     this.meter = { open: true, db: -100 };
   }
 }

@@ -115,6 +115,17 @@ describe("voice settings", () => {
     expect(s.ducking.releaseMs).toBe(100);
     expect(sanitizeVoiceSettings(null)).toEqual(sanitizeVoiceSettings({}));
   });
+  it("only the noisy preset turns the RNNoise AI stage on", () => {
+    const cur = sanitizeVoiceSettings({ ai: true });
+    expect(applyVoicePreset(cur, "noisy").ai).toBe(true);
+    for (const id of ["off", "speech", "podcast", "nvidia"] as const)
+      expect(applyVoicePreset(cur, id).ai, id).toBe(false);
+    expect(sanitizeVoiceSettings({ ai: "yes" }).ai).toBe(false);
+    // an AI mic already cleaned the signal: no second gate
+    const nv = applyVoicePreset(sanitizeVoiceSettings({}), "nvidia");
+    expect(nv.gate).toBe(false);
+    expect(nv.enabled).toBe(true);
+  });
   it("presets enable the chain and keep the ducking choice", () => {
     const cur = sanitizeVoiceSettings({
       ducking: { enabled: true, amountDb: -18 },

@@ -3,6 +3,15 @@
 import { useEffect, useState } from "react";
 
 import {
+  AI_DEVICE_NAME,
+  listChoices,
+  loadMicId,
+  saveMicId,
+  type DeviceChoice,
+} from "../engine/audio-devices";
+import { applyVoicePreset } from "../engine/voice";
+
+import {
   useRuntimeSnapshot,
   useSources,
   useStudio,
@@ -24,14 +33,18 @@ export function SourceBar() {
   const rt = useStudio();
   const src = useSources();
   const snap = useRuntimeSnapshot();
-  const [cams, setCams] = useState<MediaDeviceInfo[]>([]);
+  const [cams, setCams] = useState<DeviceChoice[]>([]);
+  const [mics, setMics] = useState<DeviceChoice[]>([]);
   const [camId, setCamId] = useState("");
+  const [micId, setMicId] = useState("");
+  useEffect(() => setMicId(loadMicId()), []);
 
   useEffect(() => {
     if (!src.webcam || !navigator.mediaDevices?.enumerateDevices) return;
-    void navigator.mediaDevices
-      .enumerateDevices()
-      .then((d) => setCams(d.filter((x) => x.kind === "videoinput")));
+    void navigator.mediaDevices.enumerateDevices().then((d) => {
+      setCams(listChoices(d, "videoinput"));
+      setMics(listChoices(d, "audioinput"));
+    });
   }, [src.webcam]);
 
   return (
@@ -45,7 +58,10 @@ export function SourceBar() {
         onClick={() =>
           src.webcam
             ? rt.sources.stopWebcam()
-            : void rt.sources.startWebcam(camId || undefined)
+            : void rt.sources.startWebcam(
+                camId || undefined,
+                micId || undefined,
+              )
         }
       >
         {src.webcam ? "📷 Kamerayı kapat" : "📷 Kamerayı aç"}
@@ -57,16 +73,56 @@ export function SourceBar() {
           value={camId}
           onChange={(e) => {
             setCamId(e.target.value);
-            void rt.sources.startWebcam(e.target.value || undefined);
+            void rt.sources.startWebcam(
+              e.target.value || undefined,
+              micId || undefined,
+            );
           }}
         >
           <option value="">Varsayılan kamera</option>
           {cams.map((c) => (
             <option key={c.deviceId} value={c.deviceId}>
-              {c.label || `Kamera ${c.deviceId.slice(0, 4)}`}
+              {c.ai ? "✨ " : ""}
+              {c.label}
             </option>
           ))}
         </select>
+      )}
+      {src.webcam && mics.length > 1 && (
+        <select
+          aria-label="Mikrofon seç"
+          className="rounded-md border bg-background px-2 py-1.5 text-xs"
+          value={micId}
+          onChange={(e) => {
+            const id = e.target.value;
+            setMicId(id);
+            saveMicId(id);
+            const picked = mics.find((m) => m.deviceId === id);
+            // an AI microphone is already clean: switch the software chain to the matching preset
+            if (picked?.ai)
+              rt.setVoiceSettings(
+                applyVoicePreset(rt.getVoiceSnapshot().settings, "nvidia"),
+              );
+            void rt.sources.startWebcam(camId || undefined, id || undefined);
+          }}
+        >
+          <option value="">Varsayılan mikrofon</option>
+          {mics.map((m) => (
+            <option key={m.deviceId} value={m.deviceId}>
+              {m.ai ? "✨ " : ""}
+              {m.label}
+              {m.ai ? " · yapay zeka gürültü giderme" : ""}
+            </option>
+          ))}
+        </select>
+      )}
+      {src.micAi && (
+        <span
+          className="rounded-md bg-speaker-b/15 px-2 py-1 text-[11px] text-foreground"
+          title="Tarayıcının kendi gürültü engelleme / yankı / otomatik kazancı kapatıldı: sinyal yalnızca bir kez işlenir."
+        >
+          ✨ {AI_DEVICE_NAME[src.micAi]} etkin
+        </span>
       )}
       <button
         className={BTN}

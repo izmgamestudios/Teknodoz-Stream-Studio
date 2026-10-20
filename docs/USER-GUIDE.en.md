@@ -135,6 +135,9 @@ Brightness, contrast, sharpness, blur, vignette and warmth; for the microphone a
 4. In the “Ses iyileştirme” (voice enhancement) panel choose Konuşma (speech), Podcast or Gürültülü ortam (noisy room); tune the gate threshold, reduction, EQ + compression amount and rumble filter.
 5. Stay silent and press “Ortam gürültüsünü ölç” (measure room noise): the gate threshold is set just above the measured noise.
 6. Turn on “Konuşurken müziği kıs” (duck music while speaking): music channels are lowered while you talk and come back smoothly; moving the slider by hand sets the new base level.
+7. In a noisy room turn on “Yapay zeka gürültü bastırma (RNNoise)” (AI noise suppression): an open-source neural network cleans your voice locally in the browser (the model takes a few seconds to load the first time).
+8. If you use NVIDIA Broadcast / RTX Voice / Krisp pick the “✨” virtual microphone from the microphone list: the browser's own noise suppression and auto gain are switched off so the audio is not processed twice, and the “NVIDIA / AI mikrofon” preset is selected.
+9. Advanced: connect to the local NVIDIA Broadcast 2.3+ MCP gateway (127.0.0.1:18100–18109) from the panel; the effects it advertises (noise removal, echo removal, Studio Voice…) are listed. The browser must allow local network access.
 
 > 💡 **Tip:** The browser's noise suppression, echo cancellation and auto gain are already on when the mic opens; the panel works on top of that.
 

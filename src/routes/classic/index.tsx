@@ -1610,6 +1610,7 @@ function Studio() {
                   ["speech", "Konuşma"],
                   ["podcast", "Podcast"],
                   ["noisy", "Gürültülü ortam"],
+                  ["nvidia", "✨ NVIDIA / AI mikrofon"],
                 ] as [Exclude<VoicePreset, "custom">, string][]
               ).map(([id, label]) => (
                 <button
@@ -1622,6 +1623,29 @@ function Studio() {
                 </button>
               ))}
             </div>
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={voice.ai}
+                onChange={(e) =>
+                  setVoice((v) => ({
+                    ...v,
+                    ai: e.target.checked,
+                    enabled: e.target.checked || v.enabled,
+                  }))
+                }
+              />
+              Yapay zeka gürültü bastırma (RNNoise)
+              {voice.ai && (
+                <span className="text-[11px] text-muted-foreground">
+                  {voiceRef.current.aiState === "ready"
+                    ? "· etkin"
+                    : voiceRef.current.aiState === "error"
+                      ? "· yüklenemedi"
+                      : "· yükleniyor"}
+                </span>
+              )}
+            </label>
             <label className="flex items-center gap-2 text-xs">
               <input
                 type="checkbox"

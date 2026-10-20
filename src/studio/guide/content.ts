@@ -273,6 +273,9 @@ export const GUIDE: readonly GuideSection[] = [
         "“Ses iyileştirme” panelinde Konuşma, Podcast ya da Gürültülü ortam ön ayarını seç; gürültü kapısı eşiğini, bastırma miktarını, EQ+sıkıştırma gücünü ve uğultu filtresini ayarla.",
         "Sessiz kalıp “Ortam gürültüsünü ölç” düğmesine bas: kapı eşiği ölçülen gürültünün hemen üstüne ayarlanır.",
         "“Konuşurken müziği kıs”ı aç: sen konuşurken müzik kanalları kısılır, bitince yumuşakça geri gelir; sürgüyü elle oynatırsan o değer yeni taban olur.",
+        "Gürültülü ortamda “Yapay zeka gürültü bastırma (RNNoise)”u aç: açık kaynak bir sinir ağı sesini tarayıcıda, bilgisayarında yerel olarak temizler (ilk açılışta model birkaç saniye yüklenir).",
+        "NVIDIA Broadcast / RTX Voice / Krisp kullanıyorsan mikrofon listesinden “✨” işaretli sanal mikrofonu seç: tarayıcının kendi gürültü engelleme ve otomatik kazancı kapanır, ses iki kez işlenmez ve “NVIDIA / AI mikrofon” ön ayarı seçilir.",
+        "Gelişmiş: NVIDIA Broadcast 2.3+ yerel MCP gateway'ine (127.0.0.1:18100–18109) panelden bağlanabilirsin; gateway'in bildirdiği efektler (gürültü giderme, yankı giderme, Studio Voice…) listelenir. Tarayıcı yerel ağ erişimine izin vermeli.",
       ],
       tips: [
         "Tarayıcının gürültü engelleme, yankı önleme ve otomatik kazancı mikrofon açılırken zaten etkindir; panel onun üstüne çalışır.",
@@ -291,6 +294,9 @@ export const GUIDE: readonly GuideSection[] = [
         "In the “Ses iyileştirme” (voice enhancement) panel choose Konuşma (speech), Podcast or Gürültülü ortam (noisy room); tune the gate threshold, reduction, EQ + compression amount and rumble filter.",
         "Stay silent and press “Ortam gürültüsünü ölç” (measure room noise): the gate threshold is set just above the measured noise.",
         "Turn on “Konuşurken müziği kıs” (duck music while speaking): music channels are lowered while you talk and come back smoothly; moving the slider by hand sets the new base level.",
+        "In a noisy room turn on “Yapay zeka gürültü bastırma (RNNoise)” (AI noise suppression): an open-source neural network cleans your voice locally in the browser (the model takes a few seconds to load the first time).",
+        "If you use NVIDIA Broadcast / RTX Voice / Krisp pick the “✨” virtual microphone from the microphone list: the browser's own noise suppression and auto gain are switched off so the audio is not processed twice, and the “NVIDIA / AI mikrofon” preset is selected.",
+        "Advanced: connect to the local NVIDIA Broadcast 2.3+ MCP gateway (127.0.0.1:18100–18109) from the panel; the effects it advertises (noise removal, echo removal, Studio Voice…) are listed. The browser must allow local network access.",
       ],
       tips: [
         "The browser's noise suppression, echo cancellation and auto gain are already on when the mic opens; the panel works on top of that.",

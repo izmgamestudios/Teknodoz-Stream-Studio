@@ -135,6 +135,9 @@ Parlaklık, kontrast, netlik, bulanıklık, vinyet ve sıcaklık; mikrofon için
 4. “Ses iyileştirme” panelinde Konuşma, Podcast ya da Gürültülü ortam ön ayarını seç; gürültü kapısı eşiğini, bastırma miktarını, EQ+sıkıştırma gücünü ve uğultu filtresini ayarla.
 5. Sessiz kalıp “Ortam gürültüsünü ölç” düğmesine bas: kapı eşiği ölçülen gürültünün hemen üstüne ayarlanır.
 6. “Konuşurken müziği kıs”ı aç: sen konuşurken müzik kanalları kısılır, bitince yumuşakça geri gelir; sürgüyü elle oynatırsan o değer yeni taban olur.
+7. Gürültülü ortamda “Yapay zeka gürültü bastırma (RNNoise)”u aç: açık kaynak bir sinir ağı sesini tarayıcıda, bilgisayarında yerel olarak temizler (ilk açılışta model birkaç saniye yüklenir).
+8. NVIDIA Broadcast / RTX Voice / Krisp kullanıyorsan mikrofon listesinden “✨” işaretli sanal mikrofonu seç: tarayıcının kendi gürültü engelleme ve otomatik kazancı kapanır, ses iki kez işlenmez ve “NVIDIA / AI mikrofon” ön ayarı seçilir.
+9. Gelişmiş: NVIDIA Broadcast 2.3+ yerel MCP gateway'ine (127.0.0.1:18100–18109) panelden bağlanabilirsin; gateway'in bildirdiği efektler (gürültü giderme, yankı giderme, Studio Voice…) listelenir. Tarayıcı yerel ağ erişimine izin vermeli.
 
 > 💡 **İpucu:** Tarayıcının gürültü engelleme, yankı önleme ve otomatik kazancı mikrofon açılırken zaten etkindir; panel onun üstüne çalışır.
 

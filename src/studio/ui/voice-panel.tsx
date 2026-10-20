@@ -10,6 +10,7 @@ import {
   type VoiceSettings,
 } from "../engine/voice";
 import { useAudioState, useStudio, useVoice } from "../runtime/use-studio";
+import { BroadcastGatewayPanel } from "./broadcast-gateway-panel";
 import { Check, Field, PANEL, PanelTitle, RangeInput } from "./fields";
 
 const PRESETS: readonly {
@@ -27,7 +28,12 @@ const PRESETS: readonly {
   {
     id: "noisy",
     label: "Gürültülü ortam",
-    hint: "Fan, sokak, klavye: güçlü kapı",
+    hint: "Fan, sokak, klavye: yapay zeka + güçlü kapı",
+  },
+  {
+    id: "nvidia",
+    label: "✨ NVIDIA / AI mikrofon",
+    hint: "Mikrofon zaten temiz (NVIDIA Broadcast, RTX Voice, Krisp): çift işleme yok",
   },
 ];
 
@@ -164,6 +170,24 @@ export function VoicePanel() {
         >
           Gürültü kapısı (sessizken arka plan gürültüsünü kıs)
         </Check>
+        <Check
+          checked={s.ai}
+          onChange={(ai) => set({ ai, enabled: ai || s.enabled })}
+        >
+          Yapay zeka gürültü bastırma (RNNoise · açık kaynak, tarayıcıda yerel
+          çalışır)
+        </Check>
+        {s.ai && (
+          <p role="status" className="text-[11px] text-muted-foreground">
+            {rt.micFx.aiState === "loading"
+              ? "Model yükleniyor…"
+              : rt.micFx.aiState === "ready"
+                ? "✓ Yapay zeka gürültü bastırma etkin"
+                : rt.micFx.aiState === "error"
+                  ? `Yüklenemedi: ${rt.micFx.aiError || "tarayıcı AudioWorklet/WebAssembly desteklemiyor olabilir."}`
+                  : "Mikrofon açılınca etkinleşir."}
+          </p>
+        )}
         <Field label={`Kapı eşiği: ${s.gateDb} dB`}>
           <RangeInput
             label="Kapı eşiği"
@@ -260,6 +284,8 @@ export function VoicePanel() {
           />
         </Field>
       </fieldset>
+
+      <BroadcastGatewayPanel />
 
       <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
         Tarayıcının gürültü engelleme, yankı önleme ve otomatik kazanç özelliği
