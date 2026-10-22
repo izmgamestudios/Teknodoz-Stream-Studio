@@ -17,7 +17,7 @@ import {
   PanelTitle,
 } from "@/studio/ui/fields";
 import { EditPanel, SubtitlesPanel } from "@/studio/ui/watch/editor";
-import { readAdminToken, saveAdminToken } from "@/studio/watch/admin-token";
+import { AdminGate } from "@/studio/ui/admin-gate";
 import {
   adminDelete,
   adminList,
@@ -40,7 +40,11 @@ export const Route = createFileRoute("/library")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: LibraryPage,
+  component: () => (
+    <AdminGate>
+      <LibraryPage />
+    </AdminGate>
+  ),
 });
 
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
@@ -48,8 +52,7 @@ const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
 function LibraryPage() {
   const t = useT();
   const lang = useLang();
-  const [token, setToken] = useState("");
-  const [typed, setTyped] = useState("");
+  const token = "";
   const [media, setMedia] = useState<MediaRecord[] | null>(null);
   const [catalog, setCatalog] = useState<AdminItem[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -65,11 +68,7 @@ function LibraryPage() {
   }, []);
 
   useEffect(() => {
-    const tk = readAdminToken();
-    if (tk) {
-      setToken(tk);
-      void load(tk);
-    }
+    void load(token);
   }, [load]);
 
   const current = useMemo(
@@ -129,36 +128,11 @@ function LibraryPage() {
       </header>
 
       <div className="mx-auto max-w-6xl space-y-4">
-        {!token || media === null ? (
+        {media === null ? (
           <section className={PANEL}>
-            <PanelTitle>{t("catalog.token")}</PanelTitle>
-            <form
-              className="flex flex-wrap gap-2"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                saveAdminToken(typed);
-                setToken(typed);
-                if (!(await load(typed)))
-                  setNote({ ok: false, text: t("admin.err.load") });
-              }}
-            >
-              <input
-                type="password"
-                autoComplete="off"
-                className={`${INPUT} min-w-0 flex-1`}
-                aria-label={t("catalog.token")}
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-              />
-              <button className={BTN_ACCENT} disabled={typed.length < 16}>
-                {t("catalog.connect")}
-              </button>
-            </form>
-            {note && !note.ok && (
-              <p role="alert" className="mt-2 text-sm text-destructive">
-                {note.text}
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground">
+              {t("watch.loading")}
+            </p>
           </section>
         ) : (
           <>

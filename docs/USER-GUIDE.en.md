@@ -362,7 +362,6 @@ Room mode needs one long-lived Node process on the server (docs/ROOM.md). Server
 ### Links
 
 - [YouTube — Teknodoz](https://www.youtube.com/@teknodoz) — Eğitim videoları ve yayın kayıtları / Tutorials and recordings
-- [GitHub — kaynak kod, sorunlar, tartışmalar](https://github.com/izmgamestudios/Teknodoz-Stream-Studio) — Hata bildirimi ve katkı / Bug reports and contributions
 
 <a name="more"></a>
 

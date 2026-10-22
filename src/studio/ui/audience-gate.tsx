@@ -8,6 +8,8 @@ import { LANGS, type Lang } from "../i18n/messages";
 import { useLang, useT } from "../i18n/use-t";
 import { getSettingsSnapshot, saveSettings } from "../storage";
 import { useTheme, type ThemeChoice } from "../theme";
+import { logoutAdmin, useAdmin } from "../watch/admin-session";
+import { Link } from "@tanstack/react-router";
 
 export function AudienceGate() {
   const t = useT();
@@ -74,6 +76,7 @@ export function PrefBar({ withMode = false }: { withMode?: boolean }) {
   const lang = useLang();
   const [theme, setTheme] = useTheme();
   const audience = useAudience();
+  const { admin } = useAdmin();
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <select
@@ -103,6 +106,20 @@ export function PrefBar({ withMode = false }: { withMode?: boolean }) {
         <option value="light">☀ {t("settings.theme.light")}</option>
         <option value="dark">🌙 {t("settings.theme.dark")}</option>
       </select>
+      {withMode &&
+        (admin ? (
+          <button
+            className={`${SEL} hover:bg-accent`}
+            onClick={() => void logoutAdmin()}
+            title={t("admin.logout.signed")}
+          >
+            🔓 {t("admin.logout")}
+          </button>
+        ) : (
+          <Link to="/admin" className={`${SEL} hover:bg-accent`}>
+            🔒 {t("admin.login.link")}
+          </Link>
+        ))}
       {withMode && audience && (
         <button
           className={`${SEL} hover:bg-accent`}

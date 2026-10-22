@@ -30,3 +30,4 @@
 - [x] `/translations`: edit tr/en/de/es texts on the server without a release.
 - [x] Media library: studio recordings + uploads stored on the server (DB records, Range streaming), preview + publish to /watch.
 - [x] Library editor: trim, title-card / video intro+outro, fade, loudness, burned-in captions (ffmpeg jobs); Whisper subtitles (whisper.cpp / faster-whisper CLI) with editor and VTT upload.
+- [x] Admin session (HttpOnly cookie) gating admin pages, owner/site settings and GitHub links.

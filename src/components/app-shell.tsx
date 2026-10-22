@@ -8,6 +8,7 @@ import type { MessageKey } from "@/studio/i18n/messages";
 import { roomBadge } from "@/studio/room/badge";
 import { loadOverrides } from "@/studio/i18n/overrides";
 import { useAudience, VIEWER_ROUTES } from "@/studio/audience";
+import { useAdmin } from "@/studio/watch/admin-session";
 import { AudienceGate, PrefBar } from "@/studio/ui/audience-gate";
 
 const NAV: readonly {
@@ -74,10 +75,13 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
   const t = useT();
   const audience = useAudience();
   // viewers see the end-user pages only; creators (and the not-yet-decided) see everything
-  const nav =
+  const { admin } = useAdmin();
+  // administration is only visible to a signed-in administrator
+  const nav = (
     audience === "viewer"
       ? NAV.filter((n) => VIEWER_ROUTES.includes(n.to))
-      : NAV.filter((n) => n.to !== "/watch" || audience === "creator");
+      : NAV.filter((n) => n.to !== "/watch" || audience === "creator")
+  ).filter((n) => n.to !== "/admin" || admin === true);
   const badge = useSyncExternalStore(
     roomBadge.subscribe,
     roomBadge.get,

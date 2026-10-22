@@ -5,12 +5,11 @@
 //   GET  /api/admin/status   { storage, healthy, counts, checkedAt }
 //   GET  /api/admin/export   full backup (contains password hashes + secret link keys: keep private)
 //   POST /api/admin/import   merge a backup into the store (existing ids are replaced)
-import { timingSafeEqual } from "node:crypto";
-
 import { z } from "zod";
 
 import { tr } from "../studio/i18n/messages";
 import { isMediaSource } from "../studio/watch/media-url";
+import { isAdminRequest } from "./auth";
 import {
   captionSchema,
   isAssetUrl,
@@ -83,14 +82,8 @@ export interface AdminOptions {
 export function createAdminApi(opts: AdminOptions) {
   const now = opts.now ?? Date.now;
 
-  function isAdmin(req: Request): boolean {
-    if (!opts.token) return false;
-    const m = /^Bearer (.+)$/.exec(req.headers.get("authorization") ?? "");
-    if (!m) return false;
-    const a = Buffer.from(m[1] as string);
-    const b = Buffer.from(opts.token);
-    return a.length === b.length && timingSafeEqual(a, b);
-  }
+  const isAdmin = (req: Request): boolean =>
+    isAdminRequest(req, opts.token, now());
 
   const countOverrides = (o: Record<string, Record<string, string>>): number =>
     Object.values(o).reduce((n, m) => n + Object.keys(m).length, 0);

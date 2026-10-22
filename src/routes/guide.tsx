@@ -5,6 +5,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
+import { useAdmin } from "@/studio/watch/admin-session";
 import { titleFromMatches } from "@/studio/branding/head";
 import { CREDITS } from "@/studio/credits";
 import { FAQ, GUIDE, type GuideSection } from "@/studio/guide/content";
@@ -40,8 +41,8 @@ const TXT = {
   eyebrow: { tr: "Kılavuz", en: "Guide" },
   title: { tr: "Kullanım kılavuzu", en: "User guide" },
   intro: {
-    tr: "Adım adım anlatım, PDF ve video kaynakları, kısayollar ve sık sorulan sorular. Aynı içerik GitHub'da da yayınlanır.",
-    en: "Step by step instructions, PDF and video resources, shortcuts and FAQ. The same content is published on GitHub.",
+    tr: "Adım adım anlatım, PDF ve video kaynakları, kısayollar ve sık sorulan sorular.",
+    en: "Step by step instructions, PDF and video resources, shortcuts and FAQ.",
   },
   search: { tr: "Kılavuzda ara…", en: "Search the guide…" },
   none: { tr: "Eşleşen bölüm yok.", en: "No matching section." },
@@ -185,6 +186,7 @@ function PdfCard({ p, lang }: { p: ResolvedPdf; lang: Lang }) {
 }
 
 function GuidePage() {
+  const { admin } = useAdmin();
   const lang = useContentLang();
   const brand = useBrand();
   const [query, setQuery] = useState("");
@@ -462,24 +464,27 @@ function GuidePage() {
             </section>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            <a
-              className={BTN}
-              href={`${CREDITS.repo}/blob/main/docs/USER-GUIDE${lang === "en" ? ".en" : ""}.md`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {TXT.github[lang]}
-            </a>
-            <a
-              className={BTN}
-              href={`${CREDITS.repo}/blob/main/docs/KAYNAKCA.md`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {TXT.bib[lang]}
-            </a>
-          </div>
+          {/* the repository is private: its links are for the administrator only */}
+          {admin && (
+            <div className="flex flex-wrap gap-2">
+              <a
+                className={BTN}
+                href={`${CREDITS.repo}/blob/main/docs/USER-GUIDE${lang === "en" ? ".en" : ""}.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {TXT.github[lang]}
+              </a>
+              <a
+                className={BTN}
+                href={`${CREDITS.repo}/blob/main/docs/KAYNAKCA.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {TXT.bib[lang]}
+              </a>
+            </div>
+          )}
         </div>
       </div>
       <CreditsFooter className="mx-auto mt-6 max-w-6xl border-t pt-3" />

@@ -171,9 +171,9 @@ export interface AdminInput {
   captions: { lang: string; label: string; url: string }[];
 }
 
-const auth = (token: string): HeadersInit => ({
-  authorization: `Bearer ${token}`,
-});
+/** Empty token = rely on the HttpOnly admin session cookie (the normal web UI case). */
+const auth = (token: string): HeadersInit =>
+  token ? { authorization: `Bearer ${token}` } : {};
 
 export async function adminList(token: string): Promise<AdminItem[] | null> {
   const d = await getJson<{ items: AdminItem[] }>("/api/catalog/admin", {

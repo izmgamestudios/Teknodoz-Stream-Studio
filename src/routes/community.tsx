@@ -9,6 +9,7 @@ import { AnnounceCard } from "@/studio/ui/announce-card";
 import { CreditsFooter } from "@/studio/ui/credits";
 import { SupportersSection } from "@/studio/ui/supporters";
 import { BTN, BTN_ACCENT, PANEL, PanelTitle } from "@/studio/ui/fields";
+import { useAdmin } from "@/studio/watch/admin-session";
 import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/community")({
@@ -36,7 +37,11 @@ const PROBLEM: Record<UrlProblem, string> = {
 };
 
 function CommunityPage() {
-  const statuses = channelStatuses(COMMUNITY_LINKS);
+  const { admin } = useAdmin();
+  // the project repository is private: its channel is for the administrator only
+  const statuses = channelStatuses(COMMUNITY_LINKS).filter(
+    (s) => admin === true || s.def.id !== "github",
+  );
   const active = statuses.filter((s) => s.url);
   const pending = statuses.filter((s) => !s.url);
 
@@ -98,52 +103,55 @@ function CommunityPage() {
 
         <SupportersSection />
 
-        <details className={`${PANEL} lg:col-span-2`} id="kurulum">
-          <summary className="cursor-pointer text-sm font-semibold">
-            Kurulum durumu (proje sahibi için) — {active.length}/
-            {statuses.length} kanal bağlı
-          </summary>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Kanalı platformda oluşturduktan sonra adresini{" "}
-            <code>src/studio/community/links.ts</code> dosyasına yazın; yalnızca
-            platformun kendi alan adındaki https adresleri düğme olur. Adım adım
-            rehber ve hazır metinler: <code>docs/COMMUNITY.md</code>.
-          </p>
-          <ul className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
-            {statuses.map(({ def, url, problem }) => (
-              <li key={def.id} className="rounded-md border p-2">
-                <span aria-hidden="true">{def.icon}</span> <b>{def.name}</b>{" "}
-                {url ? (
-                  <span className="text-speaker-b">✓ bağlı</span>
-                ) : problem ? (
-                  <span className="text-destructive">
-                    ⚠ adres geçersiz: {PROBLEM[problem]}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">○ bekliyor</span>
-                )}
-                {!url && (
-                  <p className="text-[11px] text-muted-foreground">
-                    {def.create}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-          {pending.length === 0 && (
-            <p className="mt-2 text-xs">Tüm kanallar bağlı.</p>
-          )}
-          <p className="mt-2">
-            <a
-              className={BTN}
-              href={`${CREDITS.repo}/issues`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              GitHub Issues
-            </a>
-          </p>
-        </details>
+        {admin && (
+          <details className={`${PANEL} lg:col-span-2`} id="kurulum">
+            <summary className="cursor-pointer text-sm font-semibold">
+              Kurulum durumu (proje sahibi için) — {active.length}/
+              {statuses.length} kanal bağlı
+            </summary>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Kanalı platformda oluşturduktan sonra adresini{" "}
+              <code>src/studio/community/links.ts</code> dosyasına yazın;
+              yalnızca platformun kendi alan adındaki https adresleri düğme
+              olur. Adım adım rehber ve hazır metinler:{" "}
+              <code>docs/COMMUNITY.md</code>.
+            </p>
+            <ul className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
+              {statuses.map(({ def, url, problem }) => (
+                <li key={def.id} className="rounded-md border p-2">
+                  <span aria-hidden="true">{def.icon}</span> <b>{def.name}</b>{" "}
+                  {url ? (
+                    <span className="text-speaker-b">✓ bağlı</span>
+                  ) : problem ? (
+                    <span className="text-destructive">
+                      ⚠ adres geçersiz: {PROBLEM[problem]}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">○ bekliyor</span>
+                  )}
+                  {!url && (
+                    <p className="text-[11px] text-muted-foreground">
+                      {def.create}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {pending.length === 0 && (
+              <p className="mt-2 text-xs">Tüm kanallar bağlı.</p>
+            )}
+            <p className="mt-2">
+              <a
+                className={BTN}
+                href={`${CREDITS.repo}/issues`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub Issues
+              </a>
+            </p>
+          </details>
+        )}
       </div>
 
       <CreditsFooter className="mx-auto mt-6 max-w-6xl border-t pt-3" />

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { titleFromMatches } from "@/studio/branding/head";
 import { useT } from "@/studio/i18n/use-t";
-import { readAdminToken, saveAdminToken } from "@/studio/watch/admin-token";
+import { AdminGate } from "@/studio/ui/admin-gate";
 import {
   BTN,
   BTN_ACCENT,
@@ -35,7 +35,11 @@ export const Route = createFileRoute("/catalog")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: CatalogPage,
+  component: () => (
+    <AdminGate>
+      <CatalogPage />
+    </AdminGate>
+  ),
 });
 
 interface Draft {
@@ -102,8 +106,8 @@ function toLocalInput(iso: string | null): string {
 
 function CatalogPage() {
   const t = useT();
-  const [token, setToken] = useState("");
-  const [typed, setTyped] = useState("");
+  // the HttpOnly session cookie authenticates; an empty token means "no Authorization header"
+  const token = "";
   const [items, setItems] = useState<AdminItem[] | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
@@ -112,7 +116,7 @@ function CatalogPage() {
     const list = await adminList(tk);
     if (list === null) {
       setItems(null);
-      setMsg({ ok: false, text: tk ? "catalog.badToken" : "" });
+      setMsg({ ok: false, text: "admin.err.load" });
       return;
     }
     setItems(list);
@@ -120,18 +124,8 @@ function CatalogPage() {
   }, []);
 
   useEffect(() => {
-    const tk = readAdminToken();
-    if (tk) {
-      setToken(tk);
-      void load(tk);
-    }
+    void load(token);
   }, [load]);
-
-  const connect = async () => {
-    saveAdminToken(typed);
-    setToken(typed);
-    await load(typed);
-  };
 
   const source: MediaSource | null = parseMediaInput(
     draft.url,
@@ -223,37 +217,12 @@ function CatalogPage() {
       <div className="mx-auto max-w-4xl space-y-4">
         {items === null ? (
           <section className={PANEL}>
-            <PanelTitle>{t("catalog.token")}</PanelTitle>
-            <form
-              className="flex flex-wrap gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void connect();
-              }}
-            >
-              <input
-                type="password"
-                autoComplete="off"
-                className={`${INPUT} min-w-0 flex-1`}
-                aria-label={t("catalog.token")}
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-              />
-              <button className={BTN_ACCENT} disabled={typed.length < 16}>
-                {t("catalog.connect")}
-              </button>
-            </form>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t("catalog.token.note")}
+            <p className="text-sm text-muted-foreground">
+              {msgText || t("watch.loading")}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {t("catalog.disabled")}
             </p>
-            {msgText && (
-              <p role="alert" className="mt-2 text-sm text-destructive">
-                {msgText}
-              </p>
-            )}
           </section>
         ) : (
           <>

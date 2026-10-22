@@ -15,12 +15,13 @@
 // video MIME types and verified with ffprobe when it is available.
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, readdir, rename, rm, stat } from "node:fs/promises";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 
 import { z } from "zod";
 
+import { isAdminRequest } from "./auth";
 import { StoreUnavailableError, type RecordStore } from "./catalog";
 
 export const MEDIA_API_PREFIX = "/api/media";
@@ -139,12 +140,7 @@ export interface MediaOptions {
 }
 
 export function mediaTokenOk(req: Request, token: string | null): boolean {
-  if (!token) return false;
-  const m = /^Bearer (.+)$/.exec(req.headers.get("authorization") ?? "");
-  if (!m) return false;
-  const a = Buffer.from(m[1] as string);
-  const b = Buffer.from(token);
-  return a.length === b.length && timingSafeEqual(a, b);
+  return isAdminRequest(req, token);
 }
 
 export function createMediaApi(opts: MediaOptions) {

@@ -533,6 +533,16 @@ export const tr = {
   "sub.err.whisper":
     "Whisper bu sunucuda kurulu değil. docs/DEPLOY.md içindeki “Otomatik altyazı” bölümüne bak (scripts/whisper-setup.sh).",
   "sub.err.nospeech": "Konuşma bulunamadı.",
+  "admin.login.title": "Yönetici girişi",
+  "admin.login.body":
+    "Bu bölüm yalnızca yönetici içindir. Yönetici anahtarıyla giriş yap; oturum bu tarayıcıda 12 saat açık kalır.",
+  "admin.login.button": "Giriş yap",
+  "admin.login.err.bad": "Anahtar kabul edilmedi.",
+  "admin.login.err.rate": "Çok fazla deneme. Biraz bekleyip tekrar dene.",
+  "admin.login.err.disabled": "Sunucuda yönetici anahtarı tanımlı değil.",
+  "admin.login.err.network": "Sunucuya ulaşılamadı.",
+  "admin.login.link": "Yönetici girişi",
+  "admin.logout.signed": "Yönetici olarak giriş yapıldı",
   "settings.site.summary": "Site, meta ve paylaşım ayarları (dağıtım sahibi)",
   "settings.reset.all": "Tüm ayarları varsayılana döndür",
   "settings.reset.confirm": "Tüm ayarlar varsayılana dönsün mü?",
@@ -1052,6 +1062,16 @@ export const en: Record<MessageKey, string> = {
   "sub.err.whisper":
     "Whisper is not set up on this server. See “Automatic subtitles” in docs/DEPLOY.md (scripts/whisper-setup.sh).",
   "sub.err.nospeech": "No speech was found.",
+  "admin.login.title": "Administrator sign-in",
+  "admin.login.body":
+    "This area is for the administrator only. Sign in with the admin token; the session stays open in this browser for 12 hours.",
+  "admin.login.button": "Sign in",
+  "admin.login.err.bad": "The token was not accepted.",
+  "admin.login.err.rate": "Too many attempts. Wait a while and try again.",
+  "admin.login.err.disabled": "No admin token is configured on the server.",
+  "admin.login.err.network": "Could not reach the server.",
+  "admin.login.link": "Admin sign-in",
+  "admin.logout.signed": "Signed in as administrator",
   "settings.site.summary": "Site, metadata and sharing (owner)",
   "settings.reset.all": "Reset all settings to defaults",
   "settings.reset.confirm": "Reset all settings to defaults?",

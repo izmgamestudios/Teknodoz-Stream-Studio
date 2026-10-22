@@ -362,7 +362,6 @@ Oda modu sunucuda tek ve uzun ömürlü bir Node süreci ister (docs/ROOM.md). C
 ### Bağlantılar
 
 - [YouTube — Teknodoz](https://www.youtube.com/@teknodoz) — Eğitim videoları ve yayın kayıtları / Tutorials and recordings
-- [GitHub — kaynak kod, sorunlar, tartışmalar](https://github.com/izmgamestudios/Teknodoz-Stream-Studio) — Hata bildirimi ve katkı / Bug reports and contributions
 
 <a name="more"></a>
 

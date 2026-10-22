@@ -69,6 +69,14 @@ PORT=3011 bash scripts/deploy.sh
 - Daha önce `data/catalog.json` kullandıysan o içerikler PocketBase'e **otomatik taşınmaz**;
   Katalog sayfasından yeniden ekle.
 
+## Yönetici girişi (oturum)
+Yönetim sayfaları (`/admin`, `/library`, `/catalog`, `/translations`) ve “Site, meta ve paylaşım” ayarları
+yalnızca **yönetici oturumu** açıkken görünür. Menüdeki / panel altındaki **🔒 Yönetici girişi** ile
+`CATALOG_ADMIN_TOKEN` girilir; sunucu **HttpOnly, SameSite=Strict (https'te Secure)** bir çerez verir:
+12 saat geçerlidir, sayfadaki betikler çerezi okuyamaz, token değişince tüm oturumlar düşer. Giriş
+denemeleri sınırlıdır (10 dakikada 10). Betikler hâlâ `Authorization: Bearer <token>` kullanabilir.
+Özel (private) depo için GitHub bağlantıları (kaynak kod, Issues, GitHub'daki kılavuz) yalnızca yöneticiye gösterilir.
+
 ## Yönetim paneli (`/admin`)
 İçerik üretici modunda menüdeki **Yönetim** sayfası (yönetici anahtarıyla): depolama durumu
 (PocketBase / JSON, erişilebilir mi, kayıt sayıları), **Katalog** ve **Çeviriler** yönetimine

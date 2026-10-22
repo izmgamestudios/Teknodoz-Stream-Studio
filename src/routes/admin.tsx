@@ -7,7 +7,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { titleFromMatches } from "@/studio/branding/head";
 import { useLang, useT } from "@/studio/i18n/use-t";
 import { BTN, BTN_ACCENT, INPUT, PANEL, PanelTitle } from "@/studio/ui/fields";
-import { readAdminToken, saveAdminToken } from "@/studio/watch/admin-token";
+import { AdminGate } from "@/studio/ui/admin-gate";
+import { logoutAdmin } from "@/studio/watch/admin-session";
 
 export const Route = createFileRoute("/admin")({
   head: ({ matches }) => ({
@@ -16,7 +17,11 @@ export const Route = createFileRoute("/admin")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: AdminPage,
+  component: () => (
+    <AdminGate>
+      <AdminPage />
+    </AdminGate>
+  ),
 });
 
 interface Status {
@@ -26,15 +31,13 @@ interface Status {
   checkedAt: string;
 }
 
-const auth = (token: string): HeadersInit => ({
-  authorization: `Bearer ${token}`,
-});
+const auth = (token: string): HeadersInit =>
+  token ? { authorization: `Bearer ${token}` } : {};
 
 function AdminPage() {
   const t = useT();
   const lang = useLang();
-  const [token, setToken] = useState("");
-  const [typed, setTyped] = useState("");
+  const token = "";
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
@@ -56,11 +59,7 @@ function AdminPage() {
   }, []);
 
   useEffect(() => {
-    const tk = readAdminToken();
-    if (tk) {
-      setToken(tk);
-      void load(tk);
-    }
+    void load(token);
   }, [load]);
 
   const exportBackup = async () => {
@@ -109,38 +108,14 @@ function AdminPage() {
       </header>
 
       <div className="mx-auto max-w-4xl space-y-4">
-        {!token || (error && !status) ? (
+        {!status ? (
           <section className={PANEL}>
-            <PanelTitle>{t("catalog.token")}</PanelTitle>
-            <form
-              className="flex flex-wrap gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                saveAdminToken(typed);
-                setToken(typed);
-                void load(typed);
-              }}
+            <p
+              className={`text-sm ${error ? "text-destructive" : "text-muted-foreground"}`}
+              role={error ? "alert" : undefined}
             >
-              <input
-                type="password"
-                autoComplete="off"
-                className={`${INPUT} min-w-0 flex-1`}
-                aria-label={t("catalog.token")}
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-              />
-              <button className={BTN_ACCENT} disabled={typed.length < 16}>
-                {t("catalog.connect")}
-              </button>
-            </form>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t("catalog.token.note")}
+              {error ? t("admin.err.load") : t("watch.loading")}
             </p>
-            {error && token && (
-              <p role="alert" className="mt-2 text-sm text-destructive">
-                {t("admin.err.load")}
-              </p>
-            )}
           </section>
         ) : (
           status && (
@@ -182,14 +157,7 @@ function AdminPage() {
                   <button className={BTN} onClick={() => void load(token)}>
                     ↻ {t("admin.refresh")}
                   </button>
-                  <button
-                    className={BTN}
-                    onClick={() => {
-                      saveAdminToken("");
-                      setToken("");
-                      setStatus(null);
-                    }}
-                  >
+                  <button className={BTN} onClick={() => void logoutAdmin()}>
                     {t("admin.logout")}
                   </button>
                   <span className="text-xs text-muted-foreground">

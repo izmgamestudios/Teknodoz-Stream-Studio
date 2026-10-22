@@ -23,7 +23,7 @@ import {
   PANEL,
   PanelTitle,
 } from "@/studio/ui/fields";
-import { readAdminToken, saveAdminToken } from "@/studio/watch/admin-token";
+import { AdminGate } from "@/studio/ui/admin-gate";
 import { fold } from "@/studio/watch/filter";
 
 export const Route = createFileRoute("/translations")({
@@ -33,7 +33,11 @@ export const Route = createFileRoute("/translations")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: TranslationsPage,
+  component: () => (
+    <AdminGate>
+      <TranslationsPage />
+    </AdminGate>
+  ),
 });
 
 const KEYS = Object.keys(tr) as MessageKey[];
@@ -49,7 +53,7 @@ async function put(
     const res = await fetch(`/api/i18n/${lang}/${encodeURIComponent(key)}`, {
       method: "PUT",
       headers: {
-        authorization: `Bearer ${token}`,
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
         "content-type": "application/json",
       },
       body: JSON.stringify({ value }),
@@ -66,7 +70,7 @@ async function del(token: string, lang: Lang, key: string): Promise<boolean> {
   try {
     const res = await fetch(`/api/i18n/${lang}/${encodeURIComponent(key)}`, {
       method: "DELETE",
-      headers: { authorization: `Bearer ${token}` },
+      headers: token ? { authorization: `Bearer ${token}` } : {},
     });
     return res.ok || res.status === 404;
   } catch {
@@ -76,8 +80,7 @@ async function del(token: string, lang: Lang, key: string): Promise<boolean> {
 
 function TranslationsPage() {
   const t = useT();
-  const [token, setToken] = useState("");
-  const [typed, setTyped] = useState("");
+  const token = "";
   const [lang, setLang] = useState<Lang>("de");
   const [text, setText] = useState("");
   const [changedOnly, setChangedOnly] = useState(false);
@@ -87,8 +90,6 @@ function TranslationsPage() {
   const [, bump] = useState(0);
 
   useEffect(() => {
-    const tk = readAdminToken();
-    if (tk) setToken(tk);
     void loadOverrides().then(() => bump((n) => n + 1));
   }, []);
 
@@ -149,34 +150,7 @@ function TranslationsPage() {
       </header>
 
       <div className="mx-auto max-w-5xl space-y-4">
-        {!token ? (
-          <section className={PANEL}>
-            <PanelTitle>{t("catalog.token")}</PanelTitle>
-            <form
-              className="flex flex-wrap gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                saveAdminToken(typed);
-                setToken(typed);
-              }}
-            >
-              <input
-                type="password"
-                autoComplete="off"
-                className={`${INPUT} min-w-0 flex-1`}
-                aria-label={t("catalog.token")}
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-              />
-              <button className={BTN_ACCENT} disabled={typed.length < 16}>
-                {t("catalog.connect")}
-              </button>
-            </form>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t("catalog.token.note")}
-            </p>
-          </section>
-        ) : (
+        {
           <>
             <section className={`${PANEL} flex flex-wrap items-center gap-2`}>
               <label className="flex items-center gap-2 text-sm">
@@ -294,7 +268,7 @@ function TranslationsPage() {
               </button>
             )}
           </>
-        )}
+        }
       </div>
     </div>
   );

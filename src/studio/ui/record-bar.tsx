@@ -6,7 +6,7 @@ import { Link } from "@tanstack/react-router";
 
 import { useT } from "../i18n/use-t";
 import { useRuntimeSnapshot, useStudio } from "../runtime/use-studio";
-import { readAdminToken, saveAdminToken } from "../watch/admin-token";
+import { useAdmin } from "../watch/admin-session";
 import { uploadMedia } from "../watch/media-client";
 import {
   BTN,
@@ -148,11 +148,10 @@ function SendToLibrary() {
   const snap = useRuntimeSnapshot();
   const last = snap.lastRecording;
   const [state, setState] = useState<UploadState>({ s: "idle" });
-  const [token, setToken] = useState("");
+  const { admin } = useAdmin();
   const [auto, setAuto] = useState(false);
 
   useEffect(() => {
-    setToken(readAdminToken());
     try {
       setAuto(localStorage.getItem(AUTO_KEY) === "1");
     } catch {
@@ -160,12 +159,13 @@ function SendToLibrary() {
     }
   }, []);
 
-  const send = async (tk: string) => {
+  const send = async () => {
     const data = rt.getLastRecording();
     if (!data) return;
     setState({ s: "sending", p: 0 });
+    // the admin session cookie authenticates the upload
     const r = await uploadMedia(
-      tk,
+      "",
       data.blob,
       {
         title: data.name.replace(/\.[^.]+$/, ""),
@@ -176,7 +176,6 @@ function SendToLibrary() {
       (p) => setState({ s: "sending", p }),
     );
     if (r.ok) {
-      saveAdminToken(tk);
       setState({ s: "done", id: r.media.id });
     } else
       setState({
@@ -192,14 +191,13 @@ function SendToLibrary() {
       });
   };
 
-  // automatic upload right after the recording ends (needs a saved admin token)
+  // automatic upload right after the recording ends (needs an admin session)
   const lastName = last?.name;
   useEffect(() => {
-    if (auto && lastName && token.length >= 16 && state.s === "idle")
-      void send(token);
+    if (auto && admin && lastName && state.s === "idle") void send();
     // only when a new recording appears
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastName, auto]);
+  }, [lastName, auto, admin]);
 
   if (!last) return null;
   return (
@@ -209,26 +207,19 @@ function SendToLibrary() {
         {(last.size / 1024 / 1024).toFixed(1)} MB)
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        {token.length < 16 && (
-          <input
-            type="password"
-            autoComplete="off"
-            className={`${INPUT_AUTO} w-56`}
-            placeholder={t("catalog.token")}
-            aria-label={t("catalog.token")}
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-          />
+        {admin ? (
+          <button
+            className={BTN_ACCENT}
+            disabled={state.s === "sending" || state.s === "done"}
+            onClick={() => void send()}
+          >
+            {t("rec.up.send")}
+          </button>
+        ) : (
+          <Link to="/admin" className={BTN_ACCENT}>
+            🔒 {t("admin.login.link")}
+          </Link>
         )}
-        <button
-          className={BTN_ACCENT}
-          disabled={
-            token.length < 16 || state.s === "sending" || state.s === "done"
-          }
-          onClick={() => void send(token)}
-        >
-          {t("rec.up.send")}
-        </button>
         <Check
           checked={auto}
           onChange={(v) => {

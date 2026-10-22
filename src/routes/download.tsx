@@ -5,6 +5,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
+import { useAdmin } from "@/studio/watch/admin-session";
 import { titleFromMatches } from "@/studio/branding/head";
 import { CREDITS } from "@/studio/credits";
 import { useContentLang } from "@/studio/i18n/use-t";
@@ -223,6 +224,7 @@ function PlatformCard({
 }
 
 function DownloadPage() {
+  const { admin } = useAdmin();
   const lang = useContentLang();
   const brand = useBrand();
   const inst = useInstall();
@@ -374,14 +376,16 @@ function DownloadPage() {
                 <li key={n.en}>{n[lang]}</li>
               ))}
             </ul>
-            <a
-              className={`${BTN} mt-3`}
-              href={`${CREDITS.repo}/blob/main/docs/DOWNLOADS.md`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {TXT.docs[lang]}
-            </a>
+            {admin && (
+              <a
+                className={`${BTN} mt-3`}
+                href={`${CREDITS.repo}/blob/main/docs/DOWNLOADS.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {TXT.docs[lang]}
+              </a>
+            )}
           </section>
         </aside>
       </div>

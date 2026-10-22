@@ -515,6 +515,18 @@ export const de: Record<MessageKey, string> = {
   "sub.err.whisper":
     "Whisper ist auf diesem Server nicht eingerichtet. Siehe „Automatische Untertitel“ in docs/DEPLOY.md (scripts/whisper-setup.sh).",
   "sub.err.nospeech": "Es wurde keine Sprache gefunden.",
+  "admin.login.title": "Administrator-Anmeldung",
+  "admin.login.body":
+    "Dieser Bereich ist nur für den Administrator. Melde dich mit dem Admin-Token an; die Sitzung bleibt 12 Stunden in diesem Browser offen.",
+  "admin.login.button": "Anmelden",
+  "admin.login.err.bad": "Das Token wurde nicht akzeptiert.",
+  "admin.login.err.rate":
+    "Zu viele Versuche. Warte kurz und versuche es erneut.",
+  "admin.login.err.disabled":
+    "Auf dem Server ist kein Admin-Token konfiguriert.",
+  "admin.login.err.network": "Server nicht erreichbar.",
+  "admin.login.link": "Admin-Anmeldung",
+  "admin.logout.signed": "Als Administrator angemeldet",
   "settings.site.summary": "Website, Metadaten und Teilen (Eigentümer)",
   "settings.reset.all": "Alle Einstellungen auf Standard zurücksetzen",
   "settings.reset.confirm": "Alle Einstellungen auf Standard zurücksetzen?",

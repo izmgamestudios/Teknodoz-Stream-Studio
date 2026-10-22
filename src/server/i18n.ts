@@ -7,11 +7,10 @@
 //   GET    /api/i18n                  public: { overrides: { de: { "nav.watch": "…" } } }
 //   PUT    /api/i18n/:lang/:key       admin:  { value }
 //   DELETE /api/i18n/:lang/:key       admin:  back to the built-in text
-import { timingSafeEqual } from "node:crypto";
-
 import { z } from "zod";
 
 import { LANGS, tr } from "../studio/i18n/messages";
+import { isAdminRequest } from "./auth";
 import { StoreUnavailableError } from "./catalog";
 
 export const I18N_API_PREFIX = "/api/i18n";
@@ -63,14 +62,7 @@ export function createI18nApi(opts: {
 }) {
   const langs = new Set<string>(LANGS.map((l) => l.id));
 
-  function isAdmin(req: Request): boolean {
-    if (!opts.token) return false;
-    const m = /^Bearer (.+)$/.exec(req.headers.get("authorization") ?? "");
-    if (!m) return false;
-    const a = Buffer.from(m[1] as string);
-    const b = Buffer.from(opts.token);
-    return a.length === b.length && timingSafeEqual(a, b);
-  }
+  const isAdmin = (req: Request): boolean => isAdminRequest(req, opts.token);
 
   async function handle(req: Request): Promise<Response | null> {
     const url = new URL(req.url);

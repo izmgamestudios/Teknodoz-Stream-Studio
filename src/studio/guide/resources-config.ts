@@ -10,7 +10,6 @@
 //   links:  any https link.
 //
 // Invalid entries are ignored and reported on /guide instead of breaking the page.
-import { CREDITS } from "../credits";
 import type { ResourcesConfig } from "./resources";
 
 export const GUIDE_RESOURCES: ResourcesConfig = {
@@ -21,11 +20,6 @@ export const GUIDE_RESOURCES: ResourcesConfig = {
       title: "YouTube — Teknodoz",
       url: "https://www.youtube.com/@teknodoz",
       note: "Eğitim videoları ve yayın kayıtları / Tutorials and recordings",
-    },
-    {
-      title: "GitHub — kaynak kod, sorunlar, tartışmalar",
-      url: CREDITS.repo,
-      note: "Hata bildirimi ve katkı / Bug reports and contributions",
     },
   ],
 };

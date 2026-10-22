@@ -8,6 +8,8 @@
 // Writes need `Authorization: Bearer <CATALOG_ADMIN_TOKEN>` (>= 16 chars); unset = read-only.
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
+import { isAdminRequest } from "./auth";
+
 import { z } from "zod";
 
 import { isMediaSource, type MediaSource } from "../studio/watch/media-url";
@@ -216,11 +218,8 @@ export function createCatalogApi(opts: CatalogOptions) {
     return hits.length > CATALOG_LIMITS.unlockPerMinute;
   }
 
-  function isAdmin(req: Request): boolean {
-    if (!opts.token) return false;
-    const m = /^Bearer (.+)$/.exec(req.headers.get("authorization") ?? "");
-    return !!m && safeEqual(m[1] as string, opts.token);
-  }
+  const isAdmin = (req: Request): boolean =>
+    isAdminRequest(req, opts.token, now());
 
   async function readJson(req: Request): Promise<unknown> {
     const raw = await req.text();

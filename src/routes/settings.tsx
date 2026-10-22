@@ -14,6 +14,7 @@ import {
   OutputSection,
   ShortcutsSection,
 } from "@/studio/ui/settings-panels";
+import { useAdmin } from "@/studio/watch/admin-session";
 import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/settings")({
@@ -42,6 +43,7 @@ function SettingsPage() {
 
 function SettingsApp() {
   const t = useT();
+  const { admin } = useAdmin();
   return (
     <div className="min-h-screen p-3 md:p-6">
       <header className="mx-auto mb-4 max-w-5xl">
@@ -61,12 +63,14 @@ function SettingsApp() {
           <BrandLocalSection />
         </div>
       </div>
-      <details className="group mx-auto mt-4 max-w-5xl">
-        <summary className="cursor-pointer rounded-md px-1 py-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground">
-          {t("settings.site.summary")}
-        </summary>
-        <BrandSiteSection />
-      </details>
+      {admin && (
+        <details className="group mx-auto mt-4 max-w-5xl">
+          <summary className="cursor-pointer rounded-md px-1 py-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground">
+            {t("settings.site.summary")}
+          </summary>
+          <BrandSiteSection />
+        </details>
+      )}
       <CreditsFooter className="mx-auto mt-6 max-w-5xl border-t pt-3" />
     </div>
   );

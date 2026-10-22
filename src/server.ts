@@ -8,6 +8,7 @@ import { handleManifest } from "./server/manifest";
 import { createCatalogApi, catalogTokenFromEnv } from "./server/catalog";
 import { fileRecordStore, fileStore } from "./server/catalog-store";
 import { createAdminApi } from "./server/admin";
+import { createSessionApi } from "./server/session";
 import { ffmpegPoster } from "./server/ffmpeg";
 import { ffprobeProber } from "./server/ffprobe";
 import { createMediaApi, type MediaRecord } from "./server/media";
@@ -90,6 +91,7 @@ const mediaEdit = createMediaEditApi({
   whisper: whisperFromEnv(liveEnv),
 });
 const i18n = createI18nApi({ token: adminToken, store: i18nStore });
+const session = createSessionApi({ token: adminToken });
 const admin = createAdminApi({
   token: adminToken,
   catalog: catalogStore,
@@ -148,6 +150,8 @@ export default {
       if (roomResponse) return roomResponse;
       const catalogResponse = await catalog.handle(request);
       if (catalogResponse) return catalogResponse;
+      const sessionResponse = await session.handle(request);
+      if (sessionResponse) return sessionResponse;
       const mediaEditResponse = await mediaEdit.handle(request);
       if (mediaEditResponse) return mediaEditResponse;
       const mediaResponse = await media.handle(request);

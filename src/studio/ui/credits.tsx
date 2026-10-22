@@ -1,5 +1,6 @@
 // src/studio/ui/credits.tsx
 // Compact credits footer + "Hakkında / Künye" dialog.
+import { useAdmin } from "../watch/admin-session";
 import { CREDITS } from "../credits";
 import { useT } from "../i18n/use-t";
 import {
@@ -49,6 +50,7 @@ export function CreditsFooter({ className = "" }: { className?: string }) {
 
 export function AboutDialog() {
   const t = useT();
+  const { admin } = useAdmin();
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -90,19 +92,22 @@ export function AboutDialog() {
               </a>
             }
           />
-          <Row
-            k={t("credits.source")}
-            v={
-              <a
-                className={LINK}
-                href={CREDITS.repo}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                GitHub
-              </a>
-            }
-          />
+          {/* the repository is private: the link is for the administrator only */}
+          {admin && (
+            <Row
+              k={t("credits.source")}
+              v={
+                <a
+                  className={LINK}
+                  href={CREDITS.repo}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GitHub
+                </a>
+              }
+            />
+          )}
           <Row k={t("credits.license")} v={CREDITS.license} />
         </dl>
         <p className="rounded-md bg-secondary p-3 text-xs text-muted-foreground">

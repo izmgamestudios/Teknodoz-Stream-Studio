@@ -54,7 +54,7 @@ export function uploadMedia(
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/media");
-    xhr.setRequestHeader("authorization", `Bearer ${token}`);
+    if (token) xhr.setRequestHeader("authorization", `Bearer ${token}`);
     xhr.setRequestHeader("content-type", blob.type || "video/webm");
     xhr.setRequestHeader("x-title", encodeURIComponent(meta.title));
     xhr.setRequestHeader("x-filename", encodeURIComponent(meta.filename));
@@ -93,9 +93,9 @@ export function uploadMedia(
   });
 }
 
-const auth = (token: string): HeadersInit => ({
-  authorization: `Bearer ${token}`,
-});
+/** Empty token = rely on the HttpOnly admin session cookie (the normal web UI case). */
+const auth = (token: string): HeadersInit =>
+  token ? { authorization: `Bearer ${token}` } : {};
 
 export async function listMedia(token: string): Promise<MediaRecord[] | null> {
   try {

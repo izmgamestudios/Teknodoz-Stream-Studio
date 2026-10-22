@@ -512,6 +512,18 @@ export const es: Record<MessageKey, string> = {
   "sub.err.whisper":
     "Whisper no está configurado en este servidor. Consulta «Subtítulos automáticos» en docs/DEPLOY.md (scripts/whisper-setup.sh).",
   "sub.err.nospeech": "No se encontró habla.",
+  "admin.login.title": "Acceso de administrador",
+  "admin.login.body":
+    "Esta zona es solo para el administrador. Inicia sesión con el token de administrador; la sesión permanece abierta 12 horas en este navegador.",
+  "admin.login.button": "Entrar",
+  "admin.login.err.bad": "No se aceptó el token.",
+  "admin.login.err.rate":
+    "Demasiados intentos. Espera un rato e inténtalo de nuevo.",
+  "admin.login.err.disabled":
+    "No hay un token de administrador configurado en el servidor.",
+  "admin.login.err.network": "No se pudo contactar con el servidor.",
+  "admin.login.link": "Acceso de administrador",
+  "admin.logout.signed": "Sesión iniciada como administrador",
   "settings.site.summary": "Sitio, metadatos y compartir (propietario)",
   "settings.reset.all": "Restablecer todos los ajustes",
   "settings.reset.confirm":
