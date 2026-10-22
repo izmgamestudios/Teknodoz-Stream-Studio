@@ -21,7 +21,11 @@ die() { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 need() { command -v "$1" >/dev/null 2>&1 || die "$1 not found: $2"; }
 
 [ -f package.json ] || die "run this from the project root (package.json not found)"
-need ffmpeg "install ffmpeg first (subtitles need it to extract the audio)"
+# ffmpeg may be a static build in ~/ffmpeg (scripts/ffmpeg-setup.sh) rather than a system package
+FFMPEG_BIN="$(grep -E '^FFMPEG_PATH=' "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
+if [ -z "$FFMPEG_BIN" ] || [ ! -x "$FFMPEG_BIN" ]; then
+  command -v ffmpeg >/dev/null 2>&1 || die "ffmpeg not found: run  bash scripts/ffmpeg-setup.sh  first (subtitles need it to extract the audio)"
+fi
 
 set_env() {
   touch "$ENV_FILE"; chmod 600 "$ENV_FILE"
@@ -61,7 +65,14 @@ case "$MODE" in
     need python3 "install python3 + python3-venv"
     VENV="${WHISPER_VENV:-$HOME/whisper-venv}"
     say "Creating the virtual environment in $VENV"
-    python3 -m venv "$VENV"
+    if ! python3 -m venv "$VENV" 2>/dev/null; then
+      # Ubuntu ships venv/ensurepip as a separate package (needs root): bootstrap pip ourselves
+      echo "python3-venv is missing; falling back to a pip-less venv + get-pip.py"
+      rm -rf "$VENV"
+      python3 -m venv --without-pip "$VENV" || die "python3 cannot create a venv (ask the server admin for: apt install python3-venv)"
+      curl -fsSL https://bootstrap.pypa.io/get-pip.py -o "$VENV/get-pip.py"
+      "$VENV/bin/python" "$VENV/get-pip.py" >/dev/null
+    fi
     "$VENV/bin/pip" install --upgrade pip >/dev/null
     say "Installing whisper-ctranslate2 (faster-whisper)"
     "$VENV/bin/pip" install whisper-ctranslate2

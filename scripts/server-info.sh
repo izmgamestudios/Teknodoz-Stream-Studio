@@ -31,6 +31,10 @@ ver nginx -v
 ver sqlite3 --version
 ver ffmpeg -version
 ver ffprobe -version
+FFB="$(grep -E '^FFMPEG_PATH=' .env.production 2>/dev/null | tail -1 | cut -d= -f2-)"
+[ -n "$FFB" ] && { [ -x "$FFB" ] && printf '%-14s %s\n' "FFMPEG_PATH" "$("$FFB" -version 2>&1 | head -1)" || printf '%-14s %s\n' "FFMPEG_PATH" "set but not executable: $FFB"; }
+for t in cmake g++ make; do have "$t" && printf '%-14s yes\n' "$t" || printf '%-14s no\n' "$t"; done
+python3 -c "import venv, ensurepip" 2>/dev/null && echo "python venv    yes" || echo "python venv    no (whisper ctranslate2 mode falls back to get-pip)"
 ver python3 --version
 have pip3 && printf '%-14s %s\n' pip3 "$(pip3 --version 2>&1 | head -1)"
 for w in whisper-cli whisper-cpp faster-whisper whisper; do have "$w" && echo "$w         $(command -v "$w")"; done
