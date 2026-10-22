@@ -14,8 +14,7 @@ const NAV: readonly {
   to:
     | "/"
     | "/watch"
-    | "/catalog"
-    | "/translations"
+    | "/admin"
     | "/studio"
     | "/classic"
     | "/room"
@@ -58,16 +57,10 @@ const NAV: readonly {
     icon: "⬇️",
   },
   {
-    to: "/catalog",
-    label: "nav.catalog",
-    hint: "nav.catalog.hint",
-    icon: "🗂️",
-  },
-  {
-    to: "/translations",
-    label: "nav.translations",
-    hint: "nav.translations.hint",
-    icon: "🌐",
+    to: "/admin",
+    label: "nav.admin",
+    hint: "nav.admin.hint",
+    icon: "🗄️",
   },
   {
     to: "/settings",

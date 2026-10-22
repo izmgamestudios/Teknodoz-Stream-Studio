@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CatalogRouteImport } from './routes/catalog'
 import { Route as ClassicRouteRouteImport } from './routes/classic/route'
 import { Route as CommunityRouteImport } from './routes/community'
@@ -33,6 +34,11 @@ import { Route as RCodeRouteImport } from './routes/r.$code'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatalogRoute = CatalogRouteImport.update({
@@ -134,6 +140,7 @@ const RCodeRoute = RCodeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/classic': typeof ClassicRouteRouteWithChildren
+  '/admin': typeof AdminRoute
   '/catalog': typeof CatalogRoute
   '/community': typeof CommunityRoute
   '/download': typeof DownloadRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/catalog': typeof CatalogRoute
   '/community': typeof CommunityRoute
   '/download': typeof DownloadRoute
@@ -178,6 +186,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/classic': typeof ClassicRouteRouteWithChildren
+  '/admin': typeof AdminRoute
   '/catalog': typeof CatalogRoute
   '/community': typeof CommunityRoute
   '/download': typeof DownloadRoute
@@ -202,6 +211,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/classic'
+    | '/admin'
     | '/catalog'
     | '/community'
     | '/download'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/catalog'
     | '/community'
     | '/download'
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/classic'
+    | '/admin'
     | '/catalog'
     | '/community'
     | '/download'
@@ -268,6 +280,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClassicRouteRoute: typeof ClassicRouteRouteWithChildren
+  AdminRoute: typeof AdminRoute
   CatalogRoute: typeof CatalogRoute
   CommunityRoute: typeof CommunityRoute
   DownloadRoute: typeof DownloadRoute
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/catalog': {
@@ -450,6 +470,7 @@ const ClassicRouteRouteWithChildren = ClassicRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClassicRouteRoute: ClassicRouteRouteWithChildren,
+  AdminRoute: AdminRoute,
   CatalogRoute: CatalogRoute,
   CommunityRoute: CommunityRoute,
   DownloadRoute: DownloadRoute,

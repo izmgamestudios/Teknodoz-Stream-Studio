@@ -69,6 +69,15 @@ PORT=3011 bash scripts/deploy.sh
 - Daha önce `data/catalog.json` kullandıysan o içerikler PocketBase'e **otomatik taşınmaz**;
   Katalog sayfasından yeniden ekle.
 
+## Yönetim paneli (`/admin`)
+İçerik üretici modunda menüdeki **Yönetim** sayfası (yönetici anahtarıyla): depolama durumu
+(PocketBase / JSON, erişilebilir mi, kayıt sayıları), **Katalog** ve **Çeviriler** yönetimine
+kısayollar ve **yedek**: tüm katalog + çevirileri tek JSON dosyası olarak indir / geri yükle.
+Yedek parola özetlerini ve gizli bağlantı anahtarlarını içerir, gizli tut. Geri yükleme önce
+dosyanın tamamını doğrular (geçersizse hiçbir şey değişmez), sonra aynı kimlikli kayıtları değiştirir.
+Ham veriyi görmek/elle düzeltmek için PocketBase'in kendi paneli SSH tüneliyle kullanılır
+(`ssh -L 8091:127.0.0.1:8091 kullanici@sunucu` → `http://127.0.0.1:8091/_/`).
+
 ## Çeviriler (`/translations`)
 Yerleşik metinler tr/en/de/es için kodda durur. **Çeviriler** sayfasından (içerik üretici modu,
 aynı yönetici anahtarı) herhangi bir metin sunucuda değiştirilir; yeni sürüm yayınlamadan tüm

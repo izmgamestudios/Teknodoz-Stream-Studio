@@ -7,6 +7,7 @@ import { liveConfigFromEnv, tokenTooShort } from "./server/live-policy";
 import { handleManifest } from "./server/manifest";
 import { createCatalogApi, catalogTokenFromEnv } from "./server/catalog";
 import { fileStore } from "./server/catalog-store";
+import { createAdminApi } from "./server/admin";
 import { createI18nApi } from "./server/i18n";
 import { fileI18nStore } from "./server/i18n-store";
 import {
@@ -48,17 +49,19 @@ const pbConfig = pocketbaseFromEnv(liveEnv);
 const pb = pbConfig ? new PocketBase(pbConfig) : null;
 if (pb) console.info("[data] PocketBase storage:", pbConfig?.url);
 const adminToken = catalogTokenFromEnv(liveEnv);
-const catalog = createCatalogApi({
+const catalogStore = pb
+  ? pbCatalogStore(pb)
+  : fileStore(liveEnv["CATALOG_FILE"]?.trim() || "data/catalog.json");
+const i18nStore = pb
+  ? pbI18nStore(pb)
+  : fileI18nStore(liveEnv["I18N_FILE"]?.trim() || "data/i18n.json");
+const catalog = createCatalogApi({ token: adminToken, store: catalogStore });
+const i18n = createI18nApi({ token: adminToken, store: i18nStore });
+const admin = createAdminApi({
   token: adminToken,
-  store: pb
-    ? pbCatalogStore(pb)
-    : fileStore(liveEnv["CATALOG_FILE"]?.trim() || "data/catalog.json"),
-});
-const i18n = createI18nApi({
-  token: adminToken,
-  store: pb
-    ? pbI18nStore(pb)
-    : fileI18nStore(liveEnv["I18N_FILE"]?.trim() || "data/i18n.json"),
+  catalog: catalogStore,
+  i18n: i18nStore,
+  storage: pb ? "pocketbase" : "file",
 });
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -112,6 +115,8 @@ export default {
       if (roomResponse) return roomResponse;
       const catalogResponse = await catalog.handle(request);
       if (catalogResponse) return catalogResponse;
+      const adminResponse = await admin.handle(request);
+      if (adminResponse) return adminResponse;
       const i18nResponse = await i18n.handle(request);
       if (i18nResponse) return i18nResponse;
       const liveResponse = await live.handle(request);
