@@ -26,12 +26,22 @@ import {
 } from "@/studio/watch/catalog-client";
 import {
   deleteMedia,
+  getStorage,
   listMedia,
   mediaUrl,
   renameMedia,
   uploadMedia,
   type MediaRecord,
+  type StorageInfo,
 } from "@/studio/watch/media-client";
+import {
+  DEFAULT_MEDIA_QUERY,
+  filterMedia,
+  formatBytes,
+  isFiltered,
+  type MediaQuery,
+  type MediaSort,
+} from "@/studio/watch/media-filter";
 
 export const Route = createFileRoute("/library")({
   head: ({ matches }) => ({
@@ -47,7 +57,7 @@ export const Route = createFileRoute("/library")({
   ),
 });
 
-const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
+const mb = formatBytes;
 
 function LibraryPage() {
   const t = useT();
@@ -58,12 +68,19 @@ function LibraryPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [storage, setStorage] = useState<StorageInfo | null>(null);
+  const [query, setQuery] = useState<MediaQuery>(DEFAULT_MEDIA_QUERY);
   const file = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async (tk: string) => {
-    const [m, c] = await Promise.all([listMedia(tk), adminList(tk)]);
+    const [m, c, st] = await Promise.all([
+      listMedia(tk),
+      adminList(tk),
+      getStorage(tk),
+    ]);
     setMedia(m);
     setCatalog(c ?? []);
+    setStorage(st);
     return m !== null;
   }, []);
 
@@ -84,6 +101,13 @@ function LibraryPage() {
       ),
     [catalog],
   );
+
+  const shown = useMemo(
+    () => filterMedia(media ?? [], query, new Set(published.keys())),
+    [media, query, published],
+  );
+  const setQ = (patch: Partial<MediaQuery>) =>
+    setQuery((q) => ({ ...q, ...patch }));
 
   const onFile = async (f: File) => {
     setProgress(0);
@@ -106,13 +130,15 @@ function LibraryPage() {
       setNote({
         ok: false,
         text: t(
-          r.reason === "too-large"
-            ? "rec.up.err.big"
-            : r.reason === "unsupported"
-              ? "rec.up.err.type"
-              : r.reason === "unauthorized"
-                ? "rec.up.err.auth"
-                : "rec.up.err.net",
+          r.reason === "quota"
+            ? "rec.up.err.quota"
+            : r.reason === "too-large"
+              ? "rec.up.err.big"
+              : r.reason === "unsupported"
+                ? "rec.up.err.type"
+                : r.reason === "unauthorized"
+                  ? "rec.up.err.auth"
+                  : "rec.up.err.net",
         ),
       });
   };
@@ -171,9 +197,22 @@ function LibraryPage() {
                 </span>
               )}
               <span className="ml-auto text-xs text-muted-foreground">
-                {t("lib.count", { n: media.length })}
+                {isFiltered(query)
+                  ? t("lib.count.filtered", {
+                      n: shown.length,
+                      total: media.length,
+                    })
+                  : t("lib.count", { n: media.length })}
               </span>
             </section>
+
+            {storage && <StorageBar info={storage} />}
+
+            <MediaFilterBar
+              query={query}
+              onChange={setQ}
+              onReset={() => setQuery(DEFAULT_MEDIA_QUERY)}
+            />
 
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
               <section className={PANEL} aria-label={t("lib.title")}>
@@ -182,8 +221,13 @@ function LibraryPage() {
                     {t("lib.empty")}
                   </p>
                 )}
+                {media.length > 0 && shown.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {t("watch.empty")}
+                  </p>
+                )}
                 <ul className="divide-y">
-                  {media.map((m) => (
+                  {shown.map((m) => (
                     <li key={m.id}>
                       <button
                         className={`flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent ${m.id === selected ? "bg-secondary" : ""}`}
@@ -572,6 +616,239 @@ function MediaDetail({
           </div>
         </>
       )}
+    </section>
+  );
+}
+
+function StorageBar({ info }: { info: StorageInfo }) {
+  const t = useT();
+  // the quota (when set) is the limit; otherwise the free space of the disk is
+  const limit =
+    info.quotaBytes ??
+    (info.diskFreeBytes !== null ? info.usedBytes + info.diskFreeBytes : null);
+  const pct = limit ? Math.min(100, (info.usedBytes / limit) * 100) : 0;
+  const free = limit !== null ? Math.max(0, limit - info.usedBytes) : null;
+  const tone =
+    pct >= 95
+      ? "text-destructive"
+      : pct >= 80
+        ? "text-primary"
+        : "text-muted-foreground";
+  return (
+    <section className={PANEL} aria-label={t("lib.storage")}>
+      <PanelTitle>{t("lib.storage")}</PanelTitle>
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm">
+        <span>
+          <b>{formatBytes(info.usedBytes)}</b> {t("lib.storage.used")}
+        </span>
+        {free !== null && (
+          <span className={tone}>
+            <b>{formatBytes(free)}</b> {t("lib.storage.free")}
+          </span>
+        )}
+        {info.quotaBytes !== null && (
+          <span className="text-muted-foreground">
+            {t("lib.storage.quota", { q: formatBytes(info.quotaBytes) })}
+          </span>
+        )}
+        {info.diskTotalBytes !== null && info.diskFreeBytes !== null && (
+          <span className="text-muted-foreground">
+            {t("lib.storage.disk", {
+              free: formatBytes(info.diskFreeBytes),
+              total: formatBytes(info.diskTotalBytes),
+            })}
+          </span>
+        )}
+        <span className="text-muted-foreground">
+          {t("lib.storage.files", { v: info.videos, a: info.audios })}
+        </span>
+      </div>
+      {limit !== null && (
+        <div
+          className="mt-2 h-2 overflow-hidden rounded-full bg-secondary"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(pct)}
+          aria-label={t("lib.storage")}
+        >
+          <div
+            className={`h-full ${pct >= 95 ? "bg-destructive" : pct >= 80 ? "bg-primary-solid" : "bg-speaker-b"}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
+const SORTS: readonly MediaSort[] = [
+  "newest",
+  "oldest",
+  "name",
+  "size",
+  "duration",
+  "kind",
+];
+
+function MediaFilterBar({
+  query,
+  onChange,
+  onReset,
+}: {
+  query: MediaQuery;
+  onChange: (patch: Partial<MediaQuery>) => void;
+  onReset: () => void;
+}) {
+  const t = useT();
+  const num = `${INPUT_AUTO} w-20`;
+  return (
+    <section className={PANEL} aria-label={t("watch.search")}>
+      <div className="flex flex-wrap gap-2">
+        <input
+          type="search"
+          className={`${INPUT_AUTO} min-w-0 flex-1 basis-56`}
+          placeholder={t("lib.search")}
+          aria-label={t("lib.search")}
+          value={query.text}
+          onChange={(e) => onChange({ text: e.target.value })}
+        />
+        <select
+          className={INPUT_AUTO}
+          aria-label={t("lib.f.kind")}
+          value={query.kind}
+          onChange={(e) =>
+            onChange({ kind: e.target.value as MediaQuery["kind"] })
+          }
+        >
+          <option value="">{t("lib.f.kind.any")}</option>
+          <option value="video">🎬 {t("lib.f.kind.video")}</option>
+          <option value="audio">🎧 {t("lib.f.kind.audio")}</option>
+        </select>
+        <select
+          className={INPUT_AUTO}
+          aria-label={t("lib.f.state")}
+          value={query.state}
+          onChange={(e) =>
+            onChange({ state: e.target.value as MediaQuery["state"] })
+          }
+        >
+          <option value="">{t("lib.f.state.any")}</option>
+          <option value="published">{t("lib.published")}</option>
+          <option value="draft">{t("lib.f.state.draft")}</option>
+        </select>
+        <select
+          className={INPUT_AUTO}
+          aria-label={t("watch.sort")}
+          value={query.sort}
+          onChange={(e) => onChange({ sort: e.target.value as MediaSort })}
+        >
+          {SORTS.map((s) => (
+            <option key={s} value={s}>
+              {t(`lib.sort.${s}` as const)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <details className="mt-2 text-xs">
+        <summary className="cursor-pointer font-semibold">
+          {t("lib.f.advanced")}
+        </summary>
+        <div className="mt-2 flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1">
+            {t("lib.f.origin")}
+            <select
+              className={INPUT_AUTO}
+              value={query.origin}
+              onChange={(e) =>
+                onChange({ origin: e.target.value as MediaQuery["origin"] })
+              }
+            >
+              <option value="">{t("lib.f.kind.any")}</option>
+              <option value="studio">{t("lib.origin.studio")}</option>
+              <option value="upload">{t("lib.origin.upload")}</option>
+              <option value="edit">{t("lib.origin.edit")}</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            {t("lib.tab.subtitles")}
+            <select
+              className={INPUT_AUTO}
+              value={query.captions}
+              onChange={(e) =>
+                onChange({ captions: e.target.value as MediaQuery["captions"] })
+              }
+            >
+              <option value="">{t("lib.f.kind.any")}</option>
+              <option value="with">{t("lib.f.captions.with")}</option>
+              <option value="without">{t("lib.f.captions.without")}</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            {t("lib.f.from")}
+            <input
+              type="date"
+              className={INPUT_AUTO}
+              value={query.from}
+              onChange={(e) => onChange({ from: e.target.value })}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            {t("lib.f.to")}
+            <input
+              type="date"
+              className={INPUT_AUTO}
+              value={query.to}
+              onChange={(e) => onChange({ to: e.target.value })}
+            />
+          </label>
+          <fieldset className="flex items-end gap-1">
+            <legend className="mb-1">{t("lib.f.size")}</legend>
+            <input
+              inputMode="decimal"
+              className={num}
+              placeholder="min"
+              aria-label={`${t("lib.f.size")} min`}
+              value={query.minMb}
+              onChange={(e) => onChange({ minMb: e.target.value })}
+            />
+            –
+            <input
+              inputMode="decimal"
+              className={num}
+              placeholder="max"
+              aria-label={`${t("lib.f.size")} max`}
+              value={query.maxMb}
+              onChange={(e) => onChange({ maxMb: e.target.value })}
+            />
+          </fieldset>
+          <fieldset className="flex items-end gap-1">
+            <legend className="mb-1">{t("lib.f.duration")}</legend>
+            <input
+              inputMode="decimal"
+              className={num}
+              placeholder="min"
+              aria-label={`${t("lib.f.duration")} min`}
+              value={query.minMin}
+              onChange={(e) => onChange({ minMin: e.target.value })}
+            />
+            –
+            <input
+              inputMode="decimal"
+              className={num}
+              placeholder="max"
+              aria-label={`${t("lib.f.duration")} max`}
+              value={query.maxMin}
+              onChange={(e) => onChange({ maxMin: e.target.value })}
+            />
+          </fieldset>
+          {isFiltered(query) && (
+            <button className="underline" onClick={onReset}>
+              {t("watch.reset")}
+            </button>
+          )}
+        </div>
+      </details>
     </section>
   );
 }

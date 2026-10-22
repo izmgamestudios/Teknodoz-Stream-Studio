@@ -138,6 +138,7 @@ type UploadState =
         | "rec.up.err.auth"
         | "rec.up.err.big"
         | "rec.up.err.type"
+        | "rec.up.err.quota"
         | "rec.up.err.net";
     };
 
@@ -183,11 +184,13 @@ function SendToLibrary() {
         key:
           r.reason === "unauthorized"
             ? "rec.up.err.auth"
-            : r.reason === "too-large"
-              ? "rec.up.err.big"
-              : r.reason === "unsupported"
-                ? "rec.up.err.type"
-                : "rec.up.err.net",
+            : r.reason === "quota"
+              ? "rec.up.err.quota"
+              : r.reason === "too-large"
+                ? "rec.up.err.big"
+                : r.reason === "unsupported"
+                  ? "rec.up.err.type"
+                  : "rec.up.err.net",
       });
   };
 

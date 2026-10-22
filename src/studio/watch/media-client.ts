@@ -30,7 +30,12 @@ export type UploadResult =
   | {
       ok: false;
       reason:
-        "unauthorized" | "too-large" | "unsupported" | "network" | "server";
+        | "unauthorized"
+        | "too-large"
+        | "unsupported"
+        | "quota"
+        | "network"
+        | "server";
     };
 
 export interface UploadMeta {
@@ -82,11 +87,13 @@ export function uploadMedia(
         reason:
           xhr.status === 401 || xhr.status === 503
             ? "unauthorized"
-            : xhr.status === 413
-              ? "too-large"
-              : xhr.status === 415
-                ? "unsupported"
-                : "server",
+            : xhr.status === 507
+              ? "quota"
+              : xhr.status === 413
+                ? "too-large"
+                : xhr.status === 415
+                  ? "unsupported"
+                  : "server",
       });
     };
     xhr.send(blob);
@@ -312,6 +319,32 @@ export async function fetchCaptionsText(
       cache: "no-store",
     });
     return res.ok ? await res.text() : null;
+  } catch {
+    return null;
+  }
+}
+
+/* ------------------------------ storage ------------------------------ */
+
+export interface StorageInfo {
+  usedBytes: number;
+  files: number;
+  videos: number;
+  audios: number;
+  quotaBytes: number | null;
+  diskTotalBytes: number | null;
+  diskFreeBytes: number | null;
+}
+
+export async function getStorage(token: string): Promise<StorageInfo | null> {
+  try {
+    const res = await fetch("/api/media/storage", {
+      headers: auth(token),
+      cache: "no-store",
+    });
+    return res.ok
+      ? ((await res.json()) as { storage: StorageInfo }).storage
+      : null;
   } catch {
     return null;
   }

@@ -249,3 +249,52 @@ describe("media serving", () => {
     ).toBe(404);
   });
 });
+
+describe("storage usage and quota", () => {
+  it("reports used bytes, counts and disk space", async () => {
+    const s = setup();
+    await s.call("POST", "/api/media", {
+      body: bytes(3000),
+      headers: { "content-type": "video/mp4" },
+    });
+    await s.call("POST", "/api/media", {
+      body: bytes(500),
+      headers: { "content-type": "audio/mpeg" },
+    });
+    const r = (await (await s.call("GET", "/api/media/storage")).json()) as any;
+    expect(r.storage).toMatchObject({
+      usedBytes: 3500,
+      files: 2,
+      videos: 1,
+      audios: 1,
+      quotaBytes: null,
+    });
+    expect(r.storage.diskTotalBytes).toBeGreaterThan(r.storage.diskFreeBytes);
+    expect(
+      (await s.call("GET", "/api/media/storage", { auth: false })).status,
+    ).toBe(401);
+  });
+
+  it("refuses uploads that would exceed the quota, early and while streaming", async () => {
+    const store = memoryStore<MediaRecord>();
+    const api = createMediaApi({ token: TOKEN, store, dir, quotaBytes: 5000 });
+    const post = (n: number, extra: Record<string, string> = {}) =>
+      api.handle(
+        new Request("http://x/api/media", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${TOKEN}`,
+            "content-type": "video/mp4",
+            ...extra,
+          },
+          body: bytes(n) as BodyInit,
+        }),
+      );
+    expect((await post(3000))!.status).toBe(201);
+    const over = await post(3000);
+    expect(over!.status).toBe(507);
+    expect(((await over!.json()) as any).error).toBe("quota-exceeded");
+    expect((await post(1500))!.status).toBe(201); // 4500 <= 5000
+    expect(await readdir(dir)).toHaveLength(2); // nothing left over from the refused upload
+  });
+});

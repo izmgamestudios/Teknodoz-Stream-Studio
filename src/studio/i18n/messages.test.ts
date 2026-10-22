@@ -20,6 +20,8 @@ const SAME_EVERYWHERE = new Set<MessageKey>([
   "nav.prompter.hint",
   "player.queue.playlist",
   "player.speed.normal",
+  "lib.f.kind.video",
+  "lib.f.kind.audio",
 ]);
 
 describe("i18n messages", () => {

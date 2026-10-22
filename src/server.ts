@@ -79,6 +79,9 @@ const media = createMediaApi({
   store: mediaStore,
   dir: liveEnv["MEDIA_DIR"]?.trim() || "data/media",
   maxBytes: Math.max(1, Number(liveEnv["MEDIA_MAX_MB"]) || 1024) * 1024 * 1024,
+  ...(Number(liveEnv["MEDIA_QUOTA_GB"]) > 0
+    ? { quotaBytes: Number(liveEnv["MEDIA_QUOTA_GB"]) * 1024 ** 3 }
+    : {}),
   probe: prober,
   poster: (input, out) => ffmpegPoster(ffmpegBin, input, out),
 });

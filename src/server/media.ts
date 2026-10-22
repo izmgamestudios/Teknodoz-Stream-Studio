@@ -14,7 +14,7 @@
 // Uploads are streamed to disk (never buffered), capped by MEDIA_MAX_MB, restricted to audio /
 // video MIME types and verified with ffprobe when it is available.
 import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, readdir, rename, rm, stat } from "node:fs/promises";
+import { mkdir, readdir, rename, rm, stat, statfs } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { Readable } from "node:stream";
@@ -51,6 +51,8 @@ export interface MediaRecord {
   /** languages that have a <id>.<lang>.vtt file */
   captions: { lang: string; label: string }[];
   hasPoster: boolean;
+  /** short-lived preview render: hidden from the library, removed after an hour */
+  temporary?: boolean;
   origin: "studio" | "upload" | "edit";
   parentId: string | null;
   createdAt: string;
@@ -127,12 +129,26 @@ const chaptersSchema = z
   )
   .max(200);
 
+export interface StorageInfo {
+  /** bytes of every file in the library folder (media, posters, captions, cards) */
+  usedBytes: number;
+  files: number;
+  videos: number;
+  audios: number;
+  quotaBytes: number | null;
+  /** size / free space of the disk that holds the library; null when it cannot be read */
+  diskTotalBytes: number | null;
+  diskFreeBytes: number | null;
+}
+
 export interface MediaOptions {
   token: string | null;
   store: RecordStore<MediaRecord>;
   dir: string;
   /** upload cap in bytes (default 1 GiB) */
   maxBytes?: number;
+  /** total library quota in bytes (default: none, only the disk limits it) */
+  quotaBytes?: number;
   probe?: Prober;
   /** writes a JPEG poster for a video file; true when it did */
   poster?: (input: string, out: string) => Promise<boolean>;
@@ -153,6 +169,48 @@ export function createMediaApi(opts: MediaOptions) {
     return (await opts.store.list()).find((r) => r.id === id);
   }
 
+  /* ------------------------------ storage ------------------------------ */
+
+  async function dirUsage(): Promise<{ bytes: number; files: number }> {
+    await ensureDir();
+    let bytes = 0;
+    let files = 0;
+    for (const name of await readdir(opts.dir)) {
+      try {
+        const st = await stat(join(opts.dir, name));
+        if (st.isFile()) {
+          bytes += st.size;
+          files++;
+        }
+      } catch {
+        /* removed while counting */
+      }
+    }
+    return { bytes, files };
+  }
+
+  async function storageInfo(): Promise<StorageInfo> {
+    const [usage, records] = await Promise.all([dirUsage(), opts.store.list()]);
+    let diskTotal: number | null = null;
+    let diskFree: number | null = null;
+    try {
+      const fs = await statfs(opts.dir);
+      diskTotal = fs.blocks * fs.bsize;
+      diskFree = fs.bavail * fs.bsize;
+    } catch {
+      /* not supported on this platform / volume */
+    }
+    return {
+      usedBytes: usage.bytes,
+      files: usage.files,
+      videos: records.filter((r) => r.kind === "video" && !r.temporary).length,
+      audios: records.filter((r) => r.kind === "audio" && !r.temporary).length,
+      quotaBytes: opts.quotaBytes ?? null,
+      diskTotalBytes: diskTotal,
+      diskFreeBytes: diskFree,
+    };
+  }
+
   /* ------------------------------ upload ------------------------------ */
 
   async function upload(req: Request): Promise<Response> {
@@ -166,6 +224,14 @@ export function createMediaApi(opts: MediaOptions) {
     if (Number.isFinite(declared) && declared > maxBytes)
       return json({ error: "too-large" }, 413);
     if (!req.body) return json({ error: "empty" }, 400);
+
+    // library quota: refuse early when the declared size does not fit
+    let used = 0;
+    if (opts.quotaBytes !== undefined) {
+      used = (await dirUsage()).bytes;
+      if (used + (Number.isFinite(declared) ? declared : 0) > opts.quotaBytes)
+        return json({ error: "quota-exceeded" }, 507);
+    }
 
     let chapters: Chapter[] = [];
     const rawChapters = req.headers.get("x-chapters");
@@ -210,6 +276,8 @@ export function createMediaApi(opts: MediaOptions) {
         if (done) break;
         size += value.byteLength;
         if (size > maxBytes) throw new RangeError("too-large");
+        if (opts.quotaBytes !== undefined && used + size > opts.quotaBytes)
+          throw new RangeError("quota-exceeded");
         if (!out.write(value))
           await new Promise<void>((r) => out.once("drain", () => r()));
       }
@@ -225,7 +293,10 @@ export function createMediaApi(opts: MediaOptions) {
         out.destroy();
       });
       await rm(part, { force: true });
-      if (e instanceof RangeError) return json({ error: "too-large" }, 413);
+      if (e instanceof RangeError)
+        return e.message === "quota-exceeded"
+          ? json({ error: "quota-exceeded" }, 507)
+          : json({ error: "too-large" }, 413);
       return json({ error: "upload-failed" }, 400);
     }
     if (size === 0) {
@@ -403,6 +474,8 @@ export function createMediaApi(opts: MediaOptions) {
         .split("/")
         .filter(Boolean);
 
+      if (rest.length === 1 && rest[0] === "storage" && method === "GET")
+        return json({ storage: await storageInfo() });
       if (rest.length === 0 && method === "POST") return await upload(req);
       if (rest.length === 0 && method === "GET") {
         const list = await opts.store.list();
@@ -441,7 +514,7 @@ export function createMediaApi(opts: MediaOptions) {
     }
   }
 
-  return { handle, find, dir: opts.dir, store: opts.store };
+  return { handle, find, dir: opts.dir, store: opts.store, storageInfo };
 }
 
 export type MediaApi = ReturnType<typeof createMediaApi>;

@@ -93,7 +93,10 @@ Stüdyoda kaydedilen videolar ve yüklenen video/ses dosyaları sunucuda saklan�
 |---|---|---|
 | `MEDIA_DIR` | `./data/media` | Dosyaların klasörü (yedeğe dahil et) |
 | `MEDIA_MAX_MB` | `1024` | Tek dosya üst sınırı |
+| `MEDIA_QUOTA_GB` | yok | Kütüphane toplam kotası (GB). Dolunca yükleme 507 ile reddedilir. Boşsa yalnızca disk sınırlar |
 | `FFPROBE_PATH` | `ffprobe` | Süre/boyut okumak ve dosyanın gerçekten medya olduğunu doğrulamak için (yoksa MIME türüne güvenilir) |
+
+Kütüphane sayfası kullanılan/boş yeri (kota ve disk) gösterir; dosyalar arama, tür/durum/kaynak/altyazı/tarih/boyut/süre filtreleri ve sıralamayla taranır.
 
 Kayıtlar (başlık, süre, bölüm işaretleri…) katalogla aynı yerde tutulur: PocketBase'te `media_items`
 koleksiyonu, yoksa `data/media.json`. Stüdyoda kayıt bitince **Kütüphaneye gönder** düğmesi
