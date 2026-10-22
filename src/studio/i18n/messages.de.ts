@@ -494,6 +494,24 @@ export const de: Record<MessageKey, string> = {
   "edit.err.ffmpeg":
     "Auf diesem Server wurde kein ffmpeg (mit H.264-Encoder) gefunden; Bearbeitung nicht verfügbar.",
   "edit.err.trim": "Der Zuschneidebereich liegt außerhalb der Datei.",
+  "edit.frames": "Bildweise Navigation",
+  "edit.frames.hint":
+    "Tastatur: , und . ein Bild, Umschalt zehn Bilder, Leertaste Wiedergabe/Pause · {fps} B/s",
+  "edit.clips": "Schneiden und verbinden",
+  "edit.clips.hint":
+    "Start-/Endbereich als Clip hinzufügen, Reihenfolge ändern, an der Abspielposition teilen. Clips werden zu einem Video verbunden; ohne Clips gilt nur das Zuschneiden.",
+  "edit.clips.addRange": "Bereich als Clip hinzufügen",
+  "edit.clips.other": "Aus anderem Video hinzufügen…",
+  "edit.clips.inNow": "Einstiegspunkt auf aktuelles Bild setzen",
+  "edit.clips.outNow": "Ausstiegspunkt auf aktuelles Bild setzen",
+  "edit.clips.split": "An der Abspielposition teilen",
+  "edit.clips.go": "Zum Clipanfang",
+  "edit.clips.up": "Nach oben",
+  "edit.clips.down": "Nach unten",
+  "edit.clips.remove": "Clip entfernen",
+  "edit.clips.total": "{n} Clips · gesamt {t}",
+  "edit.err.clipsBurn":
+    "Eingebrannte Untertitel lassen sich nicht mit Schneiden und Verbinden kombinieren.",
   "edit.err.spec": "Die Bearbeitungseinstellungen sind ungültig.",
   "edit.err.card": "Die Titelkarte konnte nicht erstellt werden.",
   "edit.err.segment": "Das gewählte Intro-/Outro-Video wurde nicht gefunden.",

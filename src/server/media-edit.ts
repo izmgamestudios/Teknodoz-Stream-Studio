@@ -56,6 +56,20 @@ export const editSpecSchema = z.object({
     })
     .refine((t) => t.endMs - t.startMs >= 500, "too-short")
     .optional(),
+  /** cut-and-join: ordered clips (from this or other library videos); supersedes `trim` */
+  clips: z
+    .array(
+      z
+        .object({
+          mediaId: hex16.optional(),
+          startMs: z.number().int().min(0).max(86_400_000),
+          endMs: z.number().int().min(1).max(86_400_000),
+        })
+        .refine((c) => c.endMs - c.startMs >= 40, "too-short"),
+    )
+    .min(1)
+    .max(30)
+    .optional(),
   intro: segmentSchema.optional(),
   outro: segmentSchema.optional(),
   fadeMs: z.number().int().min(0).max(3000).default(0),
@@ -77,9 +91,18 @@ export interface ResolvedSegment {
   hasAudio: boolean;
 }
 
+export interface ResolvedClip {
+  file: string;
+  startMs: number;
+  endMs: number;
+  hasAudio: boolean;
+}
+
 export interface PlanInput {
   main: MediaRecord;
   spec: EditSpec;
+  /** resolved `spec.clips` (same order) */
+  clips?: ResolvedClip[];
   intro?: ResolvedSegment;
   outro?: ResolvedSegment;
   /** file name (relative to the media dir) of the VTT to burn in, when requested */
@@ -110,12 +133,25 @@ const AFMT = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo";
 /** Pure: builds the ffmpeg argument list for an edit. */
 export function planEdit(i: PlanInput): EditPlan {
   const { main, spec, caps } = i;
+  if (spec.clips) {
+    if (
+      main.kind === "audio" ||
+      !i.clips ||
+      i.clips.length !== spec.clips.length
+    )
+      throw new PlanError("clips-invalid");
+    if (spec.burnLang) throw new PlanError("clips-burn");
+  }
+  const clipMs = i.clips
+    ? i.clips.reduce((n, c) => n + (c.endMs - c.startMs), 0)
+    : null;
   const start = spec.trim?.startMs ?? 0;
   const known = main.durationMs;
   const end = spec.trim?.endMs ?? known;
-  if (known !== null && start >= known)
+  if (!spec.clips && known !== null && start >= known)
     throw new PlanError("trim-out-of-range");
-  const mainMs = end !== null ? Math.min(end, known ?? end) - start : null;
+  const mainMs =
+    clipMs ?? (end !== null ? Math.min(end, known ?? end) - start : null);
 
   if (spec.normalize && !caps.loudnorm)
     throw new PlanError("loudnorm-unavailable");
@@ -229,22 +265,29 @@ export function planEdit(i: PlanInput): EditPlan {
     addSegment(i.intro);
   }
 
-  // main
-  {
+  // main (one segment, or one per clip)
+  const addClip = (
+    file: string,
+    from: number,
+    to: number | null,
+    hasAudio: boolean,
+    cut: boolean,
+  ) => {
     const n = labels.length;
-    if (trimmed && !burn) {
-      args.push("-ss", sec(start));
-      if (mainMs !== null) args.push("-t", sec(mainMs));
+    const len = to !== null ? to - from : null;
+    if (cut) {
+      args.push("-ss", sec(from));
+      if (len !== null) args.push("-t", sec(len));
     }
-    args.push("-i", main.file);
+    args.push("-i", file);
     const vi = idx++;
     const pre = burn
       ? `subtitles=${i.burnFile}${trimmed ? `,trim=start=${sec(start)}${end !== null ? `:end=${sec(end)}` : ""},setpts=PTS-STARTPTS` : ""},`
       : "";
     filters.push(`[${vi}:v:0]${pre}${vNorm}[v${n}]`);
-    if (main.hasAudio === false) {
+    if (!hasAudio) {
       // a silent file gets silence of the same length so the concat has an audio track
-      const ai = silence(mainMs);
+      const ai = silence(len);
       filters.push(`[${ai}:a:0]${AFMT}[a${n}]`);
     } else {
       filters.push(
@@ -252,6 +295,18 @@ export function planEdit(i: PlanInput): EditPlan {
       );
     }
     labels.push(`[v${n}][a${n}]`);
+  };
+  if (i.clips) {
+    for (const c of i.clips)
+      addClip(c.file, c.startMs, c.endMs, c.hasAudio, true);
+  } else {
+    addClip(
+      main.file,
+      start,
+      mainMs !== null ? start + mainMs : null,
+      main.hasAudio !== false,
+      trimmed && !burn,
+    );
   }
 
   if (i.outro) {
@@ -322,6 +377,27 @@ export function remapChapters(
       (c) => c.t >= trimStartMs && (trimEndMs === null || c.t < trimEndMs),
     )
     .map((c) => ({ t: c.t - trimStartMs + introMs, label: c.label }));
+}
+
+/** Chapters of the main video that fall inside its clips, placed on the joined timeline. */
+export function remapClipChapters(
+  main: Pick<MediaRecord, "id" | "chapters">,
+  specClips: readonly { mediaId?: string | undefined }[],
+  clips: readonly { startMs: number; endMs: number }[],
+  introMs: number,
+): Chapter[] {
+  const out: Chapter[] = [];
+  let at = introMs;
+  clips.forEach((c, k) => {
+    const own =
+      specClips[k]?.mediaId === undefined || specClips[k]?.mediaId === main.id;
+    if (own)
+      for (const ch of main.chapters)
+        if (ch.t >= c.startMs && ch.t < c.endMs)
+          out.push({ t: ch.t - c.startMs + at, label: ch.label });
+    at += c.endMs - c.startMs;
+  });
+  return out;
 }
 
 /* ------------------------------- job runner ------------------------------- */
@@ -519,6 +595,26 @@ export function createMediaEditApi(opts: EditApiOptions) {
       if (!c.available || !c.libx264) throw new PlanError("ffmpeg-unavailable");
       const intro = await resolveSegment(spec.intro);
       const outro = await resolveSegment(spec.outro);
+      const clips: ResolvedClip[] | undefined = spec.clips
+        ? await Promise.all(
+            spec.clips.map(async (cl) => {
+              const rec = cl.mediaId ? await opts.media.find(cl.mediaId) : main;
+              if (!rec || rec.kind !== "video")
+                throw new PlanError("segment-missing");
+              if (rec.durationMs !== null && cl.startMs >= rec.durationMs)
+                throw new PlanError("trim-out-of-range");
+              return {
+                file: rec.file,
+                startMs: cl.startMs,
+                endMs:
+                  rec.durationMs !== null
+                    ? Math.min(cl.endMs, rec.durationMs)
+                    : cl.endMs,
+                hasAudio: rec.hasAudio !== false,
+              };
+            }),
+          )
+        : undefined;
       const burnFile = spec.burnLang
         ? `${main.id}.${spec.burnLang}.vtt`
         : undefined;
@@ -531,6 +627,7 @@ export function createMediaEditApi(opts: EditApiOptions) {
         spec,
         ...(intro ? { intro } : {}),
         ...(outro ? { outro } : {}),
+        ...(clips ? { clips } : {}),
         ...(burnFile ? { burnFile } : {}),
         caps: c,
         out: `${id}.part`,
@@ -557,12 +654,20 @@ export function createMediaEditApi(opts: EditApiOptions) {
         width: info?.width ?? main.width,
         height: info?.height ?? main.height,
         hasAudio: true,
-        chapters: remapChapters(
-          main.chapters,
-          trimStart,
-          spec.trim?.endMs ?? null,
-          intro?.durationMs ?? 0,
-        ),
+        fps: info?.fps ?? null,
+        chapters: spec.clips
+          ? remapClipChapters(
+              main,
+              spec.clips,
+              clips ?? [],
+              intro?.durationMs ?? 0,
+            )
+          : remapChapters(
+              main.chapters,
+              trimStart,
+              spec.trim?.endMs ?? null,
+              intro?.durationMs ?? 0,
+            ),
         captions: [],
         hasPoster: false,
         origin: "edit",

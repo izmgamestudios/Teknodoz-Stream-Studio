@@ -491,6 +491,24 @@ export const es: Record<MessageKey, string> = {
   "edit.err.ffmpeg":
     "No se encontró ffmpeg (con codificador H.264) en este servidor; la edición no está disponible.",
   "edit.err.trim": "El rango de recorte está fuera del archivo.",
+  "edit.frames": "Avance fotograma a fotograma",
+  "edit.frames.hint":
+    "Teclado: , y . un fotograma, Mayús diez, Espacio reproduce/pausa · {fps} fps",
+  "edit.clips": "Cortar y unir",
+  "edit.clips.hint":
+    "Añade el rango inicio/fin como clip, reordena y divide en el cursor. Los clips se unen en un solo vídeo; sin clips solo se aplica el recorte.",
+  "edit.clips.addRange": "Añadir rango como clip",
+  "edit.clips.other": "Añadir de otro vídeo…",
+  "edit.clips.inNow": "Entrada en el fotograma actual",
+  "edit.clips.outNow": "Salida en el fotograma actual",
+  "edit.clips.split": "Dividir en el cursor",
+  "edit.clips.go": "Ir al inicio del clip",
+  "edit.clips.up": "Subir",
+  "edit.clips.down": "Bajar",
+  "edit.clips.remove": "Quitar clip",
+  "edit.clips.total": "{n} clips · duración total {t}",
+  "edit.err.clipsBurn":
+    "Los subtítulos incrustados no se pueden combinar con cortar y unir.",
   "edit.err.spec": "Los ajustes de edición no son válidos.",
   "edit.err.card": "No se pudo preparar la tarjeta de título.",
   "edit.err.segment": "No se encontró el vídeo de intro/outro elegido.",

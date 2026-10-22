@@ -16,6 +16,7 @@ import {
   editSpecSchema,
   PlanError,
   planEdit,
+  remapClipChapters,
   remapChapters,
   type PlanInput,
 } from "./media-edit";
@@ -209,6 +210,65 @@ describe("planEdit", () => {
         }),
       ),
     ).toThrow("burn-unavailable");
+  });
+});
+
+describe("planEdit clips", () => {
+  const clipSpec = (extra: Record<string, unknown> = {}) =>
+    editSpecSchema.parse({
+      clips: [
+        { startMs: 1000, endMs: 3000 },
+        { mediaId: "fedcba9876543210", startMs: 0, endMs: 1500 },
+      ],
+      ...extra,
+    });
+  const resolved = [
+    { file: "a.webm", startMs: 1000, endMs: 3000, hasAudio: true },
+    { file: "b.webm", startMs: 0, endMs: 1500, hasAudio: false },
+  ];
+
+  it("seeks each clip separately and concatenates them", () => {
+    const p = planEdit(base({ spec: clipSpec(), clips: resolved }));
+    const a = p.args.join(" ");
+    expect(a).toContain("-ss 1.000 -t 2.000 -i a.webm");
+    expect(a).toContain("-ss 0.000 -t 1.500 -i b.webm");
+    expect(a).toContain("concat=n=2:v=1:a=1");
+    expect(a).toContain("anullsrc"); // the silent clip gets silence
+    expect(p.expectedMs).toBe(3500);
+  });
+
+  it("rejects mismatched, audio-only and burn-in combinations", () => {
+    expect(() => planEdit(base({ spec: clipSpec() }))).toThrow("clips-invalid");
+    expect(() =>
+      planEdit(
+        base({
+          spec: clipSpec(),
+          clips: resolved,
+          main: rec({ kind: "audio" }),
+        }),
+      ),
+    ).toThrow("clips-invalid");
+    expect(() =>
+      planEdit(
+        base({
+          spec: clipSpec({ burnLang: "tr" }),
+          clips: resolved,
+          burnFile: "x.vtt",
+        }),
+      ),
+    ).toThrow("clips-burn");
+  });
+
+  it("keeps chapters of the main video that sit inside its clips", () => {
+    const main = rec({
+      chapters: [
+        { t: 500, label: "dışarıda" },
+        { t: 1500, label: "içeride" },
+      ],
+    });
+    expect(remapClipChapters(main, clipSpec().clips!, resolved, 2000)).toEqual([
+      { t: 2500, label: "içeride" },
+    ]);
   });
 });
 
@@ -464,6 +524,33 @@ describe.skipIf(!hasFfmpeg)("edit + subtitles with real ffmpeg", () => {
       "aac",
       "h264",
     ]);
+  }, 60_000);
+
+  it("cuts clips from two videos and joins them in order", async () => {
+    const s = await setup();
+    const a = await upload(s, makeVideo("ca.webm", 6));
+    const b = await upload(s, makeVideo("cb.webm", 4, false));
+    expect(a.fps).toBeCloseTo(25, 0);
+    const res = await s.call(
+      "POST",
+      `/api/media/${a.id}/edit`,
+      JSON.stringify({
+        spec: {
+          clips: [
+            { startMs: 1000, endMs: 3000 },
+            { mediaId: b.id, startMs: 500, endMs: 2500 },
+            { startMs: 4000, endMs: 5000 },
+          ],
+        },
+      }),
+    );
+    expect(res.status).toBe(202);
+    const job = await waitJob(s, ((await res.json()) as any).job.id);
+    expect(job.error).toBeNull();
+    const out = (await s.store.list()).find((r) => r.id === job.resultId)!;
+    expect(out.durationMs!).toBeGreaterThan(4500);
+    expect(out.durationMs!).toBeLessThan(5600); // 2 + 2 + 1 s
+    expect(out.hasAudio).toBe(true);
   }, 60_000);
 
   it("a video can be an outro, and silent footage keeps working", async () => {

@@ -29,6 +29,21 @@ import {
   type StartResult,
 } from "../../watch/media-client";
 import {
+  appendClip,
+  clipLength,
+  layout,
+  makeClip,
+  MIN_CLIP_MS,
+  moveClip,
+  removeClip,
+  splitClipAt,
+  toSpecClips,
+  totalMs,
+  trimClip,
+  type Clip,
+} from "../../watch/clips";
+import { formatClock, formatFrames, frameAt } from "../../watch/timecode";
+import {
   DEFAULT_CARD,
   drawTitleCard,
   renderTitleCard,
@@ -102,6 +117,306 @@ function JobStatus({
 
 const sec = (ms: number) => Math.round(ms) / 1000;
 
+/** Frame-accurate transport for the preview video: ±1 frame, ±1 s, timecode with frame count. */
+function FrameBar({
+  videoRef,
+  fps,
+}: {
+  videoRef: RefObject<HTMLVideoElement | null>;
+  fps: number;
+}) {
+  const t = useT();
+  const [ms, setMs] = useState(0);
+  const frame = 1000 / fps;
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const upd = () => setMs(Math.round(v.currentTime * 1000));
+    upd();
+    v.addEventListener("timeupdate", upd);
+    v.addEventListener("seeked", upd);
+    // per-frame updates while playing, where the browser can report them
+    let handle = 0;
+    const loop = () => {
+      upd();
+      handle = v.requestVideoFrameCallback(loop);
+    };
+    if (typeof v.requestVideoFrameCallback === "function")
+      handle = v.requestVideoFrameCallback(loop);
+    return () => {
+      v.removeEventListener("timeupdate", upd);
+      v.removeEventListener("seeked", upd);
+      if (handle && typeof v.cancelVideoFrameCallback === "function")
+        v.cancelVideoFrameCallback(handle);
+    };
+  }, [videoRef]);
+
+  const step = (deltaMs: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.pause();
+    // land in the middle of the target frame so the decoder shows it, not its neighbour
+    const frames =
+      Math.round(v.currentTime * fps) + Math.round(deltaMs / frame);
+    const max = Number.isFinite(v.duration) ? v.duration : Infinity;
+    v.currentTime = Math.min(max, Math.max(0, (frames + 0.5) / fps));
+    setMs(Math.round(v.currentTime * 1000));
+  };
+
+  const onKey = (e: React.KeyboardEvent) => {
+    const tag = (e.target as HTMLElement).tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    const big = e.shiftKey ? 10 : 1;
+    if (e.key === "," || e.key === "ArrowLeft") step(-frame * big);
+    else if (e.key === "." || e.key === "ArrowRight") step(frame * big);
+    else if (e.key === " ") {
+      const v = videoRef.current;
+      if (v) void (v.paused ? v.play() : v.pause());
+    } else return;
+    e.preventDefault();
+  };
+
+  return (
+    <div
+      className="flex flex-wrap items-center gap-1.5 rounded-lg border p-2"
+      role="group"
+      aria-label={t("edit.frames")}
+      tabIndex={0}
+      onKeyDown={onKey}
+    >
+      <button className={BTN} onClick={() => step(-1000)} title="−1 s">
+        ⏪ 1 s
+      </button>
+      <button className={BTN} onClick={() => step(-frame)} title="−1 frame (,)">
+        ◀ 1f
+      </button>
+      <button
+        className={BTN}
+        onClick={() => {
+          const v = videoRef.current;
+          if (v) void (v.paused ? v.play() : v.pause());
+        }}
+        title="Space"
+      >
+        ⏯
+      </button>
+      <button className={BTN} onClick={() => step(frame)} title="+1 frame (.)">
+        1f ▶
+      </button>
+      <button className={BTN} onClick={() => step(1000)} title="+1 s">
+        1 s ⏩
+      </button>
+      <span className="ml-auto font-mono tabular-nums" aria-live="off">
+        {formatFrames(ms, fps)} · {formatClock(ms)} · #{frameAt(ms, fps)}
+      </span>
+      <span className="basis-full text-[11px] text-muted-foreground">
+        {t("edit.frames.hint", { fps: String(Math.round(fps * 100) / 100) })}
+      </span>
+    </div>
+  );
+}
+
+/** Cut-and-join: ordered clips of this (or other) library videos, joined into one video. */
+function ClipTimeline({
+  media,
+  library,
+  videoRef,
+  fps,
+  start,
+  end,
+  clips,
+  onChange,
+}: {
+  media: MediaRecord;
+  library: readonly MediaRecord[];
+  videoRef: RefObject<HTMLVideoElement | null>;
+  fps: number;
+  start: number;
+  end: number;
+  clips: Clip[];
+  onChange: (c: Clip[]) => void;
+}) {
+  const t = useT();
+  const [other, setOther] = useState("");
+  const videos = library.filter((m) => m.kind === "video" && m.id !== media.id);
+  const byId = (id: string) =>
+    id === media.id ? media : library.find((m) => m.id === id);
+  const frameMs = 1000 / fps;
+  const now = () => Math.round((videoRef.current?.currentTime ?? 0) * 1000);
+  const snap = (ms: number) =>
+    Math.round(Math.round((ms / 1000) * fps) * frameMs);
+  const rows = layout(clips);
+
+  return (
+    <fieldset className="space-y-2 rounded-lg border p-3">
+      <legend className="px-1 font-bold">✂ {t("edit.clips")}</legend>
+      <p className="text-muted-foreground">{t("edit.clips.hint")}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          className={BTN}
+          disabled={end - start < MIN_CLIP_MS}
+          onClick={() =>
+            onChange(
+              appendClip(clips, makeClip(media.id, snap(start), snap(end))),
+            )
+          }
+        >
+          ＋ {t("edit.clips.addRange")} ({formatMs(Math.max(0, end - start))})
+        </button>
+        {videos.length > 0 && (
+          <span className="flex items-center gap-1">
+            <select
+              className={INPUT_AUTO}
+              value={other}
+              aria-label={t("edit.clips.other")}
+              onChange={(e) => setOther(e.target.value)}
+            >
+              <option value="">{t("edit.clips.other")}</option>
+              {videos.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.title}
+                </option>
+              ))}
+            </select>
+            <button
+              className={BTN}
+              disabled={!other}
+              onClick={() => {
+                const v = byId(other);
+                if (v?.durationMs)
+                  onChange(appendClip(clips, makeClip(v.id, 0, v.durationMs)));
+              }}
+            >
+              ＋
+            </button>
+          </span>
+        )}
+      </div>
+      {clips.length > 0 && (
+        <>
+          <ol className="space-y-1.5">
+            {rows.map(({ clip: c, atMs }, i) => {
+              const src = byId(c.mediaId);
+              const own = c.mediaId === media.id;
+              return (
+                <li
+                  key={c.key}
+                  className="flex flex-wrap items-center gap-1.5 rounded-md bg-secondary/60 p-1.5"
+                >
+                  <span className="w-5 text-center font-bold">{i + 1}</span>
+                  <span
+                    className="min-w-0 flex-1 basis-32 truncate"
+                    title={src?.title}
+                  >
+                    {src?.title ?? c.mediaId}
+                  </span>
+                  <span className="font-mono tabular-nums">
+                    {formatFrames(c.startMs, fps)} →{" "}
+                    {formatFrames(c.endMs, fps)} · {formatMs(clipLength(c))}
+                  </span>
+                  <span className="text-muted-foreground">
+                    @{formatMs(atMs)}
+                  </span>
+                  {own && (
+                    <>
+                      <button
+                        className={BTN}
+                        title={t("edit.clips.inNow")}
+                        onClick={() =>
+                          onChange(
+                            trimClip(
+                              clips,
+                              c.key,
+                              "start",
+                              snap(now()),
+                              media.durationMs,
+                            ),
+                          )
+                        }
+                      >
+                        [⏱
+                      </button>
+                      <button
+                        className={BTN}
+                        title={t("edit.clips.outNow")}
+                        onClick={() =>
+                          onChange(
+                            trimClip(
+                              clips,
+                              c.key,
+                              "end",
+                              snap(now()),
+                              media.durationMs,
+                            ),
+                          )
+                        }
+                      >
+                        ⏱]
+                      </button>
+                      <button
+                        className={BTN}
+                        title={t("edit.clips.split")}
+                        onClick={() =>
+                          onChange(splitClipAt(clips, c.key, snap(now())))
+                        }
+                      >
+                        ✂
+                      </button>
+                      <button
+                        className={BTN}
+                        title={t("edit.clips.go")}
+                        onClick={() => {
+                          if (videoRef.current)
+                            videoRef.current.currentTime = c.startMs / 1000;
+                        }}
+                      >
+                        ▶|
+                      </button>
+                    </>
+                  )}
+                  <button
+                    className={BTN}
+                    aria-label={t("edit.clips.up")}
+                    disabled={i === 0}
+                    onClick={() => onChange(moveClip(clips, c.key, -1))}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    className={BTN}
+                    aria-label={t("edit.clips.down")}
+                    disabled={i === clips.length - 1}
+                    onClick={() => onChange(moveClip(clips, c.key, 1))}
+                  >
+                    ↓
+                  </button>
+                  <button
+                    className={BTN}
+                    aria-label={t("edit.clips.remove")}
+                    onClick={() => onChange(removeClip(clips, c.key))}
+                  >
+                    🗑
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+          <p className="text-muted-foreground">
+            {t("edit.clips.total", {
+              t: formatMs(totalMs(clips)),
+              n: String(clips.length),
+            })}
+            <button className="ml-2 underline" onClick={() => onChange([])}>
+              {t("common.reset")}
+            </button>
+          </p>
+        </>
+      )}
+    </fieldset>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Edit                                                                 */
 /* ------------------------------------------------------------------ */
@@ -131,6 +446,7 @@ export function EditPanel({
   const [end, setEnd] = useState(dur);
   const [intro, setIntro] = useState<SegmentChoice>({ type: "none" });
   const [outro, setOutro] = useState<SegmentChoice>({ type: "none" });
+  const [clips, setClips] = useState<Clip[]>([]);
   const [fade, setFade] = useState(0);
   const [normalize, setNormalize] = useState(false);
   const [burn, setBurn] = useState("");
@@ -148,6 +464,7 @@ export function EditPanel({
   useEffect(() => {
     setEnd(media.durationMs ?? 0);
     setStart(0);
+    setClips([]);
   }, [media.id, media.durationMs]);
 
   const busy = job?.status === "queued" || job?.status === "running";
@@ -181,12 +498,16 @@ export function EditPanel({
     if (i === null || o === null) return setError(t("edit.err.card"));
     const spec: EditSpec = {
       title: title.trim() || `${media.title} (${t("edit.suffix")})`,
-      ...(trimmed ? { trim: { startMs: start, endMs: end } } : {}),
+      ...(clips.length > 0
+        ? { clips: toSpecClips(clips, media.id) }
+        : trimmed
+          ? { trim: { startMs: start, endMs: end } }
+          : {}),
       ...(i ? { intro: i } : {}),
       ...(o ? { outro: o } : {}),
       fadeMs: fade,
       normalize,
-      ...(burn ? { burnLang: burn } : {}),
+      ...(burn && clips.length === 0 ? { burnLang: burn } : {}),
     };
     const r = await startEdit(token, media.id, spec);
     if (r.ok) begin(r);
@@ -204,6 +525,8 @@ export function EditPanel({
       "burn-unavailable": "edit.err.filter",
       "captions-missing": "edit.err.captions",
       "duration-unknown": "edit.err.duration",
+      "clips-invalid": "edit.err.spec",
+      "clips-burn": "edit.err.clipsBurn",
     };
     return t((known[code] ?? "edit.err.generic") as "edit.err.generic");
   };
@@ -215,8 +538,12 @@ export function EditPanel({
 
   const noIntro = !isVideo;
 
+  const fps = media.fps && media.fps > 0 ? media.fps : 30;
+  const frameStep = Math.max(1, Math.round(1000 / fps));
+
   return (
     <div className="space-y-4 text-xs">
+      {isVideo && dur > 0 && <FrameBar videoRef={videoRef} fps={fps} />}
       <fieldset className="space-y-2 rounded-lg border p-3">
         <legend className="px-1 font-bold">{t("edit.trim")}</legend>
         {dur > 0 ? (
@@ -227,7 +554,7 @@ export function EditPanel({
                 type="range"
                 min={0}
                 max={dur}
-                step={100}
+                step={frameStep}
                 value={start}
                 className="min-w-0 flex-1"
                 aria-label={t("edit.start")}
@@ -253,7 +580,7 @@ export function EditPanel({
                 type="range"
                 min={0}
                 max={dur}
-                step={100}
+                step={frameStep}
                 value={end}
                 className="min-w-0 flex-1"
                 aria-label={t("edit.end")}
@@ -290,6 +617,19 @@ export function EditPanel({
           <p className="text-muted-foreground">{t("edit.err.duration")}</p>
         )}
       </fieldset>
+
+      {isVideo && dur > 0 && (
+        <ClipTimeline
+          media={media}
+          library={library}
+          videoRef={videoRef}
+          fps={fps}
+          start={start}
+          end={end}
+          clips={clips}
+          onChange={setClips}
+        />
+      )}
 
       {!noIntro && (
         <>
@@ -329,7 +669,7 @@ export function EditPanel({
           {t("edit.normalize")}{" "}
           {caps && !caps.ffmpeg.loudnorm && `(${t("edit.unavailable")})`}
         </Check>
-        {isVideo && media.captions.length > 0 && (
+        {isVideo && media.captions.length > 0 && clips.length === 0 && (
           <label className="flex items-center gap-2">
             {t("edit.burn")}
             <select

@@ -7,7 +7,20 @@ import type { ProbeResult, Prober } from "./media";
 
 interface FfprobeJson {
   format?: { duration?: string };
-  streams?: { codec_type?: string; width?: number; height?: number }[];
+  streams?: {
+    codec_type?: string;
+    width?: number;
+    height?: number;
+    avg_frame_rate?: string;
+  }[];
+}
+
+/** "30000/1001" -> 29.97; null for "0/0" or junk. */
+export function parseRate(text: string | undefined): number | null {
+  const m = /^(\d+)\/(\d+)$/.exec(text ?? "");
+  if (!m || Number(m[2]) === 0) return null;
+  const v = Number(m[1]) / Number(m[2]);
+  return v > 0 && v < 1000 ? Math.round(v * 1000) / 1000 : null;
 }
 
 export function ffprobeProber(binary = "ffprobe"): Prober {
@@ -40,6 +53,7 @@ export function ffprobeProber(binary = "ffprobe"): Prober {
               height: null,
               hasVideo: false,
               hasAudio: false,
+              fps: null,
             });
           }
           try {
@@ -51,6 +65,7 @@ export function ffprobeProber(binary = "ffprobe"): Prober {
                 Number.isFinite(d) && d > 0 ? Math.round(d * 1000) : null,
               width: video?.width ?? null,
               height: video?.height ?? null,
+              fps: parseRate(video?.avg_frame_rate),
               hasVideo: !!video,
               hasAudio: !!j.streams?.some((s) => s.codec_type === "audio"),
             });

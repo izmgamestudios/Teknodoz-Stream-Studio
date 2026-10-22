@@ -17,6 +17,7 @@ export interface MediaRecord {
   width: number | null;
   height: number | null;
   hasAudio?: boolean;
+  fps?: number | null;
   chapters: Chapter[];
   captions: { lang: string; label: string }[];
   hasPoster: boolean;
@@ -168,6 +169,7 @@ export type Segment =
 export interface EditSpec {
   title?: string;
   trim?: { startMs: number; endMs: number };
+  clips?: { mediaId?: string; startMs: number; endMs: number }[];
   intro?: Segment;
   outro?: Segment;
   fadeMs: number;

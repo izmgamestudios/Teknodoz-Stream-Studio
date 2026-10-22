@@ -513,6 +513,23 @@ export const tr = {
   "edit.err.ffmpeg":
     "Bu sunucuda ffmpeg (H.264 kodlayıcılı) bulunamadı; düzenleme kullanılamaz.",
   "edit.err.trim": "Kırpma aralığı dosyanın dışında.",
+  "edit.frames": "Kare kare gezinme",
+  "edit.frames.hint":
+    "Klavye: , ve . bir kare, Shift ile 10 kare, Boşluk oynat/durdur · {fps} kare/sn",
+  "edit.clips": "Kes ve birleştir",
+  "edit.clips.hint":
+    "Başlangıç/bitiş aralığını klip olarak ekleyin, sırayı değiştirin, imleçte bölün. Klipler tek videoda birleşir; boşsa yalnızca kırpma uygulanır.",
+  "edit.clips.addRange": "Aralığı klip olarak ekle",
+  "edit.clips.other": "Başka videodan ekle…",
+  "edit.clips.inNow": "Girişi şimdiki kareye al",
+  "edit.clips.outNow": "Çıkışı şimdiki kareye al",
+  "edit.clips.split": "İmleçte böl",
+  "edit.clips.go": "Klibin başına git",
+  "edit.clips.up": "Yukarı taşı",
+  "edit.clips.down": "Aşağı taşı",
+  "edit.clips.remove": "Klibi sil",
+  "edit.clips.total": "{n} klip · toplam {t}",
+  "edit.err.clipsBurn": "Klip birleştirmede altyazı yakma kullanılamaz.",
   "edit.err.spec": "Düzenleme ayarları geçersiz.",
   "edit.err.card": "Başlık kartı hazırlanamadı.",
   "edit.err.segment": "Seçilen intro/outro videosu bulunamadı.",
@@ -1130,6 +1147,24 @@ export const en: Record<MessageKey, string> = {
   "edit.err.ffmpeg":
     "ffmpeg (with the H.264 encoder) was not found on this server; editing is unavailable.",
   "edit.err.trim": "The trim range is outside the file.",
+  "edit.frames": "Frame stepping",
+  "edit.frames.hint":
+    "Keyboard: , and . move one frame, Shift moves 10, Space plays/pauses · {fps} fps",
+  "edit.clips": "Cut and join",
+  "edit.clips.hint":
+    "Add the start/end range as a clip, reorder, split at the playhead. Clips are joined into one video; with none, only the trim applies.",
+  "edit.clips.addRange": "Add range as clip",
+  "edit.clips.other": "Add from another video…",
+  "edit.clips.inNow": "Set in point to the current frame",
+  "edit.clips.outNow": "Set out point to the current frame",
+  "edit.clips.split": "Split at playhead",
+  "edit.clips.go": "Go to clip start",
+  "edit.clips.up": "Move up",
+  "edit.clips.down": "Move down",
+  "edit.clips.remove": "Remove clip",
+  "edit.clips.total": "{n} clips · total {t}",
+  "edit.err.clipsBurn":
+    "Burned-in captions cannot be combined with cut-and-join.",
   "edit.err.spec": "The edit settings are invalid.",
   "edit.err.card": "The title card could not be prepared.",
   "edit.err.segment": "The chosen intro/outro video was not found.",

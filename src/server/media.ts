@@ -47,6 +47,8 @@ export interface MediaRecord {
   height: number | null;
   /** false = silent video (ffprobe saw no audio stream); older records: assume true */
   hasAudio?: boolean;
+  /** frames per second of the video stream (frame-accurate editing) */
+  fps?: number | null;
   chapters: Chapter[];
   /** languages that have a <id>.<lang>.vtt file */
   captions: { lang: string; label: string }[];
@@ -64,6 +66,7 @@ export interface ProbeResult {
   height: number | null;
   hasVideo: boolean;
   hasAudio: boolean;
+  fps?: number | null;
 }
 
 /** Injectable so tests need no ffprobe; `null` = ffprobe not available (trust the MIME type). */
@@ -327,6 +330,7 @@ export function createMediaApi(opts: MediaOptions) {
       width: info?.width ?? null,
       height: info?.height ?? null,
       hasAudio: info?.hasAudio ?? true,
+      fps: info?.fps ?? null,
       chapters,
       captions: [],
       hasPoster: false,
