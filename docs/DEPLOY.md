@@ -139,6 +139,13 @@ da diske geçici yazmayı önler.
 - Doğrulanamayan kısım: gerçek Whisper modelleri geliştirme ortamında indirilemedi; hat (ses çıkarma →
   CLI → WebVTT → kayıt) sahte bir CLI ile test edildi. İlk gerçek denemede kısa bir dosya ile dene.
 
+### Kare kesme, ses araçları, altyazı editörü
+
+- **Kes ve birleştir:** Düzenle sekmesinde kare adımlama (`,` / `.`, Shift = 10 kare), aralığı klip olarak ekleme, sıralama, imleçte bölme, başka videodan klip ekleme. Klipler tek mp4'te birleşir (ffmpeg `concat`); bölümler (chapters) klip sırasına göre yeniden hesaplanır.
+- **Ses:** konuşma iyileştirme, gürültü azaltma (`afftdn`), alçak ses kesme, 50/60 Hz uğultu, sessizken arka planı susturma (gate), dengeleme, ses seviyesi; ses mikseri (kütüphaneden müzik/anlatım, başlangıç zamanı, döngü, konuşurken kısma/ducking). "10 sn önizle" geçici bir render üretir (1 saat sonra otomatik silinir, listede görünmez).
+- **Altyazı:** Altyazılar sekmesinde satır satır düzenleme (başlangıç/bitiş, bölme/birleştirme, toplu kaydırma, bul-değiştir, okuma hızı uyarıları, yeni boş parça).
+- **Stüdyolara aktarma:** Klasik Stüdyo (arka plan videosu / müzik / ses efekti) ve Canlı Stüdyo (sahneye katman / müzik) "Sunucu kütüphanesinden" düğmesini kullanır (yönetici girişi gerekir).
+
 ## Çeviriler (`/translations`)
 Yerleşik metinler tr/en/de/es için kodda durur. **Çeviriler** sayfasından (içerik üretici modu,
 aynı yönetici anahtarı) herhangi bir metin sunucuda değiştirilir; yeni sürüm yayınlamadan tüm

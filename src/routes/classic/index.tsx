@@ -50,6 +50,15 @@ import {
   W,
 } from "@/classic/studio/types";
 import { useAudioMixer } from "@/classic/studio/use-audio-mixer";
+import {
+  addTemplate,
+  duplicateTemplate,
+  moveTemplate,
+  removeTemplate,
+  renameTemplate,
+  updateTemplate,
+  type SavedTemplate,
+} from "@/classic/studio/saved-templates";
 import { LibraryPicker } from "@/studio/ui/library-picker";
 import { mediaUrl } from "@/studio/watch/media-client";
 
@@ -127,7 +136,6 @@ const ITEM_TILES: [string, string][] = [
   ["ticker", "➡ Kayan yazı"],
 ];
 
-type SavedTemplate = { id: string; name: string; scene: Scene };
 type Transition = {
   from: Scene;
   to: Scene;
@@ -193,6 +201,8 @@ function Studio() {
   const [recSecs, setRecSecs] = useState(0);
   const [camErr, setCamErr] = useState("");
   const [saved, setSaved] = useState<SavedTemplate[]>([]);
+  /** id of the saved template whose scene is being edited in the draft */
+  const [editingTpl, setEditingTpl] = useState<string | null>(null);
   const [transition, setTransition] = useState("fade");
   const [transMs, setTransMs] = useState(900);
   const [available, setAvailable] = useState<string[]>([]);
@@ -484,23 +494,28 @@ function Studio() {
     setSelected(null);
   }
 
-  function saveTemplate() {
-    const name = window.prompt("Şablon adı?");
-    if (!name?.trim()) return;
-    const scene: Scene = {
-      ...structuredClone(draft),
-      items: draft.items
-        .filter((i) => i.kind !== "image")
-        .map((i) => ({ ...i, id: uid() })),
-    };
-    const next = [...saved, { id: uid(), name: name.trim(), scene }];
+  function commitSaved(next: SavedTemplate[]) {
     setSaved(next);
     persistSaved(next);
   }
+  function saveTemplate(defaultName = "") {
+    const name = window.prompt("Şablon adı?", defaultName);
+    if (!name?.trim()) return;
+    const r = addTemplate(saved, name, draft);
+    commitSaved(r.list);
+    setEditingTpl(r.id);
+  }
   function deleteSaved(id: string) {
-    const next = saved.filter((s) => s.id !== id);
-    setSaved(next);
-    persistSaved(next);
+    commitSaved(removeTemplate(saved, id));
+    if (editingTpl === id) setEditingTpl(null);
+  }
+  function renameSaved(t: SavedTemplate) {
+    const name = window.prompt("Yeni ad?", t.name);
+    if (name?.trim()) commitSaved(renameTemplate(saved, t.id, name));
+  }
+  function copySaved(id: string) {
+    const r = duplicateTemplate(saved, id);
+    commitSaved(r.list);
   }
 
   function addItem(it: Omit<Item, "id">) {
@@ -1006,7 +1021,10 @@ function Studio() {
                   {TEMPLATES.map((t) => (
                     <button
                       key={t.id}
-                      onClick={() => applyTemplate(t.build())}
+                      onClick={() => {
+                        applyTemplate(t.build());
+                        setEditingTpl(null);
+                      }}
                       title={t.hint}
                       className="rounded-lg bg-accent p-2 text-left hover:brightness-110"
                     >
@@ -1018,34 +1036,112 @@ function Studio() {
                     </button>
                   ))}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 border-t pt-2">
-                  <button onClick={saveTemplate} className={btn}>
-                    💾 Şablon olarak kaydet
-                  </button>
-                  {saved.map((s) => (
-                    <span
-                      key={s.id}
-                      className="inline-flex overflow-hidden rounded bg-accent"
+                <div className="space-y-2 border-t pt-2">
+                  {editingTpl && saved.some((s) => s.id === editingTpl) && (
+                    <div
+                      role="status"
+                      className="flex flex-wrap items-center gap-2 rounded bg-primary/15 px-2 py-1"
                     >
+                      <span>
+                        ✎ Düzenleniyor:{" "}
+                        <b>{saved.find((s) => s.id === editingTpl)?.name}</b>
+                      </span>
                       <button
-                        onClick={() => applyTemplate(structuredClone(s.scene))}
-                        className="px-2 py-1 hover:brightness-125"
+                        className={btn}
+                        onClick={() =>
+                          commitSaved(updateTemplate(saved, editingTpl, draft))
+                        }
                       >
-                        ★ {s.name}
+                        💾 Değişiklikleri kaydet
                       </button>
                       <button
-                        onClick={() => deleteSaved(s.id)}
-                        aria-label={`${s.name} şablonunu sil`}
-                        className="px-1.5 hover:bg-destructive"
+                        className={btn}
+                        onClick={() => setEditingTpl(null)}
                       >
-                        ×
+                        Bırak
                       </button>
-                    </span>
-                  ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button onClick={() => saveTemplate()} className={btn}>
+                      💾 Şablon olarak kaydet
+                    </button>
+                    <button
+                      onClick={() => saveTemplate("Yeni şablon")}
+                      className={btn}
+                      title="Seçili şablonu / taslağı yeni bir ad ile kopyalar"
+                    >
+                      ⧉ Kopyasını oluştur
+                    </button>
+                  </div>
+                  <ul className="space-y-1">
+                    {saved.map((s, i) => (
+                      <li
+                        key={s.id}
+                        className={`flex flex-wrap items-center gap-1 rounded bg-accent px-1 ${editingTpl === s.id ? "ring-2 ring-primary" : ""}`}
+                      >
+                        <button
+                          onClick={() => {
+                            applyTemplate(structuredClone(s.scene));
+                            setEditingTpl(s.id);
+                          }}
+                          className="min-w-0 flex-1 truncate px-1.5 py-1 text-left hover:brightness-125"
+                          title="Uygula ve düzenle"
+                        >
+                          ★ {s.name}
+                        </button>
+                        <button
+                          onClick={() => renameSaved(s)}
+                          aria-label={`${s.name} adını değiştir`}
+                          title="Adı değiştir"
+                          className="px-1.5 hover:bg-secondary"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={() => copySaved(s.id)}
+                          aria-label={`${s.name} şablonunu kopyala`}
+                          title="Kopyala"
+                          className="px-1.5 hover:bg-secondary"
+                        >
+                          ⧉
+                        </button>
+                        <button
+                          onClick={() =>
+                            commitSaved(moveTemplate(saved, s.id, -1))
+                          }
+                          disabled={i === 0}
+                          aria-label="Yukarı taşı"
+                          className="px-1.5 hover:bg-secondary disabled:opacity-40"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          onClick={() =>
+                            commitSaved(moveTemplate(saved, s.id, 1))
+                          }
+                          disabled={i === saved.length - 1}
+                          aria-label="Aşağı taşı"
+                          className="px-1.5 hover:bg-secondary disabled:opacity-40"
+                        >
+                          ↓
+                        </button>
+                        <button
+                          onClick={() => deleteSaved(s.id)}
+                          aria-label={`${s.name} şablonunu sil`}
+                          className="px-1.5 hover:bg-destructive"
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Şablon seçince eklediğin logolar korunur. Kayıtlı şablonlar bu
-                  tarayıcıda saklanır.
+                  Şablon seçince eklediğin logolar korunur. Hazır bir şablonu
+                  değiştirmek için uygula, öğeleri düzenle, sonra "Şablon olarak
+                  kaydet"; kayıtlı şablonu ★ ile açıp "Değişiklikleri kaydet"
+                  diyebilirsin. Şablonlar bu tarayıcıda saklanır.
                 </p>
               </>
             )}

@@ -32,3 +32,5 @@
 - [x] Library editor: trim, title-card / video intro+outro, fade, loudness, burned-in captions (ffmpeg jobs); Whisper subtitles (whisper.cpp / faster-whisper CLI) with editor and VTT upload.
 - [x] Admin session (HttpOnly cookie) gating admin pages, owner/site settings and GitHub links.
 - [x] Watch management: archive, story expiry, featured hero, bulk actions, continue-watching, skeletons, sticky filters.
+- [x] Editor v2: frame-accurate cut-and-join, audio clean-up + mixer with ducking, temporary previews, subtitle cue editor.
+- [x] Server library items usable in Classic Studio and Live; Classic Studio templates editable (rename, update, copy, reorder).
