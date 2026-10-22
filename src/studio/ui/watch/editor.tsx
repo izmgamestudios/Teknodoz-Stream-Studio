@@ -42,6 +42,7 @@ import {
   trimClip,
   type Clip,
 } from "../../watch/clips";
+import { CueEditor } from "./cue-editor";
 import { AudioPanel } from "./audio-panel";
 import {
   DEFAULT_AUDIO,
@@ -128,7 +129,7 @@ function FrameBar({
   videoRef,
   fps,
 }: {
-  videoRef: RefObject<HTMLVideoElement | null>;
+  videoRef: RefObject<HTMLMediaElement | null>;
   fps: number;
 }) {
   const t = useT();
@@ -136,7 +137,7 @@ function FrameBar({
   const frame = 1000 / fps;
 
   useEffect(() => {
-    const v = videoRef.current;
+    const v = videoRef.current as HTMLVideoElement | null;
     if (!v) return;
     const upd = () => setMs(Math.round(v.currentTime * 1000));
     upd();
@@ -166,7 +167,7 @@ function FrameBar({
     const frames =
       Math.round(v.currentTime * fps) + Math.round(deltaMs / frame);
     const max = Number.isFinite(v.duration) ? v.duration : Infinity;
-    v.currentTime = Math.min(max, Math.max(0, (frames + 0.5) / fps));
+    v.currentTime = Math.min(max, Math.max(0, (frames + 0.25) / fps));
     setMs(Math.round(v.currentTime * 1000));
   };
 
@@ -236,7 +237,7 @@ function ClipTimeline({
 }: {
   media: MediaRecord;
   library: readonly MediaRecord[];
-  videoRef: RefObject<HTMLVideoElement | null>;
+  videoRef: RefObject<HTMLMediaElement | null>;
   fps: number;
   start: number;
   end: number;
@@ -442,7 +443,7 @@ export function EditPanel({
   media: MediaRecord;
   token: string;
   library: readonly MediaRecord[];
-  videoRef: RefObject<HTMLVideoElement | null>;
+  videoRef: RefObject<HTMLMediaElement | null>;
   onResult: (id: string) => void;
 }) {
   const t = useT();
@@ -948,10 +949,12 @@ export function SubtitlesPanel({
   media,
   token,
   onChanged,
+  mediaRef,
 }: {
   media: MediaRecord;
   token: string;
   onChanged: () => Promise<void>;
+  mediaRef?: RefObject<HTMLMediaElement | null>;
 }) {
   const t = useT();
   const [caps, setCaps] = useState<Capabilities | null>(null);
@@ -999,9 +1002,9 @@ export function SubtitlesPanel({
     setEditing({ lang: l, text: text ?? "" });
   };
 
-  const save = async () => {
+  const save = async (text: string) => {
     if (!editing) return;
-    const r = await putCaptions(token, media.id, editing.lang, editing.text);
+    const r = await putCaptions(token, media.id, editing.lang, text);
     setMsg({ ok: !!r, text: r ? t("sub.saved") : t("sub.err.invalid") });
     if (r) {
       setEditing(null);
@@ -1091,6 +1094,12 @@ export function SubtitlesPanel({
           ))}
         </ul>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            className={BTN}
+            onClick={() => setEditing({ lang, text: "WEBVTT\n\n" })}
+          >
+            ＋ {t("cue.newTrack")} ({lang.toUpperCase()})
+          </button>
           <button className={BTN} onClick={() => file.current?.click()}>
             ⬆ {t("sub.upload")} ({lang.toUpperCase()})
           </button>
@@ -1108,25 +1117,14 @@ export function SubtitlesPanel({
           />
         </div>
         {editing && (
-          <div className="space-y-2">
-            <textarea
-              className={`${INPUT} font-mono`}
-              rows={12}
-              spellCheck
-              aria-label={t("sub.editor")}
-              lang={editing.lang}
-              value={editing.text}
-              onChange={(e) => setEditing({ ...editing, text: e.target.value })}
-            />
-            <div className="flex gap-2">
-              <button className={BTN_ACCENT} onClick={() => void save()}>
-                {t("catalog.save")}
-              </button>
-              <button className={BTN} onClick={() => setEditing(null)}>
-                {t("common.cancel")}
-              </button>
-            </div>
-          </div>
+          <CueEditor
+            key={editing.lang}
+            initial={editing.text}
+            lang={editing.lang}
+            mediaRef={mediaRef}
+            onSave={(text) => void save(text)}
+            onCancel={() => setEditing(null)}
+          />
         )}
         {msg && (
           <p

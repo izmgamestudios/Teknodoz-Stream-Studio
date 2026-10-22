@@ -63,7 +63,7 @@ export function AudioPanel({
 }: {
   media: MediaRecord;
   library: readonly MediaRecord[];
-  videoRef: RefObject<HTMLVideoElement | null>;
+  videoRef: RefObject<HTMLMediaElement | null>;
   value: AudioState;
   onChange: (a: AudioState) => void;
   previewId: string | null;

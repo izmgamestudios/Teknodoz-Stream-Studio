@@ -315,7 +315,7 @@ function MediaDetail({
   onDeleted: () => Promise<void>;
 }) {
   const t = useT();
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLMediaElement>(null);
   const [tab, setTab] = useState<"publish" | "edit" | "subtitles">("publish");
   const [title, setTitle] = useState(media.title);
   const [msg, setMsg] = useState<string | null>(null);
@@ -374,7 +374,7 @@ function MediaDetail({
       <PanelTitle>{t("lib.preview")}</PanelTitle>
       {media.kind === "video" ? (
         <video
-          ref={videoRef}
+          ref={videoRef as React.RefObject<HTMLVideoElement>}
           src={src}
           controls
           playsInline
@@ -392,7 +392,13 @@ function MediaDetail({
           ))}
         </video>
       ) : (
-        <audio src={src} controls preload="metadata" className="w-full" />
+        <audio
+          ref={videoRef as React.RefObject<HTMLAudioElement>}
+          src={src}
+          controls
+          preload="metadata"
+          className="w-full"
+        />
       )}
 
       <div
@@ -427,7 +433,12 @@ function MediaDetail({
         />
       )}
       {tab === "subtitles" && (
-        <SubtitlesPanel media={media} token={token} onChanged={onChanged} />
+        <SubtitlesPanel
+          media={media}
+          token={token}
+          onChanged={onChanged}
+          mediaRef={videoRef}
+        />
       )}
 
       {tab === "publish" && (
