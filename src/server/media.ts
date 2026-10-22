@@ -218,7 +218,12 @@ export function createMediaApi(opts: MediaOptions) {
         out.end(res);
       });
     } catch (e) {
-      out.destroy();
+      // wait for the descriptor to close: destroying a stream that is still opening can create
+      // the file after we removed it, leaving a stray .part behind
+      await new Promise<void>((resolve) => {
+        out.once("close", () => resolve());
+        out.destroy();
+      });
       await rm(part, { force: true });
       if (e instanceof RangeError) return json({ error: "too-large" }, 413);
       return json({ error: "upload-failed" }, 400);
