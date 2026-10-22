@@ -194,8 +194,6 @@ function Studio() {
   const [transition, setTransition] = useState("fade");
   const [transMs, setTransMs] = useState(900);
   const [available, setAvailable] = useState<string[]>([]);
-  const [sfxOnLive, setSfxOnLive] = useState(true);
-  const [confettiOnLive, setConfettiOnLive] = useState(false);
   const [liveTick, setLiveTick] = useState(0);
   const [live, setLive] = useState(false);
   const [rundown, setRundown] = useState<RundownScene[]>([]);
@@ -809,20 +807,14 @@ function Studio() {
         dur: transMs,
         name,
       };
-      if (sfxOnLive) void playPreset("whoosh");
     } else {
       transRef.current = null;
-      if (sfxOnLive && hadProgram) void playPreset("pop");
     }
     programRef.current = next;
     setProgram(next);
     setLive(true);
     setLiveIdx(idx);
     setLiveTick((n) => n + 1);
-    if (confettiOnLive) {
-      const { default: confetti } = await import("canvas-confetti");
-      void confetti({ particleCount: 90, spread: 75, origin: { y: 0.65 } });
-    }
   }
 
   function toggleRec() {
@@ -1429,22 +1421,6 @@ function Studio() {
                   onChange={(e) => setTransMs(+e.target.value)}
                 />
               </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={sfxOnLive}
-                  onChange={(e) => setSfxOnLive(e.target.checked)}
-                />{" "}
-                Geçiş sesi
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={confettiOnLive}
-                  onChange={(e) => setConfettiOnLive(e.target.checked)}
-                />{" "}
-                🎉 Konfeti
-              </label>
             </div>
             {available.length === 0 && (
               <p className="text-xs text-muted-foreground">
@@ -1667,8 +1643,7 @@ function Studio() {
           <RemotePanel className="mt-3" />
           <p className="mt-2 text-sm text-muted-foreground">
             Kayıt bu ekranı, mikrofonu, müziği ve ses efektlerini birlikte alır;
-            bitince video bilgisayarına iner. Konfeti yalnızca ekranda görünür,
-            kayda girmez.
+            bitince video bilgisayarına iner.
           </p>
         </section>
       </div>
