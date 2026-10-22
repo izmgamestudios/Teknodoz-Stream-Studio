@@ -272,6 +272,52 @@ describe("planEdit clips", () => {
   });
 });
 
+describe("planEdit audio", () => {
+  const audio = editSpecSchema.parse({
+    audio: {
+      voice: true,
+      humHz: 50,
+      tracks: [
+        { mediaId: "fedcba9876543210", duck: true, loop: true, startMs: 1000 },
+      ],
+    },
+  });
+
+  it("builds clean-up and mixer into the video graph", () => {
+    const p = planEdit(
+      base({ spec: audio, tracks: [{ file: "m.opus", loop: true }] }),
+    );
+    const a = p.args.join(" ");
+    expect(a).toContain("-stream_loop -1 -i m.opus");
+    expect(a).toContain("highpass=f=80");
+    expect(a).toContain("bandreject=f=50");
+    expect(a).toContain("sidechaincompress");
+    expect(a).toContain("amix=inputs=2");
+    expect(p.args).toContain("[af]");
+  });
+
+  it("uses a filter graph for audio-only files, a plain -af otherwise", () => {
+    const m = rec({ kind: "audio", mime: "audio/webm", file: "a.webm" });
+    const withFx = planEdit(
+      base({
+        main: m,
+        spec: editSpecSchema.parse({ audio: { denoise: 2 } }),
+      }),
+    );
+    expect(withFx.args).toContain("-filter_complex");
+    expect(withFx.args.join(" ")).toContain("afftdn=nr=18");
+    const plain = planEdit(
+      base({ main: m, spec: editSpecSchema.parse({ normalize: true }) }),
+    );
+    expect(plain.args).toContain("-af");
+    expect(plain.args).not.toContain("-filter_complex");
+  });
+
+  it("refuses mismatched track lists", () => {
+    expect(() => planEdit(base({ spec: audio }))).toThrow("tracks-invalid");
+  });
+});
+
 describe("remapChapters", () => {
   it("keeps chapters inside the cut and shifts them past the intro", () => {
     const ch = [
@@ -551,6 +597,49 @@ describe.skipIf(!hasFfmpeg)("edit + subtitles with real ffmpeg", () => {
     expect(out.durationMs!).toBeGreaterThan(4500);
     expect(out.durationMs!).toBeLessThan(5600); // 2 + 2 + 1 s
     expect(out.hasAudio).toBe(true);
+  }, 60_000);
+
+  it("denoises, mixes a ducked looping track and renders a temporary preview", async () => {
+    const s = await setup();
+    const main = await upload(s, makeVideo("fx.webm", 6));
+    const music = await upload(s, makeVideo("music.webm", 2));
+    const res = await s.call(
+      "POST",
+      `/api/media/${main.id}/edit`,
+      JSON.stringify({
+        spec: {
+          audio: {
+            voice: true,
+            humHz: 50,
+            gate: true,
+            volumeDb: 2,
+            tracks: [
+              {
+                mediaId: music.id,
+                loop: true,
+                duck: true,
+                volumeDb: -10,
+                fadeMs: 300,
+              },
+            ],
+          },
+          preview: { startMs: 1000, lengthMs: 3000 },
+        },
+      }),
+    );
+    expect(res.status).toBe(202);
+    const job = await waitJob(s, ((await res.json()) as any).job.id);
+    expect(job.error).toBeNull();
+    const out = (await s.store.list()).find((r) => r.id === job.resultId)!;
+    expect(out.temporary).toBe(true);
+    expect(out.durationMs!).toBeGreaterThan(2500);
+    expect(out.durationMs!).toBeLessThan(3600);
+    // temporary renders are not listed
+    const list = ((await (await s.call("GET", "/api/media")).json()) as any)
+      .media;
+    expect(list.map((m: MediaRecord) => m.id)).not.toContain(out.id);
+    // ...but can be fetched by id for the preview player
+    expect((await s.call("GET", `/api/media/${out.id}`)).status).toBe(200);
   }, 60_000);
 
   it("a video can be an outro, and silent footage keeps working", async () => {

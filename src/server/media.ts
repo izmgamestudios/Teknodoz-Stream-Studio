@@ -172,6 +172,20 @@ export function createMediaApi(opts: MediaOptions) {
     return (await opts.store.list()).find((r) => r.id === id);
   }
 
+  /** Preview renders live for an hour; every library listing clears the expired ones. */
+  const TEMP_TTL_MS = 60 * 60 * 1000;
+  async function sweepTemporary(list: MediaRecord[]): Promise<MediaRecord[]> {
+    const cutoff = now() - TEMP_TTL_MS;
+    const old = list.filter(
+      (r) => r.temporary && Date.parse(r.createdAt) < cutoff,
+    );
+    for (const r of old) {
+      await opts.store.remove(r.id);
+      await removeFiles(r.id);
+    }
+    return old.length ? list.filter((r) => !old.includes(r)) : list;
+  }
+
   /* ------------------------------ storage ------------------------------ */
 
   async function dirUsage(): Promise<{ bytes: number; files: number }> {
@@ -482,17 +496,18 @@ export function createMediaApi(opts: MediaOptions) {
         return json({ storage: await storageInfo() });
       if (rest.length === 0 && method === "POST") return await upload(req);
       if (rest.length === 0 && method === "GET") {
-        const list = await opts.store.list();
+        const list = await sweepTemporary(await opts.store.list());
         return json({
-          media: [...list].sort((a, b) =>
-            b.createdAt.localeCompare(a.createdAt),
-          ),
+          media: list
+            .filter((r) => !r.temporary)
+            .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
         });
       }
       const id = rest[0] ?? "";
       if (rest.length === 1 && ID_RE.test(id)) {
         const rec = await find(id);
         if (!rec) return json({ error: "not-found" }, 404);
+        if (method === "GET") return json({ media: rec });
         if (method === "PATCH") {
           const body = z
             .object({ title: z.string().trim().min(1).max(120) })

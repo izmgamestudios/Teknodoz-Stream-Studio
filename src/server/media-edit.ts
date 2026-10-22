@@ -22,6 +22,7 @@ import { join } from "node:path";
 import { z } from "zod";
 
 import { StoreUnavailableError } from "./catalog";
+import { audioGraph, audioSchema, hasAudioWork } from "./audio-fx";
 import { ffmpegCapabilities, ffmpegPoster, type FfmpegCaps } from "./ffmpeg";
 import {
   mediaIdOk,
@@ -72,6 +73,15 @@ export const editSpecSchema = z.object({
     .optional(),
   intro: segmentSchema.optional(),
   outro: segmentSchema.optional(),
+  /** voice clean-up, gain and extra tracks (see audio-fx.ts) */
+  audio: audioSchema.optional(),
+  /** render only a short stretch to listen to the effects; the result is temporary */
+  preview: z
+    .object({
+      startMs: z.number().int().min(0).max(86_400_000),
+      lengthMs: z.number().int().min(1000).max(30_000),
+    })
+    .optional(),
   fadeMs: z.number().int().min(0).max(3000).default(0),
   normalize: z.boolean().default(false),
   /** burn the captions of this language into the picture */
@@ -98,11 +108,18 @@ export interface ResolvedClip {
   hasAudio: boolean;
 }
 
+export interface ResolvedTrack {
+  file: string;
+  loop: boolean;
+}
+
 export interface PlanInput {
   main: MediaRecord;
   spec: EditSpec;
   /** resolved `spec.clips` (same order) */
   clips?: ResolvedClip[];
+  /** resolved `spec.audio.tracks` (same order) */
+  tracks?: ResolvedTrack[];
   intro?: ResolvedSegment;
   outro?: ResolvedSegment;
   /** file name (relative to the media dir) of the VTT to burn in, when requested */
@@ -129,6 +146,25 @@ export class PlanError extends Error {
 const even = (n: number): number => Math.max(2, Math.round(n / 2) * 2);
 const sec = (ms: number): string => (ms / 1000).toFixed(3);
 const AFMT = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo";
+
+/** Input arguments + indices for the mixer tracks, numbered from `first`. */
+function trackInputs(
+  i: PlanInput,
+  first: number,
+): { args: string[]; indices: number[] } {
+  const want = i.spec.audio?.tracks.length ?? 0;
+  if (want === 0) return { args: [], indices: [] };
+  if (!i.tracks || i.tracks.length !== want)
+    throw new PlanError("tracks-invalid");
+  const args: string[] = [];
+  const indices: number[] = [];
+  i.tracks.forEach((t, k) => {
+    if (t.loop) args.push("-stream_loop", "-1");
+    args.push("-i", t.file);
+    indices.push(first + k);
+  });
+  return { args, indices };
+}
 
 /** Pure: builds the ffmpeg argument list for an edit. */
 export function planEdit(i: PlanInput): EditPlan {
@@ -162,42 +198,62 @@ export function planEdit(i: PlanInput): EditPlan {
   if (main.kind === "audio") {
     if (spec.intro || spec.outro || spec.burnLang)
       throw new PlanError("audio-only-trim");
-    const af: string[] = [];
     const f = spec.fadeMs;
+    const post: string[] = [];
     if (f > 0 && mainMs !== null) {
-      af.push(
+      post.push(
         `afade=t=in:st=0:d=${sec(f)}`,
         `afade=t=out:st=${sec(Math.max(0, mainMs - f))}:d=${sec(f)}`,
       );
     }
-    if (spec.normalize) af.push("loudnorm=I=-16:TP=-1.5:LRA=11");
+    if (spec.normalize) post.push("loudnorm=I=-16:TP=-1.5:LRA=11");
+    const tracks = trackInputs(i, 1);
+    const work = hasAudioWork(spec.audio);
+    const head = [
+      "-y",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-nostats",
+      "-progress",
+      "pipe:1",
+      ...(start > 0 ? ["-ss", sec(start)] : []),
+      ...(mainMs !== null && spec.trim ? ["-t", sec(mainMs)] : []),
+      "-i",
+      main.file,
+      ...tracks.args,
+    ];
+    const tail = [
+      "-vn",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "160k",
+      "-ar",
+      "48000",
+      "-movflags",
+      "+faststart",
+      "-f",
+      "mp4",
+      i.out,
+    ];
+    const graph = work
+      ? [
+          `[0:a:0]${AFMT}[ac]`,
+          ...audioGraph({
+            inLabel: "[ac]",
+            audio: spec.audio,
+            trackInputs: tracks.indices,
+            post,
+            outLabel: "[af]",
+            fmt: AFMT,
+          }),
+        ]
+      : null;
     return {
-      args: [
-        "-y",
-        "-hide_banner",
-        "-loglevel",
-        "error",
-        "-nostats",
-        "-progress",
-        "pipe:1",
-        ...(start > 0 ? ["-ss", sec(start)] : []),
-        ...(mainMs !== null && spec.trim ? ["-t", sec(mainMs)] : []),
-        "-i",
-        main.file,
-        ...(af.length ? ["-af", af.join(",")] : []),
-        "-vn",
-        "-c:a",
-        "aac",
-        "-b:a",
-        "160k",
-        "-ar",
-        "48000",
-        "-movflags",
-        "+faststart",
-        "-f",
-        "mp4",
-        i.out,
-      ],
+      args: graph
+        ? [...head, "-filter_complex", graph.join(";"), "-map", "[af]", ...tail]
+        : [...head, ...(post.length ? ["-af", post.join(",")] : []), ...tail],
       expectedMs: mainMs,
       ext: "m4a",
       mime: "audio/mp4",
@@ -319,6 +375,9 @@ export function planEdit(i: PlanInput): EditPlan {
   const f = spec.fadeMs;
   const vPost: string[] = [];
   const aPost: string[] = [];
+  const tr = trackInputs(i, idx);
+  args.push(...tr.args);
+  idx += tr.indices.length;
   if (f > 0 && totalMs !== null) {
     vPost.push(
       `fade=t=in:st=0:d=${sec(f)}`,
@@ -331,7 +390,16 @@ export function planEdit(i: PlanInput): EditPlan {
   }
   if (spec.normalize) aPost.push("loudnorm=I=-16:TP=-1.5:LRA=11");
   filters.push(`[vc]${vPost.length ? vPost.join(",") : "null"}[vf]`);
-  filters.push(`[ac]${aPost.length ? aPost.join(",") : "anull"}[af]`);
+  filters.push(
+    ...audioGraph({
+      inLabel: "[ac]",
+      audio: spec.audio,
+      trackInputs: tr.indices,
+      post: aPost,
+      outLabel: "[af]",
+      fmt: AFMT,
+    }),
+  );
 
   args.push(
     "-filter_complex",
@@ -588,7 +656,22 @@ export function createMediaEditApi(opts: EditApiOptions) {
 
   /* ------------------------------ edit job ------------------------------ */
 
-  function startEdit(main: MediaRecord, spec: EditSpec): Job {
+  function startEdit(main: MediaRecord, specIn: EditSpec): Job {
+    // a preview is the audio treatment on a short stretch: no cards, joins or burn-in
+    const spec: EditSpec = specIn.preview
+      ? {
+          ...specIn,
+          trim: {
+            startMs: specIn.preview.startMs,
+            endMs: specIn.preview.startMs + specIn.preview.lengthMs,
+          },
+          fadeMs: 0,
+          intro: undefined,
+          outro: undefined,
+          clips: undefined,
+          burnLang: undefined,
+        }
+      : specIn;
     const job = newJob("edit", main.id);
     enqueue(job, async () => {
       const c = await caps();
@@ -615,6 +698,16 @@ export function createMediaEditApi(opts: EditApiOptions) {
             }),
           )
         : undefined;
+      const tracks: ResolvedTrack[] | undefined = spec.audio?.tracks.length
+        ? await Promise.all(
+            spec.audio.tracks.map(async (tk) => {
+              const rec = await opts.media.find(tk.mediaId);
+              if (!rec || rec.kind === "image" || rec.hasAudio === false)
+                throw new PlanError("segment-missing");
+              return { file: rec.file, loop: tk.loop };
+            }),
+          )
+        : undefined;
       const burnFile = spec.burnLang
         ? `${main.id}.${spec.burnLang}.vtt`
         : undefined;
@@ -628,6 +721,7 @@ export function createMediaEditApi(opts: EditApiOptions) {
         ...(intro ? { intro } : {}),
         ...(outro ? { outro } : {}),
         ...(clips ? { clips } : {}),
+        ...(tracks ? { tracks } : {}),
         ...(burnFile ? { burnFile } : {}),
         caps: c,
         out: `${id}.part`,
@@ -649,6 +743,7 @@ export function createMediaEditApi(opts: EditApiOptions) {
         file,
         size,
         title: spec.title ?? `${main.title} (düzenlendi)`,
+        ...(specIn.preview ? { temporary: true } : {}),
         filename: file,
         durationMs: info?.durationMs ?? plan.expectedMs,
         width: info?.width ?? main.width,

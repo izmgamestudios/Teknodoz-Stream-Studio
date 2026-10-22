@@ -42,6 +42,12 @@ import {
   trimClip,
   type Clip,
 } from "../../watch/clips";
+import { AudioPanel } from "./audio-panel";
+import {
+  DEFAULT_AUDIO,
+  toAudioSpec,
+  type AudioState,
+} from "../../watch/audio-state";
 import { formatClock, formatFrames, frameAt } from "../../watch/timecode";
 import {
   DEFAULT_CARD,
@@ -447,6 +453,8 @@ export function EditPanel({
   const [intro, setIntro] = useState<SegmentChoice>({ type: "none" });
   const [outro, setOutro] = useState<SegmentChoice>({ type: "none" });
   const [clips, setClips] = useState<Clip[]>([]);
+  const [audio, setAudio] = useState<AudioState>(DEFAULT_AUDIO);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [fade, setFade] = useState(0);
   const [normalize, setNormalize] = useState(false);
   const [burn, setBurn] = useState("");
@@ -458,6 +466,10 @@ export function EditPanel({
     (j) => j.resultId && onResult(j.resultId),
   );
 
+  const preview = useJob(token, (j) => j.resultId && setPreviewId(j.resultId));
+  const previewBusy =
+    preview.job?.status === "queued" || preview.job?.status === "running";
+
   useEffect(() => {
     void getCapabilities(token).then(setCaps);
   }, [token]);
@@ -465,6 +477,8 @@ export function EditPanel({
     setEnd(media.durationMs ?? 0);
     setStart(0);
     setClips([]);
+    setAudio(DEFAULT_AUDIO);
+    setPreviewId(null);
   }, [media.id, media.durationMs]);
 
   const busy = job?.status === "queued" || job?.status === "running";
@@ -505,6 +519,7 @@ export function EditPanel({
           : {}),
       ...(i ? { intro: i } : {}),
       ...(o ? { outro: o } : {}),
+      ...(toAudioSpec(audio) ? { audio: toAudioSpec(audio)! } : {}),
       fadeMs: fade,
       normalize,
       ...(burn && clips.length === 0 ? { burnLang: burn } : {}),
@@ -512,6 +527,22 @@ export function EditPanel({
     const r = await startEdit(token, media.id, spec);
     if (r.ok) begin(r);
     else setError(errText(r.error));
+  };
+
+  const runPreview = async (startMs: number) => {
+    setError(null);
+    const a = toAudioSpec(audio);
+    const from = Math.max(0, Math.min(startMs, Math.max(0, dur - 1000)));
+    const r = await startEdit(token, media.id, {
+      ...(a ? { audio: a } : {}),
+      preview: { startMs: from, lengthMs: 10_000 },
+      fadeMs: 0,
+      normalize,
+    });
+    if (r.ok) {
+      setPreviewId(null);
+      preview.begin(r);
+    } else setError(errText(r.error));
   };
 
   const errText = (code: string): string => {
@@ -527,6 +558,7 @@ export function EditPanel({
       "duration-unknown": "edit.err.duration",
       "clips-invalid": "edit.err.spec",
       "clips-burn": "edit.err.clipsBurn",
+      "tracks-invalid": "edit.err.spec",
     };
     return t((known[code] ?? "edit.err.generic") as "edit.err.generic");
   };
@@ -647,6 +679,22 @@ export function EditPanel({
             videos={videos}
             media={media}
           />
+        </>
+      )}
+
+      {dur > 0 && (
+        <>
+          <AudioPanel
+            media={media}
+            library={library}
+            videoRef={videoRef}
+            value={audio}
+            onChange={setAudio}
+            previewId={previewId}
+            previewBusy={previewBusy}
+            onPreview={(ms) => void runPreview(ms)}
+          />
+          <JobStatus job={preview.job} token={token} errKey={errText} />
         </>
       )}
 

@@ -1,5 +1,7 @@
 // src/studio/watch/media-client.ts
 // Browser client for the media library (/api/media). All calls need the admin token.
+import type { AudioSpecWire } from "./audio-state";
+
 export interface Chapter {
   t: number;
   label: string;
@@ -170,6 +172,8 @@ export interface EditSpec {
   title?: string;
   trim?: { startMs: number; endMs: number };
   clips?: { mediaId?: string; startMs: number; endMs: number }[];
+  audio?: AudioSpecWire;
+  preview?: { startMs: number; lengthMs: number };
   intro?: Segment;
   outro?: Segment;
   fadeMs: number;
