@@ -31,10 +31,14 @@ esac
 
 PB_VERSION="${PB_VERSION:-}"
 if [ -z "$PB_VERSION" ]; then
-  PB_VERSION="$(curl -fsSL https://api.github.com/repos/pocketbase/pocketbase/releases/latest \
-    | grep -m1 '"tag_name"' | sed -E 's/.*"v?([0-9][^"]*)".*/\1/')"
+  # Follow the "latest" redirect (no API rate limit): .../releases/tag/v0.30.0
+  # The URL is captured first and parsed afterwards: piping curl into `grep -m1` makes curl fail
+  # with "(23) Failure writing output" once grep exits.
+  LATEST_URL="$(curl -fsSIL -o /dev/null -w '%{url_effective}' \
+    https://github.com/pocketbase/pocketbase/releases/latest || true)"
+  PB_VERSION="$(printf '%s' "$LATEST_URL" | sed -nE 's#.*/tag/v?([0-9][0-9.]*).*#\1#p')"
 fi
-[ -n "$PB_VERSION" ] || die "could not resolve the PocketBase version (set PB_VERSION)"
+[ -n "$PB_VERSION" ] || die "could not resolve the PocketBase version (set PB_VERSION, e.g. PB_VERSION=0.30.0)"
 
 mkdir -p "$PB_DIR"
 if [ ! -x "$PB_DIR/pocketbase" ] || [ "$("$PB_DIR/pocketbase" --version 2>/dev/null | awk '{print $NF}')" != "$PB_VERSION" ]; then
