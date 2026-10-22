@@ -2,7 +2,7 @@
 // The user guide, ONE source for the /guide page and docs/USER-GUIDE(.en).md (see markdown.ts and
 // content.test.ts, which fails when the Markdown files are out of date).
 // Rule: only describe what the app really does (README.md / docs/*.md are the references).
-import type { Lang } from "../i18n/messages";
+import type { ContentLang as Lang } from "../i18n/messages";
 
 export type GuideRoute =
   | "/"

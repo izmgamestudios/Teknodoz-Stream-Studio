@@ -64,9 +64,11 @@ import {
   createAssetStore,
   createAutosaver,
   createKvStore,
+  getSettingsSnapshot,
   loadSettings,
   resolveShortcut,
   saveSettings,
+  subscribeSettings,
   type Autosaver,
 } from "../storage";
 import { createLayer, defaultProject, setDefaultStage } from "../defaults";
@@ -160,6 +162,7 @@ export class StudioRuntime {
   private recorder: StudioRecorder | null = null;
   private recorderUnsub: (() => void) | null = null;
   private unsubProject: () => void;
+  private unsubLang: () => void;
   private lastActiveId: string | null = null;
   private lastSettingsJson = "";
 
@@ -240,6 +243,12 @@ export class StudioRuntime {
     this.modelScript = st.prompter.script;
     this.model = parseScript(this.modelScript);
     this.unsubProject = this.project.subscribe(() => this.onProjectChange());
+    // the shell's language picker writes settings outside the project store: follow it
+    this.unsubLang = subscribeSettings(() => {
+      const lang = getSettingsSnapshot().lang;
+      if (lang !== this.project.getState().settings.lang)
+        this.project.updateSettings({ lang });
+    });
     this.initCompositor();
     // persist sponsor screen time (only when it changed)
     this.exposureTimer = setInterval(() => void this.flushExposure(), 15_000);
@@ -1483,6 +1492,7 @@ export class StudioRuntime {
     if (this.disposed) return;
     this.disposed = true;
     this.unsubProject();
+    this.unsubLang();
     if (this.exposureTimer) clearInterval(this.exposureTimer);
     await this.flushExposure();
     this.voice?.stop();

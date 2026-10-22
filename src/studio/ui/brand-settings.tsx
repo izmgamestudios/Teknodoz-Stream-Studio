@@ -27,7 +27,7 @@ import {
 } from "../branding/labels";
 import { LOGO_FILE_TYPES, logoDataUrl } from "../branding/logo-file";
 import { downloadBlob } from "../engine/download";
-import { useLang } from "../i18n/use-t";
+import { useContentLang } from "../i18n/use-t";
 import { useBrandControls } from "./brand-context";
 import {
   BTN,
@@ -378,7 +378,7 @@ function Groups({
 /* ------------------------------------------------------------------ */
 
 export function BrandLocalSection() {
-  const lang = useLang();
+  const lang = useContentLang();
   const { brand, local, setLocal, resetLocal } = useBrandControls();
   const [nonce, setNonce] = useState(0);
   const dirty = Object.keys(local).length > 0;
@@ -428,7 +428,7 @@ function hostOf(siteUrl: string): string {
 }
 
 function SharePreview({ brand }: { brand: Brand }) {
-  const lang = useLang();
+  const lang = useContentLang();
   return (
     <div>
       <p className="mb-1 text-[11px] text-muted-foreground">
@@ -461,7 +461,7 @@ function SharePreview({ brand }: { brand: Brand }) {
 }
 
 export function BrandSiteSection() {
-  const lang = useLang();
+  const lang = useContentLang();
   const { server } = useBrandControls();
   const [draft, setDraft] = useState<Partial<Brand>>({});
   const [nonce, setNonce] = useState(0);

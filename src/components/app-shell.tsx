@@ -1,15 +1,19 @@
 // src/components/app-shell.tsx
-import { Link, useRouterState } from "@tanstack/react-router";
-import { useSyncExternalStore, type ReactNode } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 
 import { BrandBadge, BrandLogo, useBrand } from "@/studio/ui/brand-context";
 import { useT } from "@/studio/i18n/use-t";
 import type { MessageKey } from "@/studio/i18n/messages";
 import { roomBadge } from "@/studio/room/badge";
+import { useAudience, VIEWER_ROUTES } from "@/studio/audience";
+import { AudienceGate, PrefBar } from "@/studio/ui/audience-gate";
 
 const NAV: readonly {
   to:
     | "/"
+    | "/watch"
+    | "/catalog"
     | "/studio"
     | "/classic"
     | "/room"
@@ -22,6 +26,7 @@ const NAV: readonly {
   hint: MessageKey;
   icon: string;
 }[] = [
+  { to: "/watch", label: "nav.watch", hint: "nav.watch.hint", icon: "📺" },
   { to: "/", label: "nav.prompter", hint: "nav.prompter.hint", icon: "📜" },
   { to: "/studio", label: "nav.studio", hint: "nav.studio.hint", icon: "🎬" },
   {
@@ -51,6 +56,12 @@ const NAV: readonly {
     icon: "⬇️",
   },
   {
+    to: "/catalog",
+    label: "nav.catalog",
+    hint: "nav.catalog.hint",
+    icon: "🗂️",
+  },
+  {
     to: "/settings",
     label: "nav.settings",
     hint: "nav.settings.hint",
@@ -60,6 +71,12 @@ const NAV: readonly {
 
 function NavLinks({ compact = false }: { compact?: boolean }) {
   const t = useT();
+  const audience = useAudience();
+  // viewers see the end-user pages only; creators (and the not-yet-decided) see everything
+  const nav =
+    audience === "viewer"
+      ? NAV.filter((n) => VIEWER_ROUTES.includes(n.to))
+      : NAV.filter((n) => n.to !== "/watch" || audience === "creator");
   const badge = useSyncExternalStore(
     roomBadge.subscribe,
     roomBadge.get,
@@ -67,7 +84,7 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
   );
   return (
     <>
-      {NAV.map((n, i) => (
+      {nav.map((n, i) => (
         <Link
           key={n.to}
           to={n.to}
@@ -113,7 +130,7 @@ function NavLinks({ compact = false }: { compact?: boolean }) {
           {!compact && (
             <span className="text-[10px] tracking-widest text-muted-foreground">
               {String(i + 1).padStart(2, "0")} /{" "}
-              {String(NAV.length).padStart(2, "0")}
+              {String(nav.length).padStart(2, "0")}
             </span>
           )}
         </Link>
@@ -148,6 +165,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const brand = useBrand();
   const head = useHeadline();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const audience = useAudience();
+  const navigate = useNavigate();
+  // viewers land on the watch page instead of the prompter
+  useEffect(() => {
+    if (audience === "viewer" && pathname === "/")
+      void navigate({ to: "/watch", replace: true });
+  }, [audience, pathname, navigate]);
   if (
     BARE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   ) {
@@ -203,6 +227,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
 
+        <div className="space-y-2 border-t px-5 py-3">
+          <PrefBar withMode />
+        </div>
         <div className="border-t px-5 py-4 text-[11px] leading-relaxed text-muted-foreground">
           <p>{t("shell.local")}</p>
           <p className="mt-1">© Teknodoz · IZM Game Studios</p>
@@ -219,6 +246,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
           )}
           <BrandBadge />
+          <span className="ml-auto">
+            <PrefBar withMode />
+          </span>
         </div>
         <nav
           className="flex gap-1 overflow-x-auto px-3 pb-2"
@@ -231,6 +261,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main id="main" tabIndex={-1} className="min-w-0 flex-1 outline-none">
         {children}
       </main>
+      <AudienceGate />
     </div>
   );
 }

@@ -1,10 +1,24 @@
 import { describe, expect, it } from "vitest";
 
-import { MESSAGES, en, translate, tr, type MessageKey } from "./messages";
+import {
+  LANGS,
+  MESSAGES,
+  en,
+  translate,
+  tr,
+  type MessageKey,
+} from "./messages";
 
 const keys = Object.keys(tr) as MessageKey[];
 const placeholders = (s: string) =>
   [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+
+const SAME_EVERYWHERE = new Set<MessageKey>([
+  "nav.classic",
+  "nav.live.hint",
+  "nav.download.hint",
+  "nav.prompter.hint",
+]);
 
 describe("i18n messages", () => {
   it("English has every Turkish key and no extras", () => {
@@ -12,15 +26,38 @@ describe("i18n messages", () => {
   });
 
   it("no empty strings", () => {
-    for (const lang of ["tr", "en"] as const) {
+    for (const lang of LANGS.map((l) => l.id)) {
       for (const k of keys)
         expect(MESSAGES[lang][k].trim(), `${lang}:${k}`).not.toBe("");
     }
   });
 
+  it("every language has exactly the Turkish keys", () => {
+    for (const l of LANGS)
+      expect(Object.keys(MESSAGES[l.id]).sort(), l.id).toEqual(
+        [...keys].sort(),
+      );
+  });
+
   it("placeholders match between languages", () => {
-    for (const k of keys)
-      expect(placeholders(en[k]), k).toEqual(placeholders(tr[k]));
+    for (const l of LANGS)
+      for (const k of keys)
+        expect(placeholders(MESSAGES[l.id][k]), `${l.id}:${k}`).toEqual(
+          placeholders(tr[k]),
+        );
+  });
+
+  it("German and Spanish are really translated, not copies of English", () => {
+    for (const lang of ["de", "es"] as const) {
+      const same = keys.filter(
+        (k) =>
+          MESSAGES[lang][k] === en[k] &&
+          en[k].length > 12 &&
+          // brand / platform names that are the same in every language
+          !SAME_EVERYWHERE.has(k),
+      );
+      expect(same, lang).toEqual([]);
+    }
   });
 
   it("translate interpolates and returns the key itself for unknown keys", () => {

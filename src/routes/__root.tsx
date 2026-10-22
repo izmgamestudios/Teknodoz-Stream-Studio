@@ -23,6 +23,7 @@ import { BrandProvider } from "@/studio/ui/brand-context";
 
 import appCss from "../styles.css?url";
 import { AppShell } from "../components/app-shell";
+import { THEME_BOOT_SCRIPT } from "../studio/theme";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
@@ -113,6 +114,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           },
           ...brandHeadLinks(brand, pathname),
         ],
+        scripts: [{ children: THEME_BOOT_SCRIPT }],
         ...(css ? { styles: [{ children: css }] } : {}),
       };
     },
@@ -132,7 +134,7 @@ function RootShell({ children }: { children: ReactNode }) {
     },
   });
   return (
-    <html lang={lang}>
+    <html lang={lang} data-theme="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

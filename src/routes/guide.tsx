@@ -16,7 +16,7 @@ import {
 } from "@/studio/guide/resources";
 import { GUIDE_RESOURCES } from "@/studio/guide/resources-config";
 import { guideShortcuts } from "@/studio/guide/shortcuts";
-import { useLang } from "@/studio/i18n/use-t";
+import { useContentLang } from "@/studio/i18n/use-t";
 import { useBrand } from "@/studio/ui/brand-context";
 import { CreditsFooter } from "@/studio/ui/credits";
 import { BTN, BTN_ACCENT, INPUT, PANEL, PanelTitle } from "@/studio/ui/fields";
@@ -185,7 +185,7 @@ function PdfCard({ p, lang }: { p: ResolvedPdf; lang: Lang }) {
 }
 
 function GuidePage() {
-  const lang = useLang();
+  const lang = useContentLang();
   const brand = useBrand();
   const [query, setQuery] = useState("");
   const q = query.trim().toLocaleLowerCase(lang);

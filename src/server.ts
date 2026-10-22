@@ -5,6 +5,8 @@ import { renderErrorPage } from "./lib/error-page";
 import { createLiveApi } from "./server/live";
 import { liveConfigFromEnv, tokenTooShort } from "./server/live-policy";
 import { handleManifest } from "./server/manifest";
+import { createCatalogApi, catalogTokenFromEnv } from "./server/catalog";
+import { fileStore } from "./server/catalog-store";
 import { createRoomsApi } from "./server/rooms";
 
 type ServerEntry = {
@@ -29,6 +31,13 @@ if (tokenTooShort(liveEnv))
     "[live] LIVE_ADMIN_TOKEN is shorter than 16 characters: live bridge disabled",
   );
 const live = createLiveApi({ config: liveConfigFromEnv(liveEnv) });
+
+// Viewer-home video catalog (see src/server/catalog.ts). Reads are public; writes need
+// CATALOG_ADMIN_TOKEN. Items persist in CATALOG_FILE (default ./data/catalog.json).
+const catalog = createCatalogApi({
+  token: catalogTokenFromEnv(liveEnv),
+  store: fileStore(liveEnv["CATALOG_FILE"]?.trim() || "data/catalog.json"),
+});
 
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
@@ -79,6 +88,8 @@ export default {
       if (manifestResponse) return manifestResponse;
       const roomResponse = await rooms.handle(request);
       if (roomResponse) return roomResponse;
+      const catalogResponse = await catalog.handle(request);
+      if (catalogResponse) return catalogResponse;
       const liveResponse = await live.handle(request);
       if (liveResponse) return liveResponse;
       const handler = await getServerEntry();

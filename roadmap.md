@@ -1,4 +1,5 @@
 # Roadmap
+
 - [x] Kameralı A/B podcast prompter (yapıştır, .docx, .txt)
 - [x] Masaüstü/ekran paylaşımı + kamera ile kayıt (tek bilgisayar)
 - [x] Stüdyo: taslak + canlı/kayıt bölümü, sürükle-bırak logo/banner/yazı, altyazı, arka plan video/müzik, ses efekti, görüntü efekti
@@ -20,3 +21,7 @@
 - [x] Erişilebilirlik: axe taramasında 10 sayfada 0 ihlal (ana içerik landmark'ı, içeriğe geç bağlantısı, kontrast, etiketler)
 
 - [x] Custom STUN/TURN servers (Settings → Connection), device-local, used by host and guests.
+- [x] First-visit choice viewer / creator; viewer nav = Watch, Community, Download (`src/studio/audience.ts`).
+- [x] `/watch` gallery: live public rooms + admin catalog (YouTube, Vimeo, .mp4, rooms), search, category, time, sort, mini/large/theater/fullscreen player, volume/mute, password / secret-link private items.
+- [x] Light / dark / system theme, languages tr / en / de / es for the shell, settings, guest pages, watch and catalog.
+- [ ] Translate Studio / Classic / Live / Room / Guide / Community pages (still Turkish; guide content has tr + en).

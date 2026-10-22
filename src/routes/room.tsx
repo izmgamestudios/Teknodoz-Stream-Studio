@@ -1,7 +1,7 @@
 // src/routes/room.tsx
 // Room management: short links + QR, waiting pool (approve / reject), connected guests, log.
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import {
   StudioProvider,
@@ -14,7 +14,14 @@ import { CreditsFooter } from "@/studio/ui/credits";
 import { EditorLinkCard, ModerationDesk } from "@/studio/ui/chat-panels";
 import { GuestCard } from "@/studio/ui/live-panel";
 import { RoomLinks, RoomLog, RoomPool } from "@/studio/ui/room-panels";
-import { PANEL, PanelTitle } from "@/studio/ui/fields";
+import { useT } from "@/studio/i18n/use-t";
+import {
+  BTN,
+  BTN_ACCENT,
+  INPUT_AUTO,
+  PANEL,
+  PanelTitle,
+} from "@/studio/ui/fields";
 import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/room")({
@@ -84,6 +91,7 @@ function RoomApp() {
         <div className="space-y-4">
           <RoomLinks />
           <EditorLinkCard />
+          {room.status === "open" && <ListingCard />}
         </div>
         <div className="space-y-4">
           <RoomPool />
@@ -118,5 +126,75 @@ function RoomApp() {
 
       <CreditsFooter className="mx-auto mt-6 max-w-6xl border-t pt-3" />
     </div>
+  );
+}
+
+/** Publishes the room as a live card on the public watch page. */
+function ListingCard() {
+  const t = useT();
+  const rt = useStudio();
+  const room = useRoom();
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [busy, setBusy] = useState(false);
+  const listed = room.listing !== null;
+  return (
+    <section className={PANEL} aria-label={t("room.listing")}>
+      <PanelTitle>{t("room.listing")}</PanelTitle>
+      <p className="mb-2 text-xs text-muted-foreground">
+        {t("room.listing.body")}
+      </p>
+      {listed ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+            ● {room.listing?.title}
+          </span>
+          <button
+            className={BTN}
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              await rt.room.setListing(null);
+              setBusy(false);
+            }}
+          >
+            {t("common.off")}
+          </button>
+        </div>
+      ) : (
+        <form
+          className="flex flex-wrap gap-2"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            await rt.room.setListing({
+              title: title.trim(),
+              category: category.trim(),
+            });
+            setBusy(false);
+          }}
+        >
+          <input
+            className={`${INPUT_AUTO} min-w-0 flex-1 basis-48`}
+            aria-label={t("room.listing.title")}
+            placeholder={t("room.listing.title")}
+            maxLength={120}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <input
+            className={`${INPUT_AUTO} w-36`}
+            aria-label={t("room.listing.category")}
+            placeholder={t("room.listing.category")}
+            maxLength={30}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          />
+          <button className={BTN_ACCENT} disabled={busy || title.trim() === ""}>
+            {t("common.on")}
+          </button>
+        </form>
+      )}
+    </section>
   );
 }

@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { titleFromMatches } from "@/studio/branding/head";
 import { CREDITS } from "@/studio/credits";
-import { useLang } from "@/studio/i18n/use-t";
+import { useContentLang } from "@/studio/i18n/use-t";
 import {
   resolveDownloads,
   type DownloadProblem,
@@ -223,7 +223,7 @@ function PlatformCard({
 }
 
 function DownloadPage() {
-  const lang = useLang();
+  const lang = useContentLang();
   const brand = useBrand();
   const inst = useInstall();
   const [declined, setDeclined] = useState(false);

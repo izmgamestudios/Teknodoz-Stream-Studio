@@ -431,3 +431,53 @@ describe("input validation & limits", () => {
     expect(r.res?.headers.get("x-content-type-options")).toBe("nosniff");
   });
 });
+
+describe("public listing", () => {
+  it("lists only rooms the host published, while the host is online", async () => {
+    const a = await makeRoom("1.1.1.1");
+    const b = await makeRoom("1.1.1.2");
+    expect((await call("/api/room/public")).data["rooms"]).toEqual([]);
+
+    const noAuth = await call(`/api/room/${a.code}/host/listing`, {
+      method: "POST",
+      body: { listing: { title: "Show", category: "Tech" } },
+    });
+    expect(noAuth.status).toBe(403);
+
+    const ok = await call(`/api/room/${a.code}/host/listing`, {
+      method: "POST",
+      host: a.host,
+      body: { listing: { title: "Show", category: "Tech" } },
+    });
+    expect(ok.status).toBe(200);
+    await makeGuest(a.code, "viewer");
+    await makeGuest(a.code, "guest");
+    const list = (await call("/api/room/public")).data["rooms"];
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({
+      code: a.code,
+      title: "Show",
+      category: "Tech",
+      viewers: 1,
+    });
+    expect(JSON.stringify(list)).not.toContain(a.host);
+    expect(JSON.stringify(list)).not.toContain(b.code);
+
+    clock += LIMITS.hostOnlineMs + 1;
+    expect((await call("/api/room/public")).data["rooms"]).toEqual([]);
+  });
+
+  it("unlists with null", async () => {
+    const a = await makeRoom();
+    const set = (listing: unknown) =>
+      call(`/api/room/${a.code}/host/listing`, {
+        method: "POST",
+        host: a.host,
+        body: { listing },
+      });
+    await set({ title: "X", category: "" });
+    expect((await call("/api/room/public")).data["rooms"]).toHaveLength(1);
+    await set(null);
+    expect((await call("/api/room/public")).data["rooms"]).toHaveLength(0);
+  });
+});

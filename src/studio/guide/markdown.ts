@@ -1,7 +1,7 @@
 // src/studio/guide/markdown.ts
 // Renders the guide as Markdown for GitHub (docs/USER-GUIDE.md, docs/USER-GUIDE.en.md). Pure.
 // content.test.ts checks the committed files against this output.
-import type { Lang } from "../i18n/messages";
+import type { ContentLang as Lang } from "../i18n/messages";
 import { FAQ, GUIDE } from "./content";
 import type { ResolvedResources } from "./resources";
 import { guideShortcuts } from "./shortcuts";

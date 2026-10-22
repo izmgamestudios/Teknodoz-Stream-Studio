@@ -246,6 +246,17 @@ export function createRoomApi(opts: RoomApiOptions = {}) {
         host,
         json: { mode },
       }),
+    /** Publish (or with null remove) the room on the public watch page. */
+    setListing: (
+      code: string,
+      host: string,
+      listing: { title: string; category: string } | null,
+    ) =>
+      request<{ ok: true }>(`/${code}/host/listing`, {
+        method: "POST",
+        host,
+        json: { listing },
+      }),
     /** (Re)issue the editor key; the previous one stops working. */
     issueEditorKey: (code: string, host: string) =>
       request<{ editorKey: string }>(`/${code}/host/editor`, {

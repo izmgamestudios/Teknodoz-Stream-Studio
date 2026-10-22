@@ -7,12 +7,22 @@
 #   PORT=3011          must equal the "App Port" in CloudPanel -> Site -> Settings
 #   PM2_NAME=studio    PM2 process name
 #   HEALTH_PATH=/studio
+#
+# Server secrets (CATALOG_ADMIN_TOKEN, LIVE_ADMIN_TOKEN, BRAND_*, CATALOG_FILE…) are read from
+# ./.env.production when it exists (never committed; chmod 600) and passed to PM2.
 set -euo pipefail
 
 BRANCH="${BRANCH:-main}"
 PORT="${PORT:-3011}"
 PM2_NAME="${PM2_NAME:-studio}"
 HEALTH_PATH="${HEALTH_PATH:-/studio}"
+
+if [ -f .env.production ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . ./.env.production
+  set +a
+fi
 
 say() { printf '\n\033[1;36m==> %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }

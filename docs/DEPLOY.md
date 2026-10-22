@@ -34,6 +34,21 @@ PM2 `restart` (yoksa `start`) → `/studio` için 200 sağlık kontrolü. Kontro
 | `PM2_NAME` | `studio` | PM2 süreç adı |
 | `HEALTH_PATH` | `/studio` | Sağlık kontrolü adresi |
 
+## İzleyici sayfası ve katalog (`/watch`)
+İzleyici modundaki ziyaretçiler `/watch` sayfasında canlı odaları ve katalogdaki videoları görür.
+Kataloğu yönetmek için sunucuda **en az 16 karakterlik** bir anahtar tanımla:
+
+```bash
+# ~/htdocs/<alan-adi>/.env.production   (git'e girmez; chmod 600)
+CATALOG_ADMIN_TOKEN=uzun-ve-rastgele-bir-anahtar
+# isteğe bağlı: CATALOG_FILE=/home/<kullanici>/catalog.json   (varsayılan: ./data/catalog.json)
+```
+`deploy.sh` bu dosyayı otomatik okur. Sonra içerik üretici modunda **Katalog** sayfasına gir,
+anahtarı yapıştır ve YouTube/Vimeo/.mp4 ya da oda bağlantısı ekle. Özel içerik parola ve/veya gizli
+bağlantıyla (`/watch?item=ID&k=ANAHTAR`) açılır. Anahtar tanımlı değilse katalog salt okunurdur.
+Odalar, **Oda** sayfasındaki “İzleyici sayfasında listele” ile canlı kart olarak görünür
+(oda P2P olduğu için aynı anda yaklaşık 8 izleyiciyi taşır; kalabalık için YouTube canlı yayını ekle).
+
 ## Sorun giderme
 | Belirti | Neden / çözüm |
 |---|---|

@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { defaultSettings } from "../defaults";
 import type { AppSettings, OutputSettings, ShortcutAction } from "../types";
+import { isLang } from "../i18n/messages";
 import { normalizeCombo } from "./shortcuts";
 
 /** Inclusive ranges the output settings are clamped to. Width/height are kept even (encoders). */
@@ -131,7 +132,7 @@ export const shortcutsSchema = z.preprocess(
 export const langSchema = z
   .unknown()
   .transform((value): AppSettings["lang"] =>
-    value === "tr" || value === "en" ? value : DEFAULTS.lang,
+    isLang(value) ? value : DEFAULTS.lang,
   );
 
 export const settingsSchema = z.preprocess(

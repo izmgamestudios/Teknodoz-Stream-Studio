@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { defaultSettings } from "../defaults";
-import type { MessageKey } from "../i18n/messages";
+import { LANGS, type MessageKey } from "../i18n/messages";
 import { useT } from "../i18n/use-t";
+import { useTheme } from "../theme";
 import { loadIceText, parseIceLines, saveIceText } from "../p2p/ice-config";
 import { createRoomApi } from "../room/api";
 import {
@@ -394,6 +395,23 @@ export function ShortcutsSection() {
 
 /* ------------------------------------------------------------------ */
 
+export function ThemeSelect() {
+  const t = useT();
+  const [theme, setTheme] = useTheme();
+  return (
+    <SelectInput
+      label={t("settings.theme")}
+      value={theme}
+      options={[
+        { value: "system", label: t("settings.theme.system") },
+        { value: "light", label: t("settings.theme.light") },
+        { value: "dark", label: t("settings.theme.dark") },
+      ]}
+      onChange={setTheme}
+    />
+  );
+}
+
 export function LanguageSection() {
   const t = useT();
   const { rt, settings, update } = useSettings();
@@ -404,16 +422,16 @@ export function LanguageSection() {
         <SelectInput
           label={t("settings.lang")}
           value={settings.lang}
-          options={[
-            { value: "tr", label: "Türkçe" },
-            { value: "en", label: "English" },
-          ]}
+          options={LANGS.map((l) => ({ value: l.id, label: l.label }))}
           onChange={(lang) => update({ lang })}
         />
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
         {t("settings.lang.body")}
       </p>
+      <div className="mt-4 max-w-xs">
+        <ThemeSelect />
+      </div>
       <div className="mt-4 border-t pt-3">
         <button
           className={BTN}

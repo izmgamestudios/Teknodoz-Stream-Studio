@@ -63,6 +63,8 @@ export interface RoomSnapshot {
   readonly autoApprove: Readonly<Record<PoolRole, boolean>>;
   /** secret of the chat-editor link, null until the director issues one */
   readonly editorKey: string | null;
+  /** public listing on the watch page, null = not listed */
+  readonly listing: { title: string; category: string } | null;
   readonly error: string | null;
 }
 
@@ -125,6 +127,7 @@ export class RoomHostSession {
 
   private status: RoomStatus = "idle";
   private code: string | null = null;
+  private listing: { title: string; category: string } | null = null;
   private token: string | null = null;
   private editorKey: string | null = null;
   private since = 0;
@@ -190,6 +193,7 @@ export class RoomHostSession {
       log: this.log,
       autoApprove: { ...this.auto },
       editorKey: this.editorKey,
+      listing: this.listing,
       error: this.error,
     };
   }
@@ -420,6 +424,27 @@ export class RoomHostSession {
     }
   }
 
+  /** Show the room as a live card on the public watch page (null = unlist). */
+  async setListing(
+    listing: { title: string; category: string } | null,
+  ): Promise<boolean> {
+    if (!this.code || !this.token) return false;
+    try {
+      await this.api.setListing(this.code, this.token, listing);
+      this.listing = listing;
+      this.record(
+        "room",
+        listing ? "İzleyici sayfasında listelendi" : "Listeden kaldırıldı",
+      );
+      this.emit();
+      return true;
+    } catch (e) {
+      this.record("error", `Listeleme başarısız (${errorCode(e)})`);
+      this.emit();
+      return false;
+    }
+  }
+
   async setChatMode(mode: ChatMode): Promise<void> {
     await this.chat.setMode(mode);
     const label = { moderated: "onaylı", open: "serbest", off: "kapalı" }[mode];
@@ -437,6 +462,7 @@ export class RoomHostSession {
     this.code = null;
     this.token = null;
     this.editorKey = null;
+    this.listing = null;
     this.status = "idle";
     this.pool.clear();
     for (const t of this.timers.values()) clearTimeout(t);

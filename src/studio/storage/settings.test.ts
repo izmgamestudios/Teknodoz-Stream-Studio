@@ -116,7 +116,7 @@ describe("loadSettings", () => {
 
   it("repairs invalid values field by field without discarding the rest", () => {
     store({
-      lang: "de",
+      lang: "fr",
       output: {
         width: "abc",
         height: 720,
@@ -667,5 +667,12 @@ describe("external store (useSyncExternalStore contract)", () => {
       resetSettings();
     });
     expect(result.current.lang).toBe("tr");
+  });
+});
+
+describe("supported languages", () => {
+  it("accepts tr, en, de and es", () => {
+    for (const lang of ["tr", "en", "de", "es"] as const)
+      expect(parseSettings({ lang }).lang).toBe(lang);
   });
 });

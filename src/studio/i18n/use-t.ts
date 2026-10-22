@@ -6,13 +6,22 @@ import {
   subscribeSettings,
   SETTINGS_STORAGE_KEY,
 } from "../storage/settings";
-import { translate, type Lang, type MessageKey } from "./messages";
+import {
+  contentLang,
+  translate,
+  type ContentLang,
+  type Lang,
+  type MessageKey,
+} from "./messages";
 
 /** Browser language when the user never chose one (guests on their own device). */
 export function detectLang(): Lang {
   if (typeof navigator === "undefined") return "tr";
   const l = (navigator.language || "tr").toLowerCase();
-  return l.startsWith("tr") ? "tr" : "en";
+  if (l.startsWith("tr")) return "tr";
+  if (l.startsWith("de")) return "de";
+  if (l.startsWith("es")) return "es";
+  return "en";
 }
 
 function hasStoredChoice(): boolean {
@@ -46,4 +55,9 @@ export function useT(): (
 ) => string {
   const lang = useLang();
   return useCallback((key, vars) => translate(lang, key, vars), [lang]);
+}
+
+/** tr for Turkish, en for every other language (long-form content has no de/es yet). */
+export function useContentLang(): ContentLang {
+  return contentLang(useLang());
 }

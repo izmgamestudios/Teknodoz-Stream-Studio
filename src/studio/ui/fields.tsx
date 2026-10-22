@@ -10,6 +10,8 @@ export const BTN_ACCENT =
   "inline-flex items-center justify-center gap-1.5 rounded-md bg-speaker-b px-3 py-1.5 text-xs font-bold text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40";
 export const INPUT =
   "w-full rounded-md border bg-background px-2 py-1 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring";
+/** INPUT without the forced full width, for inline filter bars / rows. */
+export const INPUT_AUTO = INPUT.replace("w-full ", "");
 export const PANEL = "rounded-xl border bg-card p-3";
 
 export function PanelTitle({

@@ -286,7 +286,7 @@ export interface AppSettings {
   output: OutputSettings;
   shortcuts: ShortcutMap;
   /** UI language */
-  lang: "tr" | "en";
+  lang: "tr" | "en" | "de" | "es";
 }
 
 /* ------------------------------------------------------------------ */

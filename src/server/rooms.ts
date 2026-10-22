@@ -110,6 +110,19 @@ interface Room {
   /** rotatable secret of the chat editor; null = no editor link issued */
   editorKey: string | null;
   chat: RoomChat;
+  /** public listing on the viewer home page; null = not listed */
+  listing: RoomListing | null;
+}
+
+export interface RoomListing {
+  title: string;
+  category: string;
+}
+
+export interface PublicRoom extends RoomListing {
+  code: string;
+  startedAt: number;
+  viewers: number;
 }
 
 class HttpError extends Error {
@@ -188,6 +201,14 @@ const chatPostBody = z.object({ text: z.string().max(2000) });
 const chatActionBody = z.object({
   action: z.enum(["approve", "reject", "edit", "onair", "offair"]),
   text: z.string().max(2000).optional(),
+});
+const listingBody = z.object({
+  listing: z
+    .object({
+      title: z.string().trim().min(1).max(120),
+      category: z.string().trim().max(30).default(""),
+    })
+    .nullable(),
 });
 const chatModeBody = z.object({ mode: z.enum(["moderated", "open", "off"]) });
 const leaveBody = z
@@ -404,6 +425,7 @@ export function createRoomsApi(options: RoomsOptions = {}) {
       guests: new Map(),
       editorKey: null,
       chat: new RoomChat(now),
+      listing: null,
     };
     rooms.set(room.code, room);
     return json(
@@ -414,6 +436,36 @@ export function createRoomsApi(options: RoomsOptions = {}) {
       },
       201,
     );
+  }
+
+  function publicRooms(): Response {
+    const t = now();
+    const out: PublicRoom[] = [];
+    for (const room of rooms.values()) {
+      if (
+        !room.listing ||
+        room.closedAt !== null ||
+        t - room.lastHostSeen >= LIMITS.hostOnlineMs
+      )
+        continue;
+      out.push({
+        code: room.code,
+        ...room.listing,
+        startedAt: room.createdAt,
+        viewers: [...room.guests.values()].filter((g) => g.role === "viewer")
+          .length,
+      });
+    }
+    return json({ rooms: out });
+  }
+
+  async function hostListing(req: Request, room: Room): Promise<Response> {
+    authHost(req, room);
+    const body = await readJson(req, listingBody);
+    room.listing = body.listing
+      ? { title: body.listing.title, category: body.listing.category ?? "" }
+      : null;
+    return json({ ok: true });
   }
 
   function roomInfo(room: Room): Response {
@@ -756,6 +808,8 @@ export function createRoomsApi(options: RoomsOptions = {}) {
       if (rest[0] === "health" && rest.length === 1) {
         return json({ ok: true, v: 1, rooms: rooms.size });
       }
+      if (rest[0] === "public" && rest.length === 1 && method === "GET")
+        return publicRooms();
       const room = getRoom(rest[0] as string);
       if (rest.length === 1) {
         if (method === "GET") return roomInfo(room);
@@ -773,6 +827,8 @@ export function createRoomsApi(options: RoomsOptions = {}) {
           return await modChatAction(req, room, rest[2] as string);
       }
       if (rest[1] === "host" && rest.length === 3) {
+        if (rest[2] === "listing" && method === "POST")
+          return await hostListing(req, room);
         if (rest[2] === "chat-mode" && method === "POST")
           return await hostChatMode(req, room);
         if (rest[2] === "editor" && (method === "POST" || method === "DELETE"))
