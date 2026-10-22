@@ -51,7 +51,7 @@ h "PM2"
 if have pm2; then pm2 list 2>&1 | head -30; else echo "pm2 not installed"; fi
 
 h "Listening ports (TCP)"
-if have ss; then ss -tlnp 2>/dev/null | awk 'NR==1 || /LISTEN/' | head -40; else echo "ss not available"; fi
+if have ss; then ss -tlnp 2>/dev/null | awk 'NR==1 || /LISTEN/' | sort -t: -k2 -n | head -80; else echo "ss not available"; fi
 
 h "Site folder"
 echo "pwd: $(pwd)"
@@ -72,7 +72,9 @@ if [ -x "$PBD/pocketbase" ]; then
 else
   echo "not installed at $PBD"
 fi
-curl -fsS -m 3 http://127.0.0.1:8090/api/health 2>/dev/null && echo || echo "health: no answer on 127.0.0.1:8090"
+PBU="$(grep -E '^POCKETBASE_URL=' .env.production 2>/dev/null | tail -1 | cut -d= -f2-)"
+PBU="${PBU:-http://127.0.0.1:${PB_PORT:-8090}}"
+curl -fsS -m 3 "$PBU/api/health" 2>/dev/null && echo || echo "health: no answer on $PBU"
 
 h "Site health"
 for p in /studio /watch /api/catalog /api/i18n; do
