@@ -527,6 +527,8 @@ export const de: Record<MessageKey, string> = {
   "admin.login.err.network": "Server nicht erreichbar.",
   "admin.login.link": "Admin-Anmeldung",
   "admin.logout.signed": "Als Administrator angemeldet",
+  "player.speed.normal": "Normal",
+  "player.fullscreen.exit": "Vollbild beenden",
   "settings.site.summary": "Website, Metadaten und Teilen (Eigentümer)",
   "settings.reset.all": "Alle Einstellungen auf Standard zurücksetzen",
   "settings.reset.confirm": "Alle Einstellungen auf Standard zurücksetzen?",

@@ -8,13 +8,12 @@ import type { WatchItem } from "../../watch/filter";
 import { BTN } from "../fields";
 import { coverOf } from "./stories";
 
-const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
-
 export function AudioPlayer({
   item,
   src,
   volume,
   muted,
+  speed,
   onEnded,
   compact = false,
 }: {
@@ -22,12 +21,12 @@ export function AudioPlayer({
   src: string;
   volume: number;
   muted: boolean;
+  speed: number;
   onEnded: () => void;
   compact?: boolean;
 }) {
   const t = useT();
   const audio = useRef<HTMLAudioElement>(null);
-  const [speed, setSpeed] = useState<number>(1);
   const cover = coverOf(item);
 
   useEffect(() => {
@@ -38,7 +37,11 @@ export function AudioPlayer({
   }, [volume, muted]);
 
   useEffect(() => {
-    if (audio.current) audio.current.playbackRate = speed;
+    const a = audio.current;
+    if (a) {
+      a.defaultPlaybackRate = speed;
+      a.playbackRate = speed;
+    }
   }, [speed, src]);
 
   const skip = (s: number) => {
@@ -94,20 +97,6 @@ export function AudioPlayer({
         <button className={BTN} onClick={() => skip(15)}>
           {t("player.fwd15")} ⏩
         </button>
-        <label className="flex items-center gap-1">
-          {t("player.speed")}
-          <select
-            className="rounded-md border bg-background px-1 py-1"
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-          >
-            {SPEEDS.map((s) => (
-              <option key={s} value={s}>
-                {s}×
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
     </div>
   );

@@ -524,6 +524,8 @@ export const es: Record<MessageKey, string> = {
   "admin.login.err.network": "No se pudo contactar con el servidor.",
   "admin.login.link": "Acceso de administrador",
   "admin.logout.signed": "Sesión iniciada como administrador",
+  "player.speed.normal": "Normal",
+  "player.fullscreen.exit": "Salir de pantalla completa",
   "settings.site.summary": "Sitio, metadatos y compartir (propietario)",
   "settings.reset.all": "Restablecer todos los ajustes",
   "settings.reset.confirm":
