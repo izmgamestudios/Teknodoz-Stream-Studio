@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { titleFromMatches } from "@/studio/branding/head";
 import { useT } from "@/studio/i18n/use-t";
+import { readAdminToken, saveAdminToken } from "@/studio/watch/admin-token";
 import {
   BTN,
   BTN_ACCENT,
@@ -36,16 +37,6 @@ export const Route = createFileRoute("/catalog")({
   }),
   component: CatalogPage,
 });
-
-const TOKEN_KEY = "studio.catalog.token";
-
-function readToken(): string {
-  try {
-    return sessionStorage.getItem(TOKEN_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
 
 interface Draft {
   id?: string;
@@ -105,7 +96,7 @@ function CatalogPage() {
   }, []);
 
   useEffect(() => {
-    const tk = readToken();
+    const tk = readAdminToken();
     if (tk) {
       setToken(tk);
       void load(tk);
@@ -113,11 +104,7 @@ function CatalogPage() {
   }, [load]);
 
   const connect = async () => {
-    try {
-      sessionStorage.setItem(TOKEN_KEY, typed);
-    } catch {
-      /* tab-only */
-    }
+    saveAdminToken(typed);
     setToken(typed);
     await load(typed);
   };
@@ -153,7 +140,7 @@ function CatalogPage() {
           ? { linkKey: false }
           : {}),
       startsAt: draft.startsAt ? new Date(draft.startsAt).toISOString() : null,
-      live: draft.live,
+      live: draft.live || source.kind === "youtube-live",
     };
     const saved = await adminSave(token, input);
     if (!saved) return setMsg({ ok: false, text: "catalog.err.save" });

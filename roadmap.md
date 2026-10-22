@@ -25,3 +25,6 @@
 - [x] `/watch` gallery: live public rooms + admin catalog (YouTube, Vimeo, .mp4, rooms), search, category, time, sort, mini/large/theater/fullscreen player, volume/mute, password / secret-link private items.
 - [x] Light / dark / system theme, languages tr / en / de / es for the shell, settings, guest pages, watch and catalog.
 - [ ] Translate Studio / Classic / Live / Room / Guide / Community pages (still Turkish; guide content has tr + en).
+- [x] YouTube channel live stream in the catalog (channel id `UC…` → embed/live_stream).
+- [x] PocketBase storage for catalog + translation overrides (`scripts/pocketbase.sh`), JSON-file fallback.
+- [x] `/translations`: edit tr/en/de/es texts on the server without a release.

@@ -49,6 +49,32 @@ bağlantıyla (`/watch?item=ID&k=ANAHTAR`) açılır. Anahtar tanımlı değilse
 Odalar, **Oda** sayfasındaki “İzleyici sayfasında listele” ile canlı kart olarak görünür
 (oda P2P olduğu için aynı anda yaklaşık 8 izleyiciyi taşır; kalabalık için YouTube canlı yayını ekle).
 
+## Veritabanı: PocketBase (katalog + çeviriler)
+Katalog ve çeviri metinleri varsayılan olarak `data/*.json` dosyalarında tutulur. Sunucuda
+**PocketBase** (tek dosyalık, SQLite tabanlı veritabanı + yönetim paneli) kurmak için:
+
+```bash
+cd ~/htdocs/<alan-adi>
+bash scripts/pocketbase.sh      # indirir, süper kullanıcıyı açar, PM2 ile başlatır, .env.production'a yazar
+PORT=3011 bash scripts/deploy.sh
+```
+- PocketBase yalnızca `127.0.0.1:8090` dinler; dışarı **açılmaz**. Site, koleksiyonları
+  (`catalog_items`, `i18n_messages`) ilk istekte kendisi oluşturur; tarayıcı PocketBase'e hiç
+  bağlanmaz, her şey `/api/catalog` ve `/api/i18n` üzerinden ve yönetici anahtarıyla geçer.
+- Yönetim paneli için SSH tüneli: `ssh -L 8090:127.0.0.1:8090 kullanici@sunucu`, sonra
+  `http://127.0.0.1:8090/_/` (e-posta/parola `.env.production` içinde).
+- PocketBase 0.23 veya üstü gerekir. Veriler `~/pocketbase/pb_data` altındadır; yedek için bu
+  klasörü kopyalamak yeterlidir.
+- PocketBase erişilemezse site son bilinen listeyi göstermeye devam eder; hiç veri yoksa API 503 döner.
+- Daha önce `data/catalog.json` kullandıysan o içerikler PocketBase'e **otomatik taşınmaz**;
+  Katalog sayfasından yeniden ekle.
+
+## Çeviriler (`/translations`)
+Yerleşik metinler tr/en/de/es için kodda durur. **Çeviriler** sayfasından (içerik üretici modu,
+aynı yönetici anahtarı) herhangi bir metin sunucuda değiştirilir; yeni sürüm yayınlamadan tüm
+ziyaretçilerde geçerli olur. “Yerleşiğe dön” kodla gelen metni geri getirir. `{n}` gibi yer
+tutucular kaynakla aynı kalmalıdır.
+
 ## Sorun giderme
 | Belirti | Neden / çözüm |
 |---|---|

@@ -12,6 +12,14 @@ import { z } from "zod";
 
 import { isMediaSource, type MediaSource } from "../studio/watch/media-url";
 
+/** The backing store (e.g. PocketBase) cannot be reached right now. */
+export class StoreUnavailableError extends Error {
+  constructor(detail = "store unavailable") {
+    super(detail);
+    this.name = "StoreUnavailableError";
+  }
+}
+
 export const CATALOG_API_PREFIX = "/api/catalog";
 export const MIN_ADMIN_TOKEN = 16;
 export const CATALOG_LIMITS = {
@@ -39,18 +47,22 @@ export interface CatalogItem {
   createdAt: string;
 }
 
+/** Persistence behind the catalog: memory (tests), JSON file, or PocketBase. */
 export interface CatalogStore {
-  load(): CatalogItem[];
-  save(items: CatalogItem[]): void;
+  list(): Promise<CatalogItem[]>;
+  upsert(item: CatalogItem): Promise<void>;
+  /** false when the id did not exist */
+  remove(id: string): Promise<boolean>;
 }
 
 export function memoryStore(initial: CatalogItem[] = []): CatalogStore {
-  let items = initial;
+  const items = new Map(initial.map((i) => [i.id, i]));
   return {
-    load: () => items,
-    save: (next) => {
-      items = next;
+    list: async () => [...items.values()],
+    upsert: async (item) => {
+      items.set(item.id, item);
     },
+    remove: async (id) => items.delete(id),
   };
 }
 
@@ -174,7 +186,7 @@ export function createCatalogApi(opts: CatalogOptions) {
     const method = req.method.toUpperCase();
     try {
       if (rest.length === 0 && method === "GET") {
-        const items = opts.store.load().map((i) => toPublic(i));
+        const items = (await opts.store.list()).map((i) => toPublic(i));
         return json({ items, admin: opts.token !== null });
       }
 
@@ -191,7 +203,9 @@ export function createCatalogApi(opts: CatalogOptions) {
           })
           .safeParse(await readJson(req));
         if (!body.success) return json({ error: "bad-request" }, 400);
-        const item = opts.store.load().find((i) => i.id === body.data.id);
+        const item = (await opts.store.list()).find(
+          (i) => i.id === body.data.id,
+        );
         if (!item) return json({ error: "not-found" }, 404);
         if (item.visibility === "public") return json({ item: toPublic(item) });
         const okKey =
@@ -210,10 +224,12 @@ export function createCatalogApi(opts: CatalogOptions) {
       if (!isAdmin(req)) return json({ error: "unauthorized" }, 401);
 
       if (rest[0] === "admin" && rest.length === 1 && method === "GET") {
-        const items = opts.store.load().map(({ passwordHash, ...i }) => ({
-          ...i,
-          hasPassword: passwordHash !== null,
-        }));
+        const items = (await opts.store.list()).map(
+          ({ passwordHash, ...i }) => ({
+            ...i,
+            hasPassword: passwordHash !== null,
+          }),
+        );
         return json({ items });
       }
 
@@ -221,9 +237,8 @@ export function createCatalogApi(opts: CatalogOptions) {
         const parsed = itemBody.safeParse(await readJson(req));
         if (!parsed.success) return json({ error: "bad-request" }, 400);
         const b = parsed.data;
-        const items = [...opts.store.load()];
-        const idx = b.id ? items.findIndex((i) => i.id === b.id) : -1;
-        const prev = idx >= 0 ? items[idx] : undefined;
+        const items = await opts.store.list();
+        const prev = b.id ? items.find((i) => i.id === b.id) : undefined;
         if (!prev && items.length >= CATALOG_LIMITS.maxItems)
           return json({ error: "full" }, 409);
         const next: CatalogItem = {
@@ -250,26 +265,23 @@ export function createCatalogApi(opts: CatalogOptions) {
           live: b.live,
           createdAt: prev?.createdAt ?? new Date(now()).toISOString(),
         };
-        if (idx >= 0) items[idx] = next;
-        else items.push(next);
-        opts.store.save(items);
+        await opts.store.upsert(next);
         const { passwordHash, ...adminView } = next;
         return json(
           { item: { ...adminView, hasPassword: passwordHash !== null } },
-          idx >= 0 ? 200 : 201,
+          prev ? 200 : 201,
         );
       }
 
       if (rest[0] === "item" && rest.length === 2 && method === "DELETE") {
-        const items = opts.store.load();
-        const next = items.filter((i) => i.id !== rest[1]);
-        if (next.length === items.length)
-          return json({ error: "not-found" }, 404);
-        opts.store.save(next);
+        const removed = await opts.store.remove(rest[1] as string);
+        if (!removed) return json({ error: "not-found" }, 404);
         return json({ ok: true });
       }
       return json({ error: "not-found" }, 404);
     } catch (e) {
+      if (e instanceof StoreUnavailableError)
+        return json({ error: "store-unavailable" }, 503);
       if (e instanceof SyntaxError || (e as Error).message === "too-large")
         return json({ error: "bad-request" }, 400);
       console.error("[catalog]", e);

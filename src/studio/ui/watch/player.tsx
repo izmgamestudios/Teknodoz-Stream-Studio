@@ -28,7 +28,7 @@ function post(
 ): void {
   const win = frame?.contentWindow;
   if (!win) return;
-  if (s.kind === "youtube") {
+  if (s.kind === "youtube" || s.kind === "youtube-live") {
     const origin = "https://www.youtube-nocookie.com";
     const send = (func: string, args: unknown[] = []) =>
       win.postMessage(JSON.stringify({ event: "command", func, args }), origin);

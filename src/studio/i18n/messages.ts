@@ -3,6 +3,7 @@
 // language; every key must exist in English (enforced by the `Record<MessageKey, string>` type).
 // Turkish is the source; English, German and Spanish live next to it. Studio panels are not translated yet.
 import { de } from "./messages.de";
+import { getOverrides } from "./overrides";
 import { es } from "./messages.es";
 
 export type Lang = "tr" | "en" | "de" | "es";
@@ -330,7 +331,7 @@ export const tr = {
   "catalog.form.edit": "İçeriği düzenle",
   "catalog.f.url": "Video bağlantısı",
   "catalog.f.url.hint":
-    "YouTube, Vimeo, https .mp4/.webm ya da bu sitenin /r/KOD oda bağlantısı",
+    "YouTube, YouTube kanalı (UC… kimliği = o kanalın canlı yayını), Vimeo, https .mp4/.webm ya da bu sitenin /r/KOD oda bağlantısı",
   "catalog.f.title": "Başlık",
   "catalog.f.description": "Açıklama",
   "catalog.f.category": "Kategori",
@@ -362,6 +363,25 @@ export const tr = {
     "Açıkken oda, izleyici ana sayfasında “canlı” kart olarak görünür ve herkes izleyici olarak katılabilir.",
   "room.listing.title": "Yayın başlığı",
   "room.listing.category": "Kategori",
+  "nav.translations": "Çeviriler",
+  "nav.translations.hint": "Metinleri sunucuda düzenle (tr, en, de, es)",
+  "tr.title": "Çeviri yönetimi",
+  "tr.intro":
+    "Metinler sunucuda saklanır ve yeni sürüm yayınlamadan hemen geçerli olur. Boş bırakılan satır yerleşik metne döner.",
+  "tr.lang": "Düzenlenen dil",
+  "tr.search": "Anahtar veya metin ara…",
+  "tr.onlyChanged": "Yalnızca değiştirilenler",
+  "tr.count": "{n} satır",
+  "tr.source": "Kaynak (Türkçe)",
+  "tr.builtin": "Yerleşik metin",
+  "tr.changed": "Değiştirildi",
+  "tr.save": "Kaydet",
+  "tr.reset": "Yerleşiğe dön",
+  "tr.saved": "Kaydedildi.",
+  "tr.err.placeholder":
+    "Süslü parantez içindeki yer tutucular kaynakla aynı kalmalı.",
+  "tr.err.save": "Kaydedilemedi.",
+  "tr.more": "Daha fazla göster",
   "settings.site.summary": "Site, meta ve paylaşım ayarları (dağıtım sahibi)",
   "settings.reset.all": "Tüm ayarları varsayılana döndür",
   "settings.reset.confirm": "Tüm ayarlar varsayılana dönsün mü?",
@@ -679,7 +699,7 @@ export const en: Record<MessageKey, string> = {
   "catalog.form.edit": "Edit item",
   "catalog.f.url": "Video link",
   "catalog.f.url.hint":
-    "YouTube, Vimeo, https .mp4/.webm or this site's /r/CODE room link",
+    "YouTube, a YouTube channel (UC… id = that channel's live stream), Vimeo, https .mp4/.webm or this site's /r/CODE room link",
   "catalog.f.title": "Title",
   "catalog.f.description": "Description",
   "catalog.f.category": "Category",
@@ -711,6 +731,25 @@ export const en: Record<MessageKey, string> = {
     "When on, the room appears as a “live” card on the viewer home page and anyone can join as a viewer.",
   "room.listing.title": "Stream title",
   "room.listing.category": "Category",
+  "nav.translations": "Translations",
+  "nav.translations.hint": "Edit texts on the server (tr, en, de, es)",
+  "tr.title": "Translation management",
+  "tr.intro":
+    "Texts are stored on the server and apply immediately without a new release. Resetting a row restores the built-in text.",
+  "tr.lang": "Language being edited",
+  "tr.search": "Search key or text…",
+  "tr.onlyChanged": "Changed only",
+  "tr.count": "{n} row(s)",
+  "tr.source": "Source (Turkish)",
+  "tr.builtin": "Built-in text",
+  "tr.changed": "Changed",
+  "tr.save": "Save",
+  "tr.reset": "Restore built-in",
+  "tr.saved": "Saved.",
+  "tr.err.placeholder":
+    "The placeholders in curly braces must match the source.",
+  "tr.err.save": "Could not save.",
+  "tr.more": "Show more",
   "settings.site.summary": "Site, metadata and sharing (owner)",
   "settings.reset.all": "Reset all settings to defaults",
   "settings.reset.confirm": "Reset all settings to defaults?",
@@ -737,7 +776,8 @@ export function translate(
   key: MessageKey,
   vars?: Record<string, string | number>,
 ): string {
-  let s: string = MESSAGES[lang][key] ?? tr[key] ?? key;
+  let s: string =
+    getOverrides()[lang]?.[key] ?? MESSAGES[lang][key] ?? tr[key] ?? key;
   if (vars)
     for (const [k, v] of Object.entries(vars))
       s = s.split(`{${k}}`).join(String(v));

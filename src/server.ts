@@ -7,6 +7,14 @@ import { liveConfigFromEnv, tokenTooShort } from "./server/live-policy";
 import { handleManifest } from "./server/manifest";
 import { createCatalogApi, catalogTokenFromEnv } from "./server/catalog";
 import { fileStore } from "./server/catalog-store";
+import { createI18nApi } from "./server/i18n";
+import { fileI18nStore } from "./server/i18n-store";
+import {
+  PocketBase,
+  pbCatalogStore,
+  pbI18nStore,
+  pocketbaseFromEnv,
+} from "./server/pocketbase";
 import { createRoomsApi } from "./server/rooms";
 
 type ServerEntry = {
@@ -32,11 +40,25 @@ if (tokenTooShort(liveEnv))
   );
 const live = createLiveApi({ config: liveConfigFromEnv(liveEnv) });
 
-// Viewer-home video catalog (see src/server/catalog.ts). Reads are public; writes need
-// CATALOG_ADMIN_TOKEN. Items persist in CATALOG_FILE (default ./data/catalog.json).
+// Viewer-home video catalog + translation overrides (see src/server/catalog.ts, i18n.ts).
+// Reads are public; writes need CATALOG_ADMIN_TOKEN. Data lives in PocketBase when
+// POCKETBASE_URL / _ADMIN_EMAIL / _ADMIN_PASSWORD are set, otherwise in JSON files
+// (CATALOG_FILE, I18N_FILE; default ./data/*.json).
+const pbConfig = pocketbaseFromEnv(liveEnv);
+const pb = pbConfig ? new PocketBase(pbConfig) : null;
+if (pb) console.info("[data] PocketBase storage:", pbConfig?.url);
+const adminToken = catalogTokenFromEnv(liveEnv);
 const catalog = createCatalogApi({
-  token: catalogTokenFromEnv(liveEnv),
-  store: fileStore(liveEnv["CATALOG_FILE"]?.trim() || "data/catalog.json"),
+  token: adminToken,
+  store: pb
+    ? pbCatalogStore(pb)
+    : fileStore(liveEnv["CATALOG_FILE"]?.trim() || "data/catalog.json"),
+});
+const i18n = createI18nApi({
+  token: adminToken,
+  store: pb
+    ? pbI18nStore(pb)
+    : fileI18nStore(liveEnv["I18N_FILE"]?.trim() || "data/i18n.json"),
 });
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -90,6 +112,8 @@ export default {
       if (roomResponse) return roomResponse;
       const catalogResponse = await catalog.handle(request);
       if (catalogResponse) return catalogResponse;
+      const i18nResponse = await i18n.handle(request);
+      if (i18nResponse) return i18nResponse;
       const liveResponse = await live.handle(request);
       if (liveResponse) return liveResponse;
       const handler = await getServerEntry();

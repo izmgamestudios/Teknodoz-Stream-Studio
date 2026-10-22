@@ -6,6 +6,7 @@ import { BrandBadge, BrandLogo, useBrand } from "@/studio/ui/brand-context";
 import { useT } from "@/studio/i18n/use-t";
 import type { MessageKey } from "@/studio/i18n/messages";
 import { roomBadge } from "@/studio/room/badge";
+import { loadOverrides } from "@/studio/i18n/overrides";
 import { useAudience, VIEWER_ROUTES } from "@/studio/audience";
 import { AudienceGate, PrefBar } from "@/studio/ui/audience-gate";
 
@@ -14,6 +15,7 @@ const NAV: readonly {
     | "/"
     | "/watch"
     | "/catalog"
+    | "/translations"
     | "/studio"
     | "/classic"
     | "/room"
@@ -60,6 +62,12 @@ const NAV: readonly {
     label: "nav.catalog",
     hint: "nav.catalog.hint",
     icon: "🗂️",
+  },
+  {
+    to: "/translations",
+    label: "nav.translations",
+    hint: "nav.translations.hint",
+    icon: "🌐",
   },
   {
     to: "/settings",
@@ -167,6 +175,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const audience = useAudience();
   const navigate = useNavigate();
+  // texts edited on the server (/translations) override the built-in ones
+  useEffect(() => {
+    void loadOverrides();
+  }, []);
   // viewers land on the watch page instead of the prompter
   useEffect(() => {
     if (audience === "viewer" && pathname === "/")

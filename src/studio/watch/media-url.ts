@@ -4,11 +4,14 @@
 
 export type MediaSource =
   | { kind: "youtube"; id: string }
+  /** whatever the channel is streaming right now (embed/live_stream?channel=UC…) */
+  | { kind: "youtube-live"; channel: string }
   | { kind: "vimeo"; id: string }
   | { kind: "file"; url: string }
   | { kind: "room"; code: string };
 
 const YT_ID = /^[A-Za-z0-9_-]{11}$/;
+const YT_CHANNEL = /^UC[A-Za-z0-9_-]{22}$/;
 const VIMEO_ID = /^\d{5,12}$/;
 const ROOM_CODE = /^[A-HJ-NP-Z2-9]{6}$/;
 const FILE_EXT = /\.(mp4|webm|ogv|m4v)$/i;
@@ -28,6 +31,8 @@ export function parseMediaInput(
 ): MediaSource | null {
   const text = input.trim();
   if (text === "" || text.length > 2000) return null;
+  // a bare channel id (UC + 22 chars) means "this channel's live stream"
+  if (YT_CHANNEL.test(text)) return { kind: "youtube-live", channel: text };
   let u: URL;
   try {
     u = new URL(text);
@@ -46,6 +51,17 @@ export function parseMediaInput(
     const parts = u.pathname.split("/").filter(Boolean);
     const first = parts[0];
     let id: string | null = null;
+    if (first === "channel") {
+      const ch = parts[1] ?? "";
+      const tail = parts[2];
+      return YT_CHANNEL.test(ch) && (tail === undefined || tail === "live")
+        ? { kind: "youtube-live", channel: ch }
+        : null;
+    }
+    if (first === "embed" && parts[1] === "live_stream") {
+      const ch = u.searchParams.get("channel") ?? "";
+      return YT_CHANNEL.test(ch) ? { kind: "youtube-live", channel: ch } : null;
+    }
     if (first === "watch") id = u.searchParams.get("v");
     else if (first === "embed" || first === "shorts" || first === "live")
       id = parts[1] ?? null;
@@ -78,6 +94,8 @@ export function isMediaSource(v: unknown): v is MediaSource {
   switch (s["kind"]) {
     case "youtube":
       return typeof s["id"] === "string" && YT_ID.test(s["id"]);
+    case "youtube-live":
+      return typeof s["channel"] === "string" && YT_CHANNEL.test(s["channel"]);
     case "vimeo":
       return typeof s["id"] === "string" && VIMEO_ID.test(s["id"]);
     case "room":
@@ -96,6 +114,8 @@ export function embedUrl(s: MediaSource, autoplay = false): string | null {
   const ap = autoplay ? "1" : "0";
   if (s.kind === "youtube")
     return `https://www.youtube-nocookie.com/embed/${s.id}?enablejsapi=1&rel=0&playsinline=1&autoplay=${ap}`;
+  if (s.kind === "youtube-live")
+    return `https://www.youtube-nocookie.com/embed/live_stream?channel=${s.channel}&enablejsapi=1&rel=0&playsinline=1&autoplay=${ap}`;
   if (s.kind === "vimeo")
     return `https://player.vimeo.com/video/${s.id}?autoplay=${ap}&dnt=1`;
   return null;
@@ -111,6 +131,8 @@ export function sourceLink(s: MediaSource): string {
   switch (s.kind) {
     case "youtube":
       return `https://www.youtube.com/watch?v=${s.id}`;
+    case "youtube-live":
+      return `https://www.youtube.com/channel/${s.channel}/live`;
     case "vimeo":
       return `https://vimeo.com/${s.id}`;
     case "room":

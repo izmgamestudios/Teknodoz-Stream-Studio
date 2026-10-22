@@ -21,6 +21,7 @@ import { Route as RemoteRouteImport } from './routes/remote'
 import { Route as RoomRouteImport } from './routes/room'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StudioRouteImport } from './routes/studio'
+import { Route as TranslationsRouteImport } from './routes/translations'
 import { Route as WatchRouteImport } from './routes/watch'
 import { Route as ChatCodeRouteImport } from './routes/chat.$code'
 import { Route as ClassicIndexRouteImport } from './routes/classic/index'
@@ -89,6 +90,11 @@ const StudioRoute = StudioRouteImport.update({
   path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TranslationsRoute = TranslationsRouteImport.update({
+  id: '/translations',
+  path: '/translations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WatchRoute = WatchRouteImport.update({
   id: '/watch',
   path: '/watch',
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/room': typeof RoomRoute
   '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
+  '/translations': typeof TranslationsRoute
   '/watch': typeof WatchRoute
   '/chat/$code': typeof ChatCodeRoute
   '/classic/join': typeof ClassicJoinRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/room': typeof RoomRoute
   '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
+  '/translations': typeof TranslationsRoute
   '/watch': typeof WatchRoute
   '/chat/$code': typeof ChatCodeRoute
   '/classic/join': typeof ClassicJoinRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   '/room': typeof RoomRoute
   '/settings': typeof SettingsRoute
   '/studio': typeof StudioRoute
+  '/translations': typeof TranslationsRoute
   '/watch': typeof WatchRoute
   '/chat/$code': typeof ChatCodeRoute
   '/classic/join': typeof ClassicJoinRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/room'
     | '/settings'
     | '/studio'
+    | '/translations'
     | '/watch'
     | '/chat/$code'
     | '/classic/join'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/room'
     | '/settings'
     | '/studio'
+    | '/translations'
     | '/watch'
     | '/chat/$code'
     | '/classic/join'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/room'
     | '/settings'
     | '/studio'
+    | '/translations'
     | '/watch'
     | '/chat/$code'
     | '/classic/join'
@@ -266,6 +278,7 @@ export interface RootRouteChildren {
   RoomRoute: typeof RoomRoute
   SettingsRoute: typeof SettingsRoute
   StudioRoute: typeof StudioRoute
+  TranslationsRoute: typeof TranslationsRoute
   WatchRoute: typeof WatchRoute
   ChatCodeRoute: typeof ChatCodeRoute
   RCodeRoute: typeof RCodeRoute
@@ -357,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/translations': {
+      id: '/translations'
+      path: '/translations'
+      fullPath: '/translations'
+      preLoaderRoute: typeof TranslationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/watch': {
       id: '/watch'
       path: '/watch'
@@ -440,6 +460,7 @@ const rootRouteChildren: RootRouteChildren = {
   RoomRoute: RoomRoute,
   SettingsRoute: SettingsRoute,
   StudioRoute: StudioRoute,
+  TranslationsRoute: TranslationsRoute,
   WatchRoute: WatchRoute,
   ChatCodeRoute: ChatCodeRoute,
   RCodeRoute: RCodeRoute,

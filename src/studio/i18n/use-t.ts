@@ -1,6 +1,7 @@
 // src/studio/i18n/use-t.ts
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 
+import { useOverridesVersion } from "./overrides";
 import {
   getSettingsSnapshot,
   subscribeSettings,
@@ -54,7 +55,12 @@ export function useT(): (
   vars?: Record<string, string | number>,
 ) => string {
   const lang = useLang();
-  return useCallback((key, vars) => translate(lang, key, vars), [lang]);
+  const overridesVersion = useOverridesVersion();
+
+  return useCallback(
+    (key, vars) => translate(lang, key, vars),
+    [lang, overridesVersion],
+  );
 }
 
 /** tr for Turkish, en for every other language (long-form content has no de/es yet). */

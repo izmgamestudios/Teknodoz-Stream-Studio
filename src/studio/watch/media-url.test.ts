@@ -34,6 +34,25 @@ describe("parseMediaInput", () => {
     ).toEqual({ kind: "room", code: "AB3CDE" });
   });
 
+  it("accepts a YouTube channel as its live stream", () => {
+    const ch = "UCX6OQ3DkcsbYNE6H8uQQuVA";
+    const want = { kind: "youtube-live", channel: ch };
+    for (const u of [
+      ch,
+      `https://www.youtube.com/channel/${ch}`,
+      `https://www.youtube.com/channel/${ch}/live`,
+      `https://www.youtube.com/embed/live_stream?channel=${ch}`,
+    ])
+      expect(parseMediaInput(u)).toEqual(want);
+    expect(parseMediaInput("https://www.youtube.com/@MrBeast/live")).toBeNull();
+    expect(
+      parseMediaInput(`https://www.youtube.com/channel/${ch}/videos`),
+    ).toBeNull();
+    expect(embedUrl({ kind: "youtube-live", channel: ch })).toContain(
+      `live_stream?channel=${ch}`,
+    );
+  });
+
   it("rejects everything else", () => {
     for (const u of [
       "",
