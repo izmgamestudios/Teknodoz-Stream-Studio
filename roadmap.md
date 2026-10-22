@@ -18,3 +18,5 @@
 - [ ] Arka plan bulanıklaştırma (segmentasyon modeli bu ortamdan indirilemedi; NVIDIA Broadcast sanal kamerası şimdilik çözüm)
 - [x] Sahne otomatik sırası (süreli rundown), "Benim şablonlarım" (formatlar arası uyarlama), Sistem sağlığı paneli (fps, çizim süresi, ses kırpılması), kayıt dosya adında format
 - [x] Erişilebilirlik: axe taramasında 10 sayfada 0 ihlal (ana içerik landmark'ı, içeriğe geç bağlantısı, kontrast, etiketler)
+
+- [x] Custom STUN/TURN servers (Settings → Connection), device-local, used by host and guests.

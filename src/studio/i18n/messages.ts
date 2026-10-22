@@ -202,6 +202,11 @@ export const tr = {
     "Açıkken internet üzerinden bağlanabilirsiniz; STUN sağlayıcısı (Google) yalnızca IP adresinizi görür, görüntü/ses/kod görmez. Kapalıyken yalnızca aynı yerel ağdaki cihazlar bağlanır. Yeni davetlerde geçerlidir.",
   "settings.stun.busy":
     "Bağlı kişiler varken değişiklik, onlar ayrılınca uygulanır.",
+  "settings.ice": "Özel STUN / TURN sunucuları",
+  "settings.ice.body":
+    "Kurumsal ağ ya da mobil veri arkasındaki konuklar bağlanamıyorsa kendi TURN sunucunuzu ekleyin. Satır başına bir sunucu: url | kullanıcı | parola. Yalnızca bu cihazda saklanır; proje dışa aktarımına girmez.",
+  "settings.ice.valid": "{n} sunucu geçerli",
+  "settings.ice.invalid": "Geçersiz satır: {lines}",
   "settings.relay": "Oda rölesi",
   "settings.relay.check": "Röleyi sına",
   "settings.relay.ok": "✓ Röle erişilebilir",
@@ -427,6 +432,11 @@ export const en: Record<MessageKey, string> = {
     "When on, you can connect over the internet; the STUN provider (Google) only sees your IP address, never video, audio or codes. When off, only devices on the same local network can connect. Applies to new invites.",
   "settings.stun.busy":
     "While people are connected the change applies once they leave.",
+  "settings.ice": "Custom STUN / TURN servers",
+  "settings.ice.body":
+    "If guests behind corporate networks or mobile data cannot connect, add your own TURN server. One server per line: url | username | credential. Stored on this device only; never included in project exports.",
+  "settings.ice.valid": "{n} server(s) valid",
+  "settings.ice.invalid": "Invalid line(s): {lines}",
   "settings.relay": "Room relay",
   "settings.relay.check": "Test relay",
   "settings.relay.ok": "✓ Relay reachable",

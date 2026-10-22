@@ -5,6 +5,7 @@
 //
 // SSR: nothing here touches RTCPeerConnection / MediaStream at module load.
 import { P2PError } from "./errors";
+import { loadCustomIce } from "./ice-config";
 
 /** Public STUN servers used ONLY when the `usePublicStun` setting is on. */
 export const PUBLIC_STUN_URLS: readonly string[] = [
@@ -15,9 +16,18 @@ export const PUBLIC_STUN_URLS: readonly string[] = [
 /** ICE gathering budget. We never trickle, so this bounds how long a code takes to appear. */
 export const DEFAULT_ICE_TIMEOUT_MS = 4000;
 
-/** `[]` (LAN / host candidates only) unless public STUN is allowed. */
-export function buildIceServers(usePublicStun: boolean): RTCIceServer[] {
-  return usePublicStun ? [{ urls: [...PUBLIC_STUN_URLS] }] : [];
+/**
+ * `[]` (LAN / host candidates only) unless public STUN is allowed or the user configured their
+ * own STUN/TURN servers (device-local, see ice-config.ts).
+ */
+export function buildIceServers(
+  usePublicStun: boolean,
+  custom: readonly RTCIceServer[] = loadCustomIce(),
+): RTCIceServer[] {
+  return [
+    ...(usePublicStun ? [{ urls: [...PUBLIC_STUN_URLS] }] : []),
+    ...custom,
+  ];
 }
 
 /**

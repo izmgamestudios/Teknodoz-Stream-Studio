@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { defaultSettings } from "../defaults";
 import type { MessageKey } from "../i18n/messages";
 import { useT } from "../i18n/use-t";
+import { loadIceText, parseIceLines, saveIceText } from "../p2p/ice-config";
 import { createRoomApi } from "../room/api";
 import {
   useProject,
@@ -210,6 +211,8 @@ export function ConnectionSection() {
   );
   const o = settings.output;
   const peers = rt.getPeersSnapshot().length;
+  const [iceText, setIceText] = useState(loadIceText);
+  const ice = parseIceLines(iceText);
 
   return (
     <section className={PANEL} aria-label={t("settings.connection")}>
@@ -228,6 +231,37 @@ export function ConnectionSection() {
       {peers > 0 && (
         <p className="mt-1 text-xs text-primary">{t("settings.stun.busy")}</p>
       )}
+
+      <div className="mt-3">
+        <label className="text-sm font-semibold" htmlFor="ice-servers">
+          {t("settings.ice")}
+        </label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("settings.ice.body")}
+        </p>
+        <textarea
+          id="ice-servers"
+          rows={3}
+          spellCheck={false}
+          autoComplete="off"
+          placeholder="turn:turn.example.org:3478 | user | password"
+          className="mt-2 w-full rounded-md border bg-background p-2 font-mono text-xs"
+          value={iceText}
+          onChange={(e) => {
+            setIceText(e.target.value);
+            saveIceText(e.target.value);
+          }}
+        />
+        {iceText.trim() !== "" && (
+          <p
+            className={`mt-1 text-xs ${ice.invalid.length > 0 ? "text-destructive" : "text-muted-foreground"}`}
+          >
+            {t("settings.ice.valid", { n: ice.servers.length })}
+            {ice.invalid.length > 0 &&
+              ` · ${t("settings.ice.invalid", { lines: ice.invalid.join(", ") })}`}
+          </p>
+        )}
+      </div>
 
       <div className="mt-4 border-t pt-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
