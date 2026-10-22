@@ -34,7 +34,7 @@ export interface Chapter {
 
 export interface MediaRecord {
   id: string;
-  kind: "video" | "audio";
+  kind: "video" | "audio" | "image";
   mime: string;
   /** file name inside MEDIA_DIR */
   file: string;
@@ -44,6 +44,8 @@ export interface MediaRecord {
   durationMs: number | null;
   width: number | null;
   height: number | null;
+  /** false = silent video (ffprobe saw no audio stream); older records: assume true */
+  hasAudio?: boolean;
   chapters: Chapter[];
   /** languages that have a <id>.<lang>.vtt file */
   captions: { lang: string; label: string }[];
@@ -95,6 +97,8 @@ const SERVE_MIME: Record<string, string> = {
   aac: "audio/aac",
   flac: "audio/flac",
   weba: "audio/webm",
+  png: "image/png",
+  jpg: "image/jpeg",
 };
 
 const ID_RE = /^[a-f0-9]{16}$/;
@@ -129,6 +133,8 @@ export interface MediaOptions {
   /** upload cap in bytes (default 1 GiB) */
   maxBytes?: number;
   probe?: Prober;
+  /** writes a JPEG poster for a video file; true when it did */
+  poster?: (input: string, out: string) => Promise<boolean>;
   now?: () => number;
 }
 
@@ -248,6 +254,7 @@ export function createMediaApi(opts: MediaOptions) {
       durationMs: info?.durationMs ?? null,
       width: info?.width ?? null,
       height: info?.height ?? null,
+      hasAudio: info?.hasAudio ?? true,
       chapters,
       captions: [],
       hasPoster: false,
@@ -255,6 +262,8 @@ export function createMediaApi(opts: MediaOptions) {
       parentId: null,
       createdAt: new Date(now()).toISOString(),
     };
+    if (type.kind === "video" && opts.poster)
+      record.hasPoster = await opts.poster(path, join(opts.dir, `${id}.jpg`));
     await opts.store.upsert(record);
     return json({ media: record }, 201);
   }
@@ -431,7 +440,7 @@ export function createMediaApi(opts: MediaOptions) {
     }
   }
 
-  return { handle, find, dir: opts.dir };
+  return { handle, find, dir: opts.dir, store: opts.store };
 }
 
 export type MediaApi = ReturnType<typeof createMediaApi>;

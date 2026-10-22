@@ -97,6 +97,30 @@ Range destekli (ileri-geri sarma) yayınlanır; kimlik tahmin edilemez 64 bitlik
 (ya da istenen değer) olmalı, yoksa 413 alırsın. Yükleme sürerken `proxy_request_buffering off;`
 da diske geçici yazmayı önler.
 
+### Düzenleme (kırp, intro/outro) ve otomatik altyazı
+`/library` → bir dosya seç → **Düzenle** / **Altyazı** sekmeleri.
+
+- **Düzenle** sunucudaki `ffmpeg` ile çalışır (H.264 kodlayıcılı olmalı; `FFMPEG_PATH` ile yol verilebilir):
+  kırpma, **başlık kartı** (tarayıcıda çizilir, Türkçe karakter sorunu olmaz) ya da kütüphaneden bir videoyu
+  **intro/outro** yapma, giriş-çıkış geçişi (fade), ses seviyesi dengeleme (EBU R128) ve altyazıyı görüntüye
+  gömme. Orijinal korunur; sonuç **yeni bir kayıt** olur. Önizleyip beğenirsen aynı sayfadan yayınlarsın.
+  Aynı anda tek iş çalışır (sıra); ilerleme çubuğu ve iptal vardır.
+- **Altyazı** açık kaynaklı **Whisper** ile sunucuda üretilir (ses hiçbir buluta gitmez):
+
+  ```bash
+  cd ~/htdocs/<alan-adi>
+  bash scripts/whisper-setup.sh              # whisper.cpp (git + cmake + C++ derleyici gerekir)
+  # derleyici yoksa:  bash scripts/whisper-setup.sh ctranslate2   (python3 -m venv + pip)
+  PORT=3011 bash scripts/deploy.sh
+  ```
+  `WHISPER_MODEL_NAME=base` daha hızlı, `medium` daha doğru (2 çekirdekli sunucuda `small` önerilir).
+  Üretilen altyazıyı panelde düzeltebilir, kendi `.vtt`/`.srt` dosyanı yükleyebilir ve oynatıcıda
+  (CC) izleyiciye sunabilirsin. Çıkan altyazılar WebVTT olarak `MEDIA_DIR` altında saklanır.
+- Ortam: `WHISPER_BACKEND` (`whisper-cpp` | `whisper-ctranslate2` | `whisper`), `WHISPER_BIN`, `WHISPER_MODEL`,
+  `WHISPER_THREADS`, `WHISPER_TIMEOUT_MIN`. `bash scripts/server-info.sh` hangisinin kurulu olduğunu gösterir.
+- Doğrulanamayan kısım: gerçek Whisper modelleri geliştirme ortamında indirilemedi; hat (ses çıkarma →
+  CLI → WebVTT → kayıt) sahte bir CLI ile test edildi. İlk gerçek denemede kısa bir dosya ile dene.
+
 ## Çeviriler (`/translations`)
 Yerleşik metinler tr/en/de/es için kodda durur. **Çeviriler** sayfasından (içerik üretici modu,
 aynı yönetici anahtarı) herhangi bir metin sunucuda değiştirilir; yeni sürüm yayınlamadan tüm

@@ -8,8 +8,11 @@ import { handleManifest } from "./server/manifest";
 import { createCatalogApi, catalogTokenFromEnv } from "./server/catalog";
 import { fileRecordStore, fileStore } from "./server/catalog-store";
 import { createAdminApi } from "./server/admin";
+import { ffmpegPoster } from "./server/ffmpeg";
 import { ffprobeProber } from "./server/ffprobe";
 import { createMediaApi, type MediaRecord } from "./server/media";
+import { createMediaEditApi } from "./server/media-edit";
+import { whisperFromEnv } from "./server/whisper";
 import { createI18nApi } from "./server/i18n";
 import { fileI18nStore } from "./server/i18n-store";
 import {
@@ -65,12 +68,26 @@ const mediaStore = pb
   : fileRecordStore<MediaRecord>(
       liveEnv["MEDIA_INDEX_FILE"]?.trim() || "data/media.json",
     );
+const ffmpegBin =
+  liveEnv["FFMPEG_PATH"]?.trim() ||
+  liveEnv["LIVE_FFMPEG_PATH"]?.trim() ||
+  "ffmpeg";
+const prober = ffprobeProber(liveEnv["FFPROBE_PATH"]?.trim() || "ffprobe");
 const media = createMediaApi({
   token: adminToken,
   store: mediaStore,
   dir: liveEnv["MEDIA_DIR"]?.trim() || "data/media",
   maxBytes: Math.max(1, Number(liveEnv["MEDIA_MAX_MB"]) || 1024) * 1024 * 1024,
-  probe: ffprobeProber(liveEnv["FFPROBE_PATH"]?.trim() || "ffprobe"),
+  probe: prober,
+  poster: (input, out) => ffmpegPoster(ffmpegBin, input, out),
+});
+// Editing (ffmpeg) and automatic subtitles (Whisper CLI, WHISPER_* env) on top of the library.
+const mediaEdit = createMediaEditApi({
+  token: adminToken,
+  media,
+  ffmpegBin,
+  probe: prober,
+  whisper: whisperFromEnv(liveEnv),
 });
 const i18n = createI18nApi({ token: adminToken, store: i18nStore });
 const admin = createAdminApi({
@@ -131,6 +148,8 @@ export default {
       if (roomResponse) return roomResponse;
       const catalogResponse = await catalog.handle(request);
       if (catalogResponse) return catalogResponse;
+      const mediaEditResponse = await mediaEdit.handle(request);
+      if (mediaEditResponse) return mediaEditResponse;
       const mediaResponse = await media.handle(request);
       if (mediaResponse) return mediaResponse;
       const adminResponse = await admin.handle(request);

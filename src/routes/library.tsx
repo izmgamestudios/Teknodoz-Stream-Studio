@@ -16,6 +16,7 @@ import {
   PANEL,
   PanelTitle,
 } from "@/studio/ui/fields";
+import { EditPanel, SubtitlesPanel } from "@/studio/ui/watch/editor";
 import { readAdminToken, saveAdminToken } from "@/studio/watch/admin-token";
 import {
   adminDelete,
@@ -253,6 +254,8 @@ function LibraryPage() {
                   media={current}
                   token={token}
                   catalogItem={published.get(current.id) ?? null}
+                  library={media}
+                  onSelect={setSelected}
                   onChanged={async () => {
                     await load(token);
                   }}
@@ -280,16 +283,22 @@ function MediaDetail({
   media,
   token,
   catalogItem,
+  library,
+  onSelect,
   onChanged,
   onDeleted,
 }: {
   media: MediaRecord;
   token: string;
   catalogItem: AdminItem | null;
+  library: readonly MediaRecord[];
+  onSelect: (id: string) => void;
   onChanged: () => Promise<void>;
   onDeleted: () => Promise<void>;
 }) {
   const t = useT();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [tab, setTab] = useState<"publish" | "edit" | "subtitles">("publish");
   const [title, setTitle] = useState(media.title);
   const [msg, setMsg] = useState<string | null>(null);
   const [pub, setPub] = useState({
@@ -343,6 +352,7 @@ function MediaDetail({
       <PanelTitle>{t("lib.preview")}</PanelTitle>
       {media.kind === "video" ? (
         <video
+          ref={videoRef}
           src={src}
           controls
           playsInline
@@ -363,186 +373,231 @@ function MediaDetail({
         <audio src={src} controls preload="metadata" className="w-full" />
       )}
 
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="min-w-0 flex-1 basis-48 text-xs">
-          {t("catalog.f.title")}
-          <input
-            className={`${INPUT} mt-1`}
-            maxLength={120}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </label>
-        <button
-          className={BTN}
-          disabled={title.trim() === "" || title.trim() === media.title}
-          onClick={async () => {
-            await renameMedia(token, media.id, title.trim());
-            await onChanged();
-          }}
-        >
-          {t("lib.rename")}
-        </button>
-        <button
-          className={BTN}
-          onClick={async () => {
-            if (!confirm(t("lib.delete.confirm"))) return;
-            if (catalogItem) await adminDelete(token, catalogItem.id);
-            await deleteMedia(token, media.id);
-            await onDeleted();
-          }}
-        >
-          {t("catalog.delete")}
-        </button>
+      <div
+        role="tablist"
+        aria-label={media.title}
+        className="flex flex-wrap gap-1 border-b pb-2"
+      >
+        {(["publish", "edit", "subtitles"] as const).map((k) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={tab === k}
+            className={`${BTN} ${tab === k ? "!bg-primary-solid !text-primary-foreground" : ""}`}
+            onClick={() => setTab(k)}
+          >
+            {t(`lib.tab.${k}` as const)}
+          </button>
+        ))}
       </div>
 
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <div>{mb(media.size)}</div>
-        <div>{media.durationMs ? formatMs(media.durationMs) : "—"}</div>
-        <div>
-          {media.width && media.height ? `${media.width}×${media.height}` : "—"}
-        </div>
-        <div>{media.mime}</div>
-      </dl>
-      {media.chapters.length > 0 && (
-        <ol
-          className="flex flex-wrap gap-1.5 text-xs"
-          aria-label={t("lib.chapters")}
-        >
-          {media.chapters.map((c, i) => (
-            <li
-              key={`${c.t}-${i}`}
-              className="rounded bg-secondary px-1.5 py-0.5 font-mono"
-            >
-              {formatMs(c.t)} · {c.label}
-            </li>
-          ))}
-        </ol>
+      {tab === "edit" && (
+        <EditPanel
+          media={media}
+          token={token}
+          library={library}
+          videoRef={videoRef}
+          onResult={async (id) => {
+            await onChanged();
+            onSelect(id);
+            setTab("publish");
+          }}
+        />
+      )}
+      {tab === "subtitles" && (
+        <SubtitlesPanel media={media} token={token} onChanged={onChanged} />
       )}
 
-      <div className="rounded-lg border p-3">
-        <h3 className="mb-2 text-sm font-bold">
-          {catalogItem ? `✓ ${t("lib.published")}` : t("lib.publish.title")}
-        </h3>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="text-xs">
-            {t("catalog.f.category")}
-            <input
-              className={`${INPUT} mt-1`}
-              maxLength={30}
-              value={pub.category}
-              onChange={(e) => setPub({ ...pub, category: e.target.value })}
-            />
-          </label>
-          <label className="text-xs">
-            {t("catalog.f.playlist")}
-            <input
-              className={`${INPUT} mt-1`}
-              maxLength={60}
-              value={pub.playlist}
-              onChange={(e) => setPub({ ...pub, playlist: e.target.value })}
-            />
-          </label>
-          <label className="text-xs">
-            {t("catalog.f.episode")}
-            <input
-              className={`${INPUT} mt-1`}
-              inputMode="numeric"
-              maxLength={6}
-              value={pub.episode}
-              onChange={(e) => setPub({ ...pub, episode: e.target.value })}
-            />
-          </label>
-          <label className="text-xs">
-            {t("catalog.f.visibility")}
-            <select
-              className={`${INPUT} mt-1`}
-              value={pub.visibility}
-              onChange={(e) =>
-                setPub({
-                  ...pub,
-                  visibility: e.target.value as "public" | "private",
-                })
-              }
-            >
-              <option value="public">{t("catalog.f.public")}</option>
-              <option value="private">{t("catalog.f.private")}</option>
-            </select>
-          </label>
-          {pub.visibility === "private" && (
-            <label className="text-xs sm:col-span-2">
-              {t("catalog.f.password")}
+      {tab === "publish" && (
+        <>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="min-w-0 flex-1 basis-48 text-xs">
+              {t("catalog.f.title")}
               <input
-                type="password"
-                autoComplete="new-password"
                 className={`${INPUT} mt-1`}
-                minLength={4}
-                maxLength={100}
-                value={pub.password}
-                onChange={(e) => setPub({ ...pub, password: e.target.value })}
+                maxLength={120}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
               />
             </label>
-          )}
-          <label className="text-xs sm:col-span-2">
-            {t("catalog.f.description")}
-            <textarea
-              className={`${INPUT} mt-1`}
-              rows={2}
-              maxLength={1000}
-              value={pub.description}
-              onChange={(e) => setPub({ ...pub, description: e.target.value })}
-            />
-          </label>
-          {media.kind === "video" && (
-            <div className="sm:col-span-2">
-              <Check
-                checked={pub.story}
-                onChange={(story) => setPub({ ...pub, story })}
-              >
-                {t("catalog.f.story")}
-              </Check>
+            <button
+              className={BTN}
+              disabled={title.trim() === "" || title.trim() === media.title}
+              onClick={async () => {
+                await renameMedia(token, media.id, title.trim());
+                await onChanged();
+              }}
+            >
+              {t("lib.rename")}
+            </button>
+            <button
+              className={BTN}
+              onClick={async () => {
+                if (!confirm(t("lib.delete.confirm"))) return;
+                if (catalogItem) await adminDelete(token, catalogItem.id);
+                await deleteMedia(token, media.id);
+                await onDeleted();
+              }}
+            >
+              {t("catalog.delete")}
+            </button>
+          </div>
+
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <div>{mb(media.size)}</div>
+            <div>{media.durationMs ? formatMs(media.durationMs) : "—"}</div>
+            <div>
+              {media.width && media.height
+                ? `${media.width}×${media.height}`
+                : "—"}
             </div>
+            <div>{media.mime}</div>
+          </dl>
+          {media.chapters.length > 0 && (
+            <ol
+              className="flex flex-wrap gap-1.5 text-xs"
+              aria-label={t("lib.chapters")}
+            >
+              {media.chapters.map((c, i) => (
+                <li
+                  key={`${c.t}-${i}`}
+                  className="rounded bg-secondary px-1.5 py-0.5 font-mono"
+                >
+                  {formatMs(c.t)} · {c.label}
+                </li>
+              ))}
+            </ol>
           )}
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            className={BTN_ACCENT}
-            onClick={() => void publish()}
-            disabled={
-              pub.visibility === "private" &&
-              !catalogItem &&
-              pub.password.length < 4
-            }
-          >
-            {catalogItem ? t("catalog.save") : t("lib.publish")}
-          </button>
-          {catalogItem && (
-            <>
-              <Link
-                to="/watch"
-                search={{ item: catalogItem.id }}
-                className={BTN}
-              >
-                📺 {t("admin.go.watch")}
-              </Link>
+
+          <div className="rounded-lg border p-3">
+            <h3 className="mb-2 text-sm font-bold">
+              {catalogItem ? `✓ ${t("lib.published")}` : t("lib.publish.title")}
+            </h3>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="text-xs">
+                {t("catalog.f.category")}
+                <input
+                  className={`${INPUT} mt-1`}
+                  maxLength={30}
+                  value={pub.category}
+                  onChange={(e) => setPub({ ...pub, category: e.target.value })}
+                />
+              </label>
+              <label className="text-xs">
+                {t("catalog.f.playlist")}
+                <input
+                  className={`${INPUT} mt-1`}
+                  maxLength={60}
+                  value={pub.playlist}
+                  onChange={(e) => setPub({ ...pub, playlist: e.target.value })}
+                />
+              </label>
+              <label className="text-xs">
+                {t("catalog.f.episode")}
+                <input
+                  className={`${INPUT} mt-1`}
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={pub.episode}
+                  onChange={(e) => setPub({ ...pub, episode: e.target.value })}
+                />
+              </label>
+              <label className="text-xs">
+                {t("catalog.f.visibility")}
+                <select
+                  className={`${INPUT} mt-1`}
+                  value={pub.visibility}
+                  onChange={(e) =>
+                    setPub({
+                      ...pub,
+                      visibility: e.target.value as "public" | "private",
+                    })
+                  }
+                >
+                  <option value="public">{t("catalog.f.public")}</option>
+                  <option value="private">{t("catalog.f.private")}</option>
+                </select>
+              </label>
+              {pub.visibility === "private" && (
+                <label className="text-xs sm:col-span-2">
+                  {t("catalog.f.password")}
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    className={`${INPUT} mt-1`}
+                    minLength={4}
+                    maxLength={100}
+                    value={pub.password}
+                    onChange={(e) =>
+                      setPub({ ...pub, password: e.target.value })
+                    }
+                  />
+                </label>
+              )}
+              <label className="text-xs sm:col-span-2">
+                {t("catalog.f.description")}
+                <textarea
+                  className={`${INPUT} mt-1`}
+                  rows={2}
+                  maxLength={1000}
+                  value={pub.description}
+                  onChange={(e) =>
+                    setPub({ ...pub, description: e.target.value })
+                  }
+                />
+              </label>
+              {media.kind === "video" && (
+                <div className="sm:col-span-2">
+                  <Check
+                    checked={pub.story}
+                    onChange={(story) => setPub({ ...pub, story })}
+                  >
+                    {t("catalog.f.story")}
+                  </Check>
+                </div>
+              )}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
-                className={BTN}
-                onClick={async () => {
-                  await adminDelete(token, catalogItem.id);
-                  await onChanged();
-                }}
+                className={BTN_ACCENT}
+                onClick={() => void publish()}
+                disabled={
+                  pub.visibility === "private" &&
+                  !catalogItem &&
+                  pub.password.length < 4
+                }
               >
-                {t("lib.unpublish")}
+                {catalogItem ? t("catalog.save") : t("lib.publish")}
               </button>
-            </>
-          )}
-          {msg && (
-            <span role="status" className="text-xs text-muted-foreground">
-              {msg}
-            </span>
-          )}
-        </div>
-      </div>
+              {catalogItem && (
+                <>
+                  <Link
+                    to="/watch"
+                    search={{ item: catalogItem.id }}
+                    className={BTN}
+                  >
+                    📺 {t("admin.go.watch")}
+                  </Link>
+                  <button
+                    className={BTN}
+                    onClick={async () => {
+                      await adminDelete(token, catalogItem.id);
+                      await onChanged();
+                    }}
+                  >
+                    {t("lib.unpublish")}
+                  </button>
+                </>
+              )}
+              {msg && (
+                <span role="status" className="text-xs text-muted-foreground">
+                  {msg}
+                </span>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }
