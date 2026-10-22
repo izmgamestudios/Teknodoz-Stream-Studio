@@ -12,6 +12,8 @@ import { z } from "zod";
 import { tr } from "../studio/i18n/messages";
 import { isMediaSource } from "../studio/watch/media-url";
 import {
+  captionSchema,
+  isAssetUrl,
   CATALOG_LIMITS,
   StoreUnavailableError,
   type CatalogItem,
@@ -40,6 +42,12 @@ const itemSchema = z.object({
   linkKey: z.string().max(100).nullable(),
   startsAt: z.string().datetime({ offset: true }).nullable(),
   live: z.boolean(),
+  // added after the first release: older backups lack these
+  story: z.boolean().default(false),
+  playlist: text(60).default(""),
+  episode: z.number().int().min(0).max(100000).nullable().default(null),
+  poster: z.string().max(500).refine(isAssetUrl, "bad-url").default(""),
+  captions: z.array(captionSchema).max(8).default([]),
   createdAt: z.string().datetime({ offset: true }),
 });
 

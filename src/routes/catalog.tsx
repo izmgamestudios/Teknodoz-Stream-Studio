@@ -47,11 +47,30 @@ interface Draft {
   tags: string;
   startsAt: string;
   live: boolean;
+  story: boolean;
+  playlist: string;
+  episode: string;
+  poster: string;
+  captions: AdminItem["captions"];
   visibility: "public" | "private";
   password: string;
   removePassword: boolean;
   linkKey: "keep" | "renew" | "remove";
 }
+
+/** Suggestions for the category box (free text is still allowed). */
+const CATEGORY_SUGGESTIONS = [
+  "Haber",
+  "Dizi",
+  "Film",
+  "Belgesel",
+  "Podcast",
+  "Müzik",
+  "Canlı TV",
+  "Eğitim",
+  "Etkinlik",
+  "Röportaj",
+];
 
 const EMPTY: Draft = {
   url: "",
@@ -61,6 +80,11 @@ const EMPTY: Draft = {
   tags: "",
   startsAt: "",
   live: false,
+  story: false,
+  playlist: "",
+  episode: "",
+  poster: "",
+  captions: [],
   visibility: "public",
   password: "",
   removePassword: false,
@@ -141,6 +165,13 @@ function CatalogPage() {
           : {}),
       startsAt: draft.startsAt ? new Date(draft.startsAt).toISOString() : null,
       live: draft.live || source.kind === "youtube-live",
+      story: draft.story,
+      playlist: draft.playlist.trim(),
+      episode: /^\d{1,6}$/.test(draft.episode.trim())
+        ? Number(draft.episode.trim())
+        : null,
+      poster: draft.poster.trim(),
+      captions: draft.captions,
     };
     const saved = await adminSave(token, input);
     if (!saved) return setMsg({ ok: false, text: "catalog.err.save" });
@@ -162,6 +193,11 @@ function CatalogPage() {
       tags: i.tags.join(", "),
       startsAt: toLocalInput(i.startsAt),
       live: i.live,
+      story: i.story,
+      playlist: i.playlist,
+      episode: i.episode === null ? "" : String(i.episode),
+      poster: i.poster,
+      captions: i.captions,
       visibility: i.visibility,
       password: "",
       removePassword: false,
@@ -275,9 +311,15 @@ function CatalogPage() {
                   <input
                     className={`${INPUT} mt-1 w-full`}
                     maxLength={30}
+                    list="catalog-categories"
                     value={draft.category}
                     onChange={(e) => set({ category: e.target.value })}
                   />
+                  <datalist id="catalog-categories">
+                    {CATEGORY_SUGGESTIONS.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
                 </label>
                 <label className="block text-sm">
                   {t("catalog.f.tags")}
@@ -302,6 +344,46 @@ function CatalogPage() {
                     onChange={(live) => set({ live })}
                   >
                     {t("catalog.f.live")}
+                  </Check>
+                </div>
+                <label className="block text-sm">
+                  {t("catalog.f.playlist")}
+                  <input
+                    className={`${INPUT} mt-1 w-full`}
+                    maxLength={60}
+                    value={draft.playlist}
+                    onChange={(e) => set({ playlist: e.target.value })}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {t("catalog.f.playlist.hint")}
+                  </span>
+                </label>
+                <label className="block text-sm">
+                  {t("catalog.f.episode")}
+                  <input
+                    className={`${INPUT} mt-1 w-full`}
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={draft.episode}
+                    onChange={(e) => set({ episode: e.target.value })}
+                  />
+                </label>
+                <label className="block text-sm sm:col-span-2">
+                  {t("catalog.f.poster")}
+                  <input
+                    className={`${INPUT} mt-1 w-full`}
+                    inputMode="url"
+                    maxLength={500}
+                    value={draft.poster}
+                    onChange={(e) => set({ poster: e.target.value })}
+                  />
+                </label>
+                <div className="flex items-end sm:col-span-2">
+                  <Check
+                    checked={draft.story}
+                    onChange={(story) => set({ story })}
+                  >
+                    {t("catalog.f.story")}
                   </Check>
                 </div>
                 <label className="block text-sm">

@@ -23,6 +23,11 @@ const item = (o: Partial<WatchItem> & { id: string }): WatchItem => ({
   live: false,
   startsAt: null,
   createdAt: "2026-10-01T10:00:00",
+  story: false,
+  playlist: "",
+  episode: null,
+  poster: "",
+  captions: [],
   ...o,
 });
 
@@ -81,6 +86,18 @@ describe("filterItems", () => {
     expect(f({ time: "live" }).sort()).toEqual(["live", "room"]);
     expect(f({ time: "month" })).toContain("today");
     expect(f({ time: "month" })).not.toContain("old");
+  });
+
+  it("filters by playlist and searches playlist names", () => {
+    const withPl = [
+      item({ id: "a", playlist: "Gece Haberleri" }),
+      item({ id: "b", playlist: "Dizi X" }),
+      item({ id: "c" }),
+    ];
+    const ids = (q: Partial<typeof DEFAULT_QUERY>) =>
+      filterItems(withPl, { ...DEFAULT_QUERY, ...q }, NOW).map((i) => i.id);
+    expect(ids({ playlist: "Dizi X" })).toEqual(["b"]);
+    expect(ids({ text: "gece haberleri" })).toEqual(["a"]);
   });
 
   it("lists distinct sorted categories", () => {

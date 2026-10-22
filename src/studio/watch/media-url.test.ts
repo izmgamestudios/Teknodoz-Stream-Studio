@@ -1,7 +1,14 @@
 // src/studio/watch/media-url.test.ts
 import { describe, expect, it } from "vitest";
 
-import { embedUrl, isMediaSource, parseMediaInput } from "./media-url";
+import {
+  embedUrl,
+  fileSrc,
+  isAudioSource,
+  isMediaSource,
+  parseMediaInput,
+  type MediaSource,
+} from "./media-url";
 
 describe("parseMediaInput", () => {
   it("accepts the usual YouTube shapes", () => {
@@ -80,5 +87,30 @@ describe("isMediaSource / embedUrl", () => {
       "youtube-nocookie.com/embed/dQw4w9WgXcQ",
     );
     expect(embedUrl({ kind: "room", code: "AB3CDE" })).toBeNull();
+  });
+});
+
+describe("audio and library sources", () => {
+  it("accepts https audio files", () => {
+    for (const ext of ["mp3", "wav", "ogg", "m4a", "aac", "flac", "opus"])
+      expect(parseMediaInput(`https://cdn.example.org/p/ep1.${ext}`)).toEqual({
+        kind: "audio",
+        url: `https://cdn.example.org/p/ep1.${ext}`,
+      });
+    expect(parseMediaInput("http://cdn.example.org/a.mp3")).toBeNull();
+  });
+
+  it("validates library uploads and tells audio from video", () => {
+    const up = { kind: "upload", id: "0123456789abcdef", media: "audio" };
+    expect(isMediaSource(up)).toBe(true);
+    expect(isMediaSource({ ...up, id: "../../etc" })).toBe(false);
+    expect(isMediaSource({ ...up, media: "text" })).toBe(false);
+    expect(isAudioSource(up as MediaSource)).toBe(true);
+    expect(isAudioSource({ kind: "audio", url: "https://a.test/a.mp3" })).toBe(
+      true,
+    );
+    expect(isAudioSource({ kind: "youtube", id: "dQw4w9WgXcQ" })).toBe(false);
+    expect(fileSrc(up as MediaSource)).toBe("/media/0123456789abcdef");
+    expect(fileSrc({ kind: "youtube", id: "dQw4w9WgXcQ" })).toBeNull();
   });
 });

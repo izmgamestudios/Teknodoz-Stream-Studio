@@ -17,6 +17,11 @@ export interface WatchItem {
   startsAt: string | null;
   createdAt: string;
   viewers?: number;
+  story: boolean;
+  playlist: string;
+  episode: number | null;
+  poster: string;
+  captions: { lang: string; label: string; url: string }[];
 }
 
 export type TimeFilter =
@@ -26,6 +31,8 @@ export type SortKey = "smart" | "newest" | "oldest" | "title";
 export interface WatchQuery {
   text: string;
   category: string;
+  /** playlist / series name ("" = any) */
+  playlist: string;
   time: TimeFilter;
   sort: SortKey;
 }
@@ -33,6 +40,7 @@ export interface WatchQuery {
 export const DEFAULT_QUERY: WatchQuery = {
   text: "",
   category: "",
+  playlist: "",
   time: "all",
   sort: "smart",
 };
@@ -92,10 +100,11 @@ export function filterItems(
   const terms = fold(q.text).split(/\s+/).filter(Boolean);
   const out = items.filter((i) => {
     if (q.category && i.category !== q.category) return false;
+    if (q.playlist && i.playlist !== q.playlist) return false;
     if (!matchesTime(i, q.time, now)) return false;
     if (terms.length === 0) return true;
     const hay = fold(
-      `${i.title} ${i.description} ${i.category} ${i.tags.join(" ")}`,
+      `${i.title} ${i.description} ${i.category} ${i.playlist} ${i.tags.join(" ")}`,
     );
     return terms.every((t) => hay.includes(t));
   });

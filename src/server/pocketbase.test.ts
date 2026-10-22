@@ -98,6 +98,11 @@ const item = (id: string): CatalogItem => ({
   linkKey: null,
   startsAt: null,
   live: false,
+  story: false,
+  playlist: "",
+  episode: null,
+  poster: "",
+  captions: [],
   createdAt: "2026-10-22T10:00:00.000Z",
 });
 

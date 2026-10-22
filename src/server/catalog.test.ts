@@ -146,3 +146,91 @@ describe("catalog api", () => {
     expect(last).toBe(429);
   });
 });
+
+describe("catalog: stories, playlists, captions, audio", () => {
+  it("stores the new fields and fills defaults for older records", async () => {
+    const legacy = {
+      id: "legacy-1",
+      title: "Old",
+      description: "",
+      category: "",
+      tags: [],
+      source: yt,
+      visibility: "public",
+      passwordHash: null,
+      linkKey: null,
+      startsAt: null,
+      live: false,
+      createdAt: "2026-10-01T10:00:00.000Z",
+    };
+    const api = createCatalogApi({
+      token: TOKEN,
+      store: memoryStore([legacy as never]),
+    });
+    const old = (await call(api, "GET", "/api/catalog")).body.items[0];
+    expect(old).toMatchObject({
+      story: false,
+      playlist: "",
+      episode: null,
+      poster: "",
+      captions: [],
+    });
+
+    const c = await call(
+      api,
+      "PUT",
+      "/api/catalog/item",
+      {
+        title: "Podcast #1",
+        source: { kind: "audio", url: "https://cdn.example.org/p1.mp3" },
+        story: true,
+        playlist: "Teknoloji",
+        episode: 1,
+        poster: "https://cdn.example.org/c.jpg",
+        captions: [
+          { lang: "tr", label: "Türkçe", url: "/media/abc/captions/tr.vtt" },
+        ],
+      },
+      TOKEN,
+    );
+    expect(c.status).toBe(201);
+    const pub = (await call(api, "GET", "/api/catalog")).body.items.find(
+      (i: any) => i.title === "Podcast #1",
+    );
+    expect(pub).toMatchObject({
+      story: true,
+      playlist: "Teknoloji",
+      episode: 1,
+      source: { kind: "audio" },
+    });
+    expect(pub.captions).toHaveLength(1);
+  });
+
+  it("rejects unsafe poster / caption URLs", async () => {
+    const api = mk();
+    const put = (extra: object) =>
+      call(
+        api,
+        "PUT",
+        "/api/catalog/item",
+        { title: "x", source: yt, ...extra },
+        TOKEN,
+      );
+    expect((await put({ poster: "javascript:alert(1)" })).status).toBe(400);
+    expect(
+      (await put({ poster: "http://insecure.example/a.jpg" })).status,
+    ).toBe(400);
+    expect((await put({ poster: "/media/../../etc/passwd" })).status).toBe(400);
+    expect(
+      (
+        await put({
+          captions: [{ lang: "tr", label: "x", url: "data:text/vtt,x" }],
+        })
+      ).status,
+    ).toBe(400);
+    expect((await put({ episode: -1 })).status).toBe(400);
+    expect((await put({ poster: "/media/abc123/poster.jpg" })).status).toBe(
+      201,
+    );
+  });
+});

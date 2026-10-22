@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { useLang, useT } from "../../i18n/use-t";
 import type { Lang } from "../../i18n/messages";
 import type { WatchItem } from "../../watch/filter";
-import { thumbnailUrl } from "../../watch/media-url";
+import { isAudioSource } from "../../watch/media-url";
+import { coverOf } from "./stories";
 
 const LOCALE: Record<Lang, string> = {
   tr: "tr-TR",
@@ -42,7 +43,8 @@ export function WatchCard({
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const thumb = item.source ? thumbnailUrl(item.source) : null;
+  const thumb = coverOf(item);
+  const audio = isAudioSource(item.source);
   const canPreview =
     !item.locked && item.source?.kind === "youtube" && !item.live;
   const upcoming =
@@ -86,7 +88,13 @@ export function WatchCard({
             aria-hidden="true"
             className="flex h-full w-full items-center justify-center bg-gradient-to-br from-secondary to-muted text-5xl"
           >
-            {item.locked ? "🔒" : item.origin === "room" ? "🚪" : "▶"}
+            {item.locked
+              ? "🔒"
+              : item.origin === "room"
+                ? "🚪"
+                : audio
+                  ? "🎧"
+                  : "▶"}
           </span>
         )}
         {preview && item.source?.kind === "youtube" && (
@@ -116,6 +124,11 @@ export function WatchCard({
               {t("watch.private")}
             </span>
           )}
+          {audio && !item.locked && (
+            <span className="rounded bg-background/90 px-1.5 py-0.5 text-foreground">
+              🎧 {t("watch.audio")}
+            </span>
+          )}
         </span>
       </button>
       <div className="min-w-0">
@@ -124,6 +137,11 @@ export function WatchCard({
         </h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
           {[
+            item.playlist
+              ? item.episode !== null
+                ? `${item.playlist} · ${t("watch.episode", { n: item.episode })}`
+                : item.playlist
+              : "",
             item.category,
             item.origin === "room" && item.viewers !== undefined
               ? t("watch.room.viewers", { n: item.viewers })

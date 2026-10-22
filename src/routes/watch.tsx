@@ -1,6 +1,7 @@
 // src/routes/watch.tsx
-// Viewer home: live public rooms + the admin-curated catalog (YouTube / Vimeo / files), with
-// search, category, time and sort filters. Filters live in the URL so a view can be shared.
+// Viewer home, a streaming-site style hub: stories, live TV, series / playlists, podcasts and
+// category rails; search + category + playlist + time filters (kept in the URL) switch it to a
+// grid. A playlist sidebar and an "up next" queue in the player keep viewers watching.
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -9,6 +10,8 @@ import { useT } from "@/studio/i18n/use-t";
 import { BTN, BTN_ACCENT, INPUT, INPUT_AUTO, PANEL } from "@/studio/ui/fields";
 import { WatchCard } from "@/studio/ui/watch/card";
 import { WatchPlayer } from "@/studio/ui/watch/player";
+import { Rail, RailItem } from "@/studio/ui/watch/rail";
+import { coverOf, StoryBar, StoryViewer } from "@/studio/ui/watch/stories";
 import {
   loadCatalog,
   unlockItem,
@@ -22,6 +25,13 @@ import {
   type TimeFilter,
   type WatchItem,
 } from "@/studio/watch/filter";
+import {
+  playlistsOf,
+  queueFor,
+  sectionsOf,
+  storiesOf,
+  type Playlist,
+} from "@/studio/watch/sections";
 
 const TIMES: readonly TimeFilter[] = [
   "all",
@@ -36,6 +46,7 @@ const SORTS: readonly SortKey[] = ["smart", "newest", "oldest", "title"];
 interface Search {
   q?: string | undefined;
   cat?: string | undefined;
+  pl?: string | undefined;
   time?: TimeFilter | undefined;
   sort?: SortKey | undefined;
   item?: string | undefined;
@@ -48,11 +59,13 @@ export const Route = createFileRoute("/watch")({
       typeof v === "string" && v !== "" ? v.slice(0, max) : undefined;
     const q = str(s["q"], 100);
     const cat = str(s["cat"], 30);
+    const pl = str(s["pl"], 60);
     const item = str(s["item"], 40);
     const k = str(s["k"], 100);
     return {
       ...(q ? { q } : {}),
       ...(cat ? { cat } : {}),
+      ...(pl ? { pl } : {}),
       ...(TIMES.includes(s["time"] as TimeFilter) && s["time"] !== "all"
         ? { time: s["time"] as TimeFilter }
         : {}),
@@ -69,7 +82,7 @@ export const Route = createFileRoute("/watch")({
       {
         name: "description",
         content:
-          "Live rooms and videos: watch right on the home page, filter by category and time.",
+          "Live TV, series, films, news, podcasts and stories: watch right here, filter by category, playlist and time.",
       },
     ],
   }),
@@ -84,6 +97,7 @@ function WatchPage() {
   const [unlocked, setUnlocked] = useState<Record<string, WatchItem>>({});
   const [open, setOpen] = useState<WatchItem | null>(null);
   const [asking, setAsking] = useState<WatchItem | null>(null);
+  const [story, setStory] = useState<number | null>(null);
   const [roomCode, setRoomCode] = useState("");
 
   const refresh = useCallback(() => {
@@ -121,23 +135,26 @@ function WatchPage() {
     () => (snap?.items ?? []).map((i) => unlocked[i.id] ?? i),
     [snap, unlocked],
   );
-  const query = {
-    ...DEFAULT_QUERY,
-    text: search.q ?? "",
-    category: search.cat ?? "",
-    time: search.time ?? "all",
-    sort: search.sort ?? "smart",
-  };
-  const shown = useMemo(
-    () => filterItems(items, query),
-    [items, query.text, query.category, query.time, query.sort],
+  const query = useMemo(
+    () => ({
+      ...DEFAULT_QUERY,
+      text: search.q ?? "",
+      category: search.cat ?? "",
+      playlist: search.pl ?? "",
+      time: search.time ?? "all",
+      sort: search.sort ?? "smart",
+    }),
+    [search.q, search.cat, search.pl, search.time, search.sort],
   );
+  const shown = useMemo(() => filterItems(items, query), [items, query]);
   const cats = useMemo(() => categoriesOf(items), [items]);
-  const dirty =
-    query.text ||
-    query.category ||
-    query.time !== "all" ||
-    query.sort !== "smart";
+  const playlists = useMemo(() => playlistsOf(items), [items]);
+  const stories = useMemo(() => storiesOf(items), [items]);
+  const sections = useMemo(() => sectionsOf(items), [items]);
+  const filtering = Boolean(
+    query.text || query.category || query.playlist || query.time !== "all",
+  );
+  const dirty = filtering || query.sort !== "smart";
 
   const set = (patch: Search) =>
     void navigate({
@@ -145,8 +162,22 @@ function WatchPage() {
       replace: true,
     });
 
-  const openItem = (i: WatchItem) => (i.locked ? setAsking(i) : setOpen(i));
+  const openItem = useCallback((i: WatchItem) => {
+    if (i.locked) setAsking(i);
+    else setOpen(i);
+  }, []);
   const code = roomCode.trim().toUpperCase();
+  const codeOk = /^[A-HJ-NP-Z2-9]{6}$/.test(code);
+  const queue = useMemo(
+    () => (open ? queueFor(items, open, shown) : []),
+    [open, items, shown],
+  );
+
+  const card = (i: WatchItem, wide = false) => (
+    <RailItem key={i.id} wide={wide}>
+      <WatchCard item={i} onOpen={openItem} />
+    </RailItem>
+  );
 
   return (
     <div className="min-h-screen p-3 md:p-6">
@@ -156,6 +187,8 @@ function WatchPage() {
           {t("watch.intro")}
         </p>
       </header>
+
+      <StoryBar items={stories} onOpen={setStory} />
 
       <section
         className="mx-auto mb-4 max-w-7xl space-y-2"
@@ -228,25 +261,103 @@ function WatchPage() {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-7xl gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {shown.map((i) => (
-          <WatchCard key={i.id} item={i} onOpen={openItem} />
-        ))}
+      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <PlaylistSidebar
+          playlists={playlists}
+          active={query.playlist}
+          onPick={(name) => set({ pl: name || undefined })}
+        />
+
+        <div className="min-w-0 space-y-8">
+          {!snap && (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              {t("watch.loading")}
+            </p>
+          )}
+
+          {snap && filtering && (
+            <div className="grid gap-x-4 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
+              {shown.map((i) => (
+                <WatchCard key={i.id} item={i} onOpen={openItem} />
+              ))}
+            </div>
+          )}
+
+          {snap && !filtering && items.length > 0 && (
+            <>
+              {sections.live.length > 0 && (
+                <Rail title={t("watch.rail.live")} count={sections.live.length}>
+                  {sections.live.map((i) => card(i, true))}
+                </Rail>
+              )}
+              {sections.upcoming.length > 0 && (
+                <Rail
+                  title={t("watch.rail.upcoming")}
+                  count={sections.upcoming.length}
+                >
+                  {sections.upcoming.map((i) => card(i))}
+                </Rail>
+              )}
+              {sections.playlists.length > 0 && (
+                <Rail
+                  title={t("watch.rail.playlists")}
+                  count={sections.playlists.length}
+                >
+                  {sections.playlists.map((p) => (
+                    <RailItem key={p.name}>
+                      <PlaylistCard
+                        playlist={p}
+                        onPlay={() => {
+                          const first = p.items[0];
+                          if (first) openItem(first);
+                        }}
+                        onBrowse={() => set({ pl: p.name })}
+                      />
+                    </RailItem>
+                  ))}
+                </Rail>
+              )}
+              {sections.audio.length > 0 && (
+                <Rail
+                  title={t("watch.rail.audio")}
+                  count={sections.audio.length}
+                >
+                  {sections.audio.map((i) => card(i))}
+                </Rail>
+              )}
+              {sections.categories.map((c) => (
+                <Rail
+                  key={c.name || "__none"}
+                  title={c.name || t("watch.rail.other")}
+                  count={c.items.length}
+                  action={
+                    c.name ? (
+                      <button
+                        className="text-xs underline"
+                        onClick={() => set({ cat: c.name })}
+                      >
+                        {t("watch.category.all")} →
+                      </button>
+                    ) : null
+                  }
+                >
+                  {c.items.map((i) => card(i))}
+                </Rail>
+              ))}
+            </>
+          )}
+
+          {snap && shown.length === 0 && (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              {!snap.available
+                ? t("watch.offline")
+                : items.length === 0
+                  ? t("watch.none")
+                  : t("watch.empty")}
+            </p>
+          )}
+        </div>
       </div>
-      {snap && shown.length === 0 && (
-        <p className="mx-auto mt-10 max-w-7xl text-center text-sm text-muted-foreground">
-          {!snap.available
-            ? t("watch.offline")
-            : items.length === 0
-              ? t("watch.none")
-              : t("watch.empty")}
-        </p>
-      )}
-      {!snap && (
-        <p className="mx-auto mt-10 max-w-7xl text-center text-sm text-muted-foreground">
-          {t("watch.loading")}
-        </p>
-      )}
 
       <section
         className={`${PANEL} mx-auto mt-8 flex max-w-7xl flex-wrap items-center gap-2`}
@@ -264,8 +375,8 @@ function WatchPage() {
           onChange={(e) => setRoomCode(e.target.value)}
         />
         <a
-          className={`${BTN_ACCENT} ${/^[A-HJ-NP-Z2-9]{6}$/.test(code) ? "" : "pointer-events-none opacity-50"}`}
-          aria-disabled={!/^[A-HJ-NP-Z2-9]{6}$/.test(code)}
+          className={`${BTN_ACCENT} ${codeOk ? "" : "pointer-events-none opacity-50"}`}
+          aria-disabled={!codeOk}
           href={`/r/${code}?as=viewer`}
         >
           {t("watch.joinByCode.go")}
@@ -283,8 +394,142 @@ function WatchPage() {
           }}
         />
       )}
-      {open && <WatchPlayer item={open} onClose={() => setOpen(null)} />}
+      {open && (
+        <WatchPlayer
+          item={open}
+          queue={queue}
+          queueTitle={
+            open.playlist
+              ? t("player.queue.playlist", { name: open.playlist })
+              : t("player.queue.browse")
+          }
+          onSelect={openItem}
+          onClose={() => setOpen(null)}
+        />
+      )}
+      {story !== null && stories.length > 0 && (
+        <StoryViewer
+          items={stories}
+          start={story}
+          onClose={() => setStory(null)}
+        />
+      )}
     </div>
+  );
+}
+
+/** Side list of playlists / series: pick one to filter, or "All". */
+function PlaylistSidebar({
+  playlists,
+  active,
+  onPick,
+}: {
+  playlists: readonly Playlist[];
+  active: string;
+  onPick: (name: string) => void;
+}) {
+  const t = useT();
+  const row = (current: boolean) =>
+    `flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent ${current ? "bg-secondary font-semibold" : ""}`;
+  return (
+    <aside
+      aria-label={t("watch.playlists")}
+      className="lg:sticky lg:top-4 lg:self-start"
+    >
+      <details
+        open
+        className="rounded-xl border bg-card p-2 lg:[&>summary]:pointer-events-none"
+      >
+        <summary className="cursor-pointer px-3 py-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {t("watch.playlists")}
+        </summary>
+        <ul className="mt-1 max-h-[60dvh] space-y-0.5 overflow-y-auto">
+          <li>
+            <button
+              className={row(active === "")}
+              aria-current={active === "" ? "true" : undefined}
+              onClick={() => onPick("")}
+            >
+              {t("watch.playlists.all")}
+            </button>
+          </li>
+          {playlists.map((p) => (
+            <li key={p.name}>
+              <button
+                className={row(active === p.name)}
+                aria-current={active === p.name ? "true" : undefined}
+                onClick={() => onPick(p.name)}
+              >
+                <span className="min-w-0 truncate">{p.name}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {p.items.length}
+                </span>
+              </button>
+            </li>
+          ))}
+          {playlists.length === 0 && (
+            <li className="px-3 py-2 text-xs text-muted-foreground">
+              {t("watch.playlists.empty")}
+            </li>
+          )}
+        </ul>
+      </details>
+    </aside>
+  );
+}
+
+/** A playlist as a card: cover of the first episode, count, play / browse. */
+function PlaylistCard({
+  playlist,
+  onPlay,
+  onBrowse,
+}: {
+  playlist: Playlist;
+  onPlay: () => void;
+  onBrowse: () => void;
+}) {
+  const t = useT();
+  const first = playlist.items[0];
+  const cover = first ? coverOf(first) : null;
+  return (
+    <article className="space-y-2">
+      <button
+        type="button"
+        onClick={onPlay}
+        className="group relative block aspect-video w-full overflow-hidden rounded-xl bg-secondary outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+        aria-label={`${t("watch.playlist.play")}: ${playlist.name}`}
+      >
+        {cover ? (
+          <img
+            src={cover}
+            alt=""
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="size-full object-cover transition-transform group-hover:scale-105"
+            onError={(e) => (e.currentTarget.style.display = "none")}
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="flex size-full items-center justify-center text-5xl"
+          >
+            ▶
+          </span>
+        )}
+        <span className="absolute inset-y-0 right-0 flex w-1/3 flex-col items-center justify-center bg-black/70 text-xs font-bold text-white">
+          <span className="text-lg">≡</span>
+          {t("watch.episodes", { n: playlist.items.length })}
+        </span>
+      </button>
+      <div className="flex items-start gap-2">
+        <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-semibold leading-snug">
+          {playlist.name}
+        </h3>
+        <button className="shrink-0 text-xs underline" onClick={onBrowse}>
+          {t("watch.playlists.all")}
+        </button>
+      </div>
+    </article>
   );
 }
 

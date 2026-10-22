@@ -44,8 +44,55 @@ export interface CatalogItem {
   startsAt: string | null;
   /** marked live by the admin (YouTube live etc.) */
   live: boolean;
+  /** shown in the stories bar (short, vertical-friendly clips) */
+  story: boolean;
+  /** playlist / series / show name; items sharing it form a queue ("" = none) */
+  playlist: string;
+  /** episode number inside the playlist (orders the queue) */
+  episode: number | null;
+  /** cover image: https URL or /media/... path ("" = none) */
+  poster: string;
+  /** subtitle tracks (WebVTT) */
+  captions: Caption[];
   createdAt: string;
 }
+
+export interface Caption {
+  lang: string;
+  label: string;
+  /** https URL or /media/... path to a .vtt file */
+  url: string;
+}
+
+/** Fields added after the first release: older stored records get these defaults. */
+export function withDefaults(i: CatalogItem): CatalogItem {
+  return {
+    ...i,
+    story: i.story ?? false,
+    playlist: i.playlist ?? "",
+    episode: i.episode ?? null,
+    poster: i.poster ?? "",
+    captions: i.captions ?? [],
+  };
+}
+
+/** https URL, or a path inside our own media library (no "..", no empty segments). */
+export function isAssetUrl(u: string): boolean {
+  if (u === "") return true;
+  if (/^https:\/\/[^\s]+$/.test(u)) return true;
+  return (
+    /^\/media\/[A-Za-z0-9._-]+(\/[A-Za-z0-9._-]+)*$/.test(u) &&
+    !u.split("/").some((seg) => seg === "..")
+  );
+}
+
+const assetUrl = z.string().max(500).refine(isAssetUrl, "bad-url");
+
+export const captionSchema = z.object({
+  lang: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/),
+  label: z.string().trim().min(1).max(40),
+  url: assetUrl.refine((u) => u !== "", "bad-url"),
+});
 
 /** Persistence behind the catalog: memory (tests), JSON file, or PocketBase. */
 export interface CatalogStore {
@@ -93,6 +140,11 @@ const itemBody = z.object({
   linkKey: z.boolean().optional(),
   startsAt: z.string().datetime({ offset: true }).nullable().default(null),
   live: z.boolean().default(false),
+  story: z.boolean().default(false),
+  playlist: text(60).default(""),
+  episode: z.number().int().min(0).max(100000).nullable().default(null),
+  poster: assetUrl.default(""),
+  captions: z.array(captionSchema).max(8).default([]),
 });
 
 function hashPassword(pw: string): string {
@@ -186,7 +238,9 @@ export function createCatalogApi(opts: CatalogOptions) {
     const method = req.method.toUpperCase();
     try {
       if (rest.length === 0 && method === "GET") {
-        const items = (await opts.store.list()).map((i) => toPublic(i));
+        const items = (await opts.store.list()).map((i) =>
+          toPublic(withDefaults(i)),
+        );
         return json({ items, admin: opts.token !== null });
       }
 
@@ -224,12 +278,10 @@ export function createCatalogApi(opts: CatalogOptions) {
       if (!isAdmin(req)) return json({ error: "unauthorized" }, 401);
 
       if (rest[0] === "admin" && rest.length === 1 && method === "GET") {
-        const items = (await opts.store.list()).map(
-          ({ passwordHash, ...i }) => ({
-            ...i,
-            hasPassword: passwordHash !== null,
-          }),
-        );
+        const items = (await opts.store.list()).map((raw) => {
+          const { passwordHash, ...i } = withDefaults(raw);
+          return { ...i, hasPassword: passwordHash !== null };
+        });
         return json({ items });
       }
 
@@ -263,6 +315,11 @@ export function createCatalogApi(opts: CatalogOptions) {
                 : null,
           startsAt: b.startsAt,
           live: b.live,
+          story: b.story,
+          playlist: b.playlist,
+          episode: b.episode,
+          poster: b.poster,
+          captions: b.captions,
           createdAt: prev?.createdAt ?? new Date(now()).toISOString(),
         };
         await opts.store.upsert(next);

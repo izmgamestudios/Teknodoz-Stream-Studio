@@ -15,6 +15,11 @@ interface ServerItem {
   live: boolean;
   startsAt: string | null;
   createdAt: string;
+  story?: boolean;
+  playlist?: string;
+  episode?: number | null;
+  poster?: string;
+  captions?: { lang: string; label: string; url: string }[];
 }
 
 interface ServerRoom {
@@ -39,6 +44,11 @@ export function toWatchItem(i: ServerItem): WatchItem {
     live: i.live,
     startsAt: i.startsAt,
     createdAt: i.createdAt,
+    story: i.story ?? false,
+    playlist: i.playlist ?? "",
+    episode: i.episode ?? null,
+    poster: i.poster ?? "",
+    captions: i.captions ?? [],
   };
 }
 
@@ -57,6 +67,11 @@ export function roomToWatchItem(r: ServerRoom): WatchItem {
     startsAt: null,
     createdAt: new Date(r.startedAt).toISOString(),
     viewers: r.viewers,
+    story: false,
+    playlist: "",
+    episode: null,
+    poster: "",
+    captions: [],
   };
 }
 
@@ -129,6 +144,11 @@ export interface AdminItem {
   linkKey: string | null;
   startsAt: string | null;
   live: boolean;
+  story: boolean;
+  playlist: string;
+  episode: number | null;
+  poster: string;
+  captions: { lang: string; label: string; url: string }[];
   createdAt: string;
 }
 
@@ -144,6 +164,11 @@ export interface AdminInput {
   linkKey?: boolean;
   startsAt: string | null;
   live: boolean;
+  story: boolean;
+  playlist: string;
+  episode: number | null;
+  poster: string;
+  captions: { lang: string; label: string; url: string }[];
 }
 
 const auth = (token: string): HeadersInit => ({
