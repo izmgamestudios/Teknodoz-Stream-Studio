@@ -553,6 +553,13 @@ export const es: Record<MessageKey, string> = {
   "cue.issue.line": "línea demasiado larga",
   "cue.issue.empty": "vacía",
   "cue.issue.reversed": "termina antes de empezar",
+  "libpick.button": "Desde la biblioteca del servidor",
+  "libpick.login":
+    "la biblioteca del servidor requiere iniciar sesión como administrador",
+  "libpick.error": "No se pudo cargar la biblioteca.",
+  "libpick.loading": "Cargando…",
+  "libpick.search": "Buscar en la biblioteca…",
+  "libpick.none": "No hay archivos que coincidan.",
   "edit.clips.total": "{n} clips · duración total {t}",
   "edit.err.clipsBurn":
     "Los subtítulos incrustados no se pueden combinar con cortar y unir.",

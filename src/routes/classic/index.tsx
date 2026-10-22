@@ -50,6 +50,8 @@ import {
   W,
 } from "@/classic/studio/types";
 import { useAudioMixer } from "@/classic/studio/use-audio-mixer";
+import { LibraryPicker } from "@/studio/ui/library-picker";
+import { mediaUrl } from "@/studio/watch/media-client";
 
 export const Route = createFileRoute("/classic/")({
   head: () => ({
@@ -1082,6 +1084,18 @@ function Studio() {
                       }}
                     />
                   </label>
+                  <LibraryPicker
+                    kinds={["video"]}
+                    buttonClassName={btn}
+                    onPick={(m) => {
+                      if (!bgvRef.current) return;
+                      bgvRef.current.src = mediaUrl(m.id);
+                      prepareAudio();
+                      void bgvRef.current.play();
+                      setHasBgVideo(true);
+                      patch({ base: "video" });
+                    }}
+                  />
                   {hasBgVideo && (
                     <button
                       className={btn}
@@ -1459,6 +1473,22 @@ function Studio() {
                     ▶ {u.label.slice(0, 14)}
                   </button>
                 ))}
+                <LibraryPicker
+                  kinds={["audio"]}
+                  buttonClassName={btn}
+                  onPick={async (m) => {
+                    const blob = await (await fetch(mediaUrl(m.id))).blob();
+                    try {
+                      const buffer = await mixer.decode(blob);
+                      setUploads((u) => [
+                        ...u,
+                        { id: uid(), label: m.title.slice(0, 40), buffer },
+                      ]);
+                    } catch {
+                      /* undecodable: ignore */
+                    }
+                  }}
+                />
                 <label className={`${btn} cursor-pointer`}>
                   + Kendi sesin
                   <input
@@ -1511,6 +1541,17 @@ function Studio() {
                   }}
                 />
               </label>
+              <LibraryPicker
+                kinds={["audio", "video"]}
+                buttonClassName={btn}
+                onPick={(m) => {
+                  if (!bgaRef.current) return;
+                  bgaRef.current.src = mediaUrl(m.id);
+                  prepareAudio();
+                  void bgaRef.current.play();
+                  setBgAudioName(m.title);
+                }}
+              />
               {bgAudioName && (
                 <button
                   className={btn}

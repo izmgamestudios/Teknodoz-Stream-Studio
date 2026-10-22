@@ -18,6 +18,8 @@ import { useAudioState, useStudio } from "../runtime/use-studio";
 import type { AssetMeta } from "../types";
 import { addAssetLayer, classifyFile, importFiles } from "./actions";
 import { BTN, PANEL, PanelTitle } from "./fields";
+import { LibraryPicker } from "./library-picker";
+import { mediaUrl } from "../watch/media-client";
 
 function fmtSize(n: number): string {
   if (n > 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1)} GB`;
@@ -95,6 +97,35 @@ export function MediaLibrary({ onSelect }: { onSelect: (id: string) => void }) {
           await refresh();
         }}
       />
+      <div className="mb-2">
+        <LibraryPicker
+          kinds={["video", "audio"]}
+          buttonClassName={BTN}
+          onPick={async (m) => {
+            setMsg("");
+            try {
+              const res = await fetch(mediaUrl(m.id));
+              if (!res.ok) throw new Error("download");
+              const blob = await res.blob();
+              const ext = m.file.includes(".")
+                ? m.file.slice(m.file.lastIndexOf("."))
+                : "";
+              const meta = await rt.assets.put(blob, {
+                name: `${m.title}${ext}`,
+                type: m.kind === "audio" ? "audio" : "video",
+              });
+              // videos go straight onto the stage; audio stays here to be played as music / effect
+              if (m.kind === "video") {
+                const id = addAssetLayer(rt, meta.id, "video", m.title);
+                onSelect(id);
+              }
+              await refresh();
+            } catch {
+              setMsg("Sunucu kütüphanesinden alınamadı.");
+            }
+          }}
+        />
+      </div>
       {backend === "memory" && (
         <p role="alert" className="mb-2 text-xs text-destructive">
           Tarayıcı depolaması kullanılamıyor (gizli pencere?). Dosyalar sayfa

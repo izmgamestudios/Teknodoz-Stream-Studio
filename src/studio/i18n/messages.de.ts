@@ -556,6 +556,12 @@ export const de: Record<MessageKey, string> = {
   "cue.issue.line": "Zeile zu lang",
   "cue.issue.empty": "leer",
   "cue.issue.reversed": "endet vor dem Beginn",
+  "libpick.button": "Aus Serverbibliothek",
+  "libpick.login": "die Serverbibliothek erfordert eine Administratoranmeldung",
+  "libpick.error": "Bibliothek konnte nicht geladen werden.",
+  "libpick.loading": "Wird geladen…",
+  "libpick.search": "In der Bibliothek suchen…",
+  "libpick.none": "Keine passenden Dateien.",
   "edit.clips.total": "{n} Clips · gesamt {t}",
   "edit.err.clipsBurn":
     "Eingebrannte Untertitel lassen sich nicht mit Schneiden und Verbinden kombinieren.",

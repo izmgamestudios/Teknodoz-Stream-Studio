@@ -60,7 +60,7 @@ export function useAudioMixer() {
   );
 
   const decode = useCallback(
-    async (file: File) => {
+    async (file: Blob) => {
       const { ctx } = ensure();
       return ctx.decodeAudioData(await file.arrayBuffer());
     },
