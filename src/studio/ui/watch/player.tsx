@@ -15,6 +15,13 @@ import {
   type MediaSource,
 } from "../../watch/media-url";
 import { nextInQueue } from "../../watch/sections";
+import {
+  clearProgress,
+  getProgress,
+  RESUME_END_S,
+  RESUME_MIN_S,
+  saveProgress,
+} from "../../watch/progress";
 import { BTN, BTN_ACCENT, Check } from "../fields";
 import { AudioPlayer } from "./audio-player";
 import { coverOf } from "./stories";
@@ -169,6 +176,7 @@ export function WatchPlayer({
   const [muted, setMuted] = useState(false);
   const [autonext, setAutonext] = useState(true);
   const [speed, setSpeed] = useState<number>(1);
+  const lastSave = useRef(0);
   const [nativeFs, setNativeFs] = useState(false);
   const [cssFs, setCssFs] = useState(false);
   const isFs = nativeFs || cssFs;
@@ -441,9 +449,36 @@ export function WatchPlayer({
                   autoPlay
                   playsInline
                   className="h-full w-full object-contain"
-                  onEnded={playNext}
+                  onEnded={() => {
+                    clearProgress(item.id);
+                    playNext();
+                  }}
+                  onTimeUpdate={(e) => {
+                    const v = e.currentTarget;
+                    const nowMs = Date.now();
+                    if (nowMs - lastSave.current > 4000) {
+                      lastSave.current = nowMs;
+                      saveProgress(item.id, v.currentTime, v.duration);
+                    }
+                  }}
+                  onPause={(e) =>
+                    saveProgress(
+                      item.id,
+                      e.currentTarget.currentTime,
+                      e.currentTarget.duration,
+                    )
+                  }
                   onLoadedMetadata={(e) => {
-                    e.currentTarget.playbackRate = speed;
+                    const v = e.currentTarget;
+                    v.playbackRate = speed;
+                    // pick up where this device left off
+                    const saved = getProgress(item.id);
+                    if (
+                      saved &&
+                      saved.t >= RESUME_MIN_S &&
+                      saved.t < v.duration - RESUME_END_S
+                    )
+                      v.currentTime = saved.t;
                   }}
                 >
                   {item.captions.map((c) => (

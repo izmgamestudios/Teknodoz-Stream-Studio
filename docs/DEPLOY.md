@@ -77,6 +77,13 @@ yalnızca **yönetici oturumu** açıkken görünür. Menüdeki / panel altında
 denemeleri sınırlıdır (10 dakikada 10). Betikler hâlâ `Authorization: Bearer <token>` kullanabilir.
 Özel (private) depo için GitHub bağlantıları (kaynak kod, Issues, GitHub'daki kılavuz) yalnızca yöneticiye gösterilir.
 
+## Watch yönetimi (`/catalog`)
+Yönetici girişiyle **Watch yönetimi**: içerik ekle / düzenle / kopyala / sil, **arşivle** (izleyiciden gizlenir, silinmez),
+**hikâye süresi** (24 saat, 3/7/30 gün, süresiz ya da özel tarih; süre dolunca içerik hikâye çubuğundan kalkar,
+normal video olarak kalır), **öne çıkar** (sayfa üstünde büyük afiş), arama / durum / kategori filtreleri, sıralama ve
+**toplu işlemler** (arşivle, geri al, sil, hikâye aç-kapat, öne çıkar). İzleyici tarafında “kaldığın yerden devam et”
+bu cihazın tarayıcısında tutulur (sunucuya gitmez).
+
 ## Yönetim paneli (`/admin`)
 İçerik üretici modunda menüdeki **Yönetim** sayfası (yönetici anahtarıyla): depolama durumu
 (PocketBase / JSON, erişilebilir mi, kayıt sayıları), **Katalog** ve **Çeviriler** yönetimine

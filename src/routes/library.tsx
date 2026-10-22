@@ -348,6 +348,10 @@ function MediaDetail({
       startsAt: catalogItem?.startsAt ?? null,
       live: false,
       story: pub.story,
+      archived: catalogItem?.archived ?? false,
+      storyUntil: pub.story ? (catalogItem?.storyUntil ?? null) : null,
+      featured: catalogItem?.featured ?? false,
+      durationMs: media.durationMs,
       playlist: pub.playlist.trim(),
       episode: /^\d{1,6}$/.test(pub.episode.trim())
         ? Number(pub.episode.trim())

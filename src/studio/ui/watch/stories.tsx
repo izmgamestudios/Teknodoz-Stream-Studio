@@ -4,7 +4,8 @@
 // (YouTube / Vimeo / live) run on a fixed timer because their position is not readable.
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useT } from "../../i18n/use-t";
+import { useLang, useT } from "../../i18n/use-t";
+import { relativeTime } from "../../watch/admin-filter";
 import type { WatchItem } from "../../watch/filter";
 import { embedUrl, fileSrc, thumbnailUrl } from "../../watch/media-url";
 
@@ -112,6 +113,7 @@ export function StoryViewer({
   onClose: () => void;
 }) {
   const t = useT();
+  const lang = useLang();
   const [index, setIndex] = useState(
     Math.min(Math.max(start, 0), items.length - 1),
   );
@@ -271,6 +273,13 @@ export function StoryViewer({
             ))}
           </div>
           <p className="mt-2 truncate text-sm font-semibold">{item.title}</p>
+          {item.storyUntil && (
+            <p className="text-[11px] opacity-80">
+              {t("story.ends", {
+                t: relativeTime(Date.parse(item.storyUntil) - Date.now(), lang),
+              })}
+            </p>
+          )}
         </div>
         <div className="absolute right-2 top-9 flex gap-1">
           {isFile && (

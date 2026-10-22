@@ -103,6 +103,10 @@ const item = (id: string): CatalogItem => ({
   episode: null,
   poster: "",
   captions: [],
+  archived: false,
+  storyUntil: null,
+  featured: false,
+  durationMs: null,
   createdAt: "2026-10-22T10:00:00.000Z",
 });
 

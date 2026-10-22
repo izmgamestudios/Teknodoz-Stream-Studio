@@ -47,6 +47,10 @@ const itemSchema = z.object({
   episode: z.number().int().min(0).max(100000).nullable().default(null),
   poster: z.string().max(500).refine(isAssetUrl, "bad-url").default(""),
   captions: z.array(captionSchema).max(8).default([]),
+  archived: z.boolean().default(false),
+  storyUntil: z.string().datetime({ offset: true }).nullable().default(null),
+  featured: z.boolean().default(false),
+  durationMs: z.number().int().min(0).nullable().default(null),
   createdAt: z.string().datetime({ offset: true }),
 });
 

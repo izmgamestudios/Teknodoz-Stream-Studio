@@ -29,12 +29,23 @@ export function formatWhen(iso: string | null, lang: Lang): string {
   }).format(d);
 }
 
+function clock(ms: number): string {
+  const s = Math.round(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${p(m)}:${p(s % 60)}` : `${m}:${p(s % 60)}`;
+}
+
 export function WatchCard({
   item,
   onOpen,
+  progress = null,
 }: {
   item: WatchItem;
   onOpen: (item: WatchItem) => void;
+  /** 0..1 already watched on this device */
+  progress?: number | null;
 }) {
   const t = useT();
   const lang = useLang();
@@ -107,6 +118,26 @@ export function WatchCard({
             allow="autoplay"
             sandbox="allow-scripts allow-same-origin"
           />
+        )}
+        {item.durationMs !== null && item.durationMs > 0 && !item.live && (
+          <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-white">
+            {clock(item.durationMs)}
+          </span>
+        )}
+        {progress !== null && progress > 0 && (
+          <span
+            className="absolute inset-x-0 bottom-0 h-1 bg-black/40"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress * 100)}
+            aria-label={t("watch.progress")}
+          >
+            <span
+              className="block h-full bg-primary-solid"
+              style={{ width: `${Math.round(progress * 100)}%` }}
+            />
+          </span>
         )}
         <span className="absolute left-2 top-2 flex gap-1 text-[10px] font-bold uppercase">
           {(item.live || item.origin === "room") && (

@@ -10,6 +10,7 @@ import { useT } from "@/studio/i18n/use-t";
 import { BTN, BTN_ACCENT, INPUT, INPUT_AUTO, PANEL } from "@/studio/ui/fields";
 import { WatchCard } from "@/studio/ui/watch/card";
 import { WatchPlayer } from "@/studio/ui/watch/player";
+import { Hero } from "@/studio/ui/watch/hero";
 import { Rail, RailItem } from "@/studio/ui/watch/rail";
 import { coverOf, StoryBar, StoryViewer } from "@/studio/ui/watch/stories";
 import {
@@ -25,6 +26,8 @@ import {
   type TimeFilter,
   type WatchItem,
 } from "@/studio/watch/filter";
+import { fractionOf } from "@/studio/watch/progress";
+import { useProgress } from "@/studio/watch/use-progress";
 import {
   playlistsOf,
   queueFor,
@@ -166,6 +169,19 @@ function WatchPage() {
     if (i.locked) setAsking(i);
     else setOpen(i);
   }, []);
+  const progress = useProgress();
+  const hero = useMemo(
+    () => items.filter((i) => i.featured && !i.locked && i.source).slice(0, 5),
+    [items],
+  );
+  const resume = useMemo(
+    () =>
+      items
+        .filter((i) => !i.locked && progress[i.id] && i.origin === "catalog")
+        .sort((a, b) => (progress[b.id]?.at ?? 0) - (progress[a.id]?.at ?? 0))
+        .slice(0, 12),
+    [items, progress],
+  );
   const code = roomCode.trim().toUpperCase();
   const codeOk = /^[A-HJ-NP-Z2-9]{6}$/.test(code);
   const queue = useMemo(
@@ -175,7 +191,11 @@ function WatchPage() {
 
   const card = (i: WatchItem, wide = false) => (
     <RailItem key={i.id} wide={wide}>
-      <WatchCard item={i} onOpen={openItem} />
+      <WatchCard
+        item={i}
+        onOpen={openItem}
+        progress={fractionOf(progress[i.id])}
+      />
     </RailItem>
   );
 
@@ -188,10 +208,12 @@ function WatchPage() {
         </p>
       </header>
 
+      {!filtering && hero.length > 0 && <Hero items={hero} onPlay={openItem} />}
+
       <StoryBar items={stories} onOpen={setStory} />
 
       <section
-        className="mx-auto mb-4 max-w-7xl space-y-2"
+        className="sticky top-0 z-20 -mx-3 mx-auto mb-4 max-w-7xl space-y-2 bg-background/95 px-3 py-2 backdrop-blur md:-mx-6 md:px-6 lg:mx-auto lg:rounded-xl lg:px-0"
         aria-label={t("watch.search")}
       >
         <div className="flex flex-wrap gap-2">
@@ -270,21 +292,45 @@ function WatchPage() {
 
         <div className="min-w-0 space-y-8">
           {!snap && (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              {t("watch.loading")}
-            </p>
+            <div
+              className="grid gap-x-4 gap-y-6 sm:grid-cols-2 xl:grid-cols-3"
+              role="status"
+              aria-label={t("watch.loading")}
+            >
+              {Array.from({ length: 6 }, (_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse space-y-2"
+                  aria-hidden="true"
+                >
+                  <div className="aspect-video rounded-xl bg-secondary" />
+                  <div className="h-3 w-3/4 rounded bg-secondary" />
+                  <div className="h-3 w-1/2 rounded bg-secondary" />
+                </div>
+              ))}
+            </div>
           )}
 
           {snap && filtering && (
             <div className="grid gap-x-4 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
               {shown.map((i) => (
-                <WatchCard key={i.id} item={i} onOpen={openItem} />
+                <WatchCard
+                  key={i.id}
+                  item={i}
+                  onOpen={openItem}
+                  progress={fractionOf(progress[i.id])}
+                />
               ))}
             </div>
           )}
 
           {snap && !filtering && items.length > 0 && (
             <>
+              {resume.length > 0 && (
+                <Rail title={t("watch.rail.resume")} count={resume.length}>
+                  {resume.map((i) => card(i))}
+                </Rail>
+              )}
               {sections.live.length > 0 && (
                 <Rail title={t("watch.rail.live")} count={sections.live.length}>
                   {sections.live.map((i) => card(i, true))}
@@ -434,7 +480,7 @@ function PlaylistSidebar({
   return (
     <aside
       aria-label={t("watch.playlists")}
-      className="lg:sticky lg:top-4 lg:self-start"
+      className="lg:sticky lg:top-28 lg:self-start"
     >
       <details
         open

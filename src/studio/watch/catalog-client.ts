@@ -20,6 +20,9 @@ interface ServerItem {
   episode?: number | null;
   poster?: string;
   captions?: { lang: string; label: string; url: string }[];
+  storyUntil?: string | null;
+  featured?: boolean;
+  durationMs?: number | null;
 }
 
 interface ServerRoom {
@@ -49,6 +52,9 @@ export function toWatchItem(i: ServerItem): WatchItem {
     episode: i.episode ?? null,
     poster: i.poster ?? "",
     captions: i.captions ?? [],
+    storyUntil: i.storyUntil ?? null,
+    featured: i.featured ?? false,
+    durationMs: i.durationMs ?? null,
   };
 }
 
@@ -72,6 +78,9 @@ export function roomToWatchItem(r: ServerRoom): WatchItem {
     episode: null,
     poster: "",
     captions: [],
+    storyUntil: null,
+    featured: false,
+    durationMs: null,
   };
 }
 
@@ -149,6 +158,10 @@ export interface AdminItem {
   episode: number | null;
   poster: string;
   captions: { lang: string; label: string; url: string }[];
+  archived: boolean;
+  storyUntil: string | null;
+  featured: boolean;
+  durationMs: number | null;
   createdAt: string;
 }
 
@@ -169,6 +182,10 @@ export interface AdminInput {
   episode: number | null;
   poster: string;
   captions: { lang: string; label: string; url: string }[];
+  archived: boolean;
+  storyUntil: string | null;
+  featured: boolean;
+  durationMs: number | null;
 }
 
 /** Empty token = rely on the HttpOnly admin session cookie (the normal web UI case). */
@@ -200,4 +217,23 @@ export async function adminDelete(token: string, id: string): Promise<boolean> {
     headers: auth(token),
   });
   return d?.ok === true;
+}
+
+export type BulkAction =
+  | { action: "archive" | "unarchive" | "delete" }
+  | { action: "story"; on: boolean; until: string | null }
+  | { action: "feature"; on: boolean };
+
+/** Applies one action to many catalog items; returns how many changed (null = failed). */
+export async function adminBulk(
+  token: string,
+  ids: readonly string[],
+  op: BulkAction,
+): Promise<number | null> {
+  const d = await getJson<{ changed: number }>("/api/catalog/bulk", {
+    method: "POST",
+    headers: { ...auth(token), "content-type": "application/json" },
+    body: JSON.stringify({ ids, ...op }),
+  });
+  return d?.changed ?? null;
 }

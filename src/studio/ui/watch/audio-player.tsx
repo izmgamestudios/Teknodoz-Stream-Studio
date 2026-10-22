@@ -6,6 +6,13 @@ import { useEffect, useRef, useState } from "react";
 import { useT } from "../../i18n/use-t";
 import type { WatchItem } from "../../watch/filter";
 import { BTN } from "../fields";
+import {
+  clearProgress,
+  getProgress,
+  RESUME_END_S,
+  RESUME_MIN_S,
+  saveProgress,
+} from "../../watch/progress";
 import { coverOf } from "./stories";
 
 export function AudioPlayer({
@@ -28,6 +35,7 @@ export function AudioPlayer({
   const t = useT();
   const audio = useRef<HTMLAudioElement>(null);
   const cover = coverOf(item);
+  const lastSave = useRef(0);
 
   useEffect(() => {
     const a = audio.current;
@@ -75,9 +83,35 @@ export function AudioPlayer({
         autoPlay
         preload="metadata"
         className="w-full max-w-md"
-        onEnded={onEnded}
+        onEnded={() => {
+          clearProgress(item.id);
+          onEnded();
+        }}
+        onTimeUpdate={(e) => {
+          const a = e.currentTarget;
+          const nowMs = Date.now();
+          if (nowMs - lastSave.current > 4000) {
+            lastSave.current = nowMs;
+            saveProgress(item.id, a.currentTime, a.duration);
+          }
+        }}
+        onPause={(e) =>
+          saveProgress(
+            item.id,
+            e.currentTarget.currentTime,
+            e.currentTarget.duration,
+          )
+        }
         onLoadedMetadata={(e) => {
-          e.currentTarget.playbackRate = speed;
+          const a = e.currentTarget;
+          a.playbackRate = speed;
+          const saved = getProgress(item.id);
+          if (
+            saved &&
+            saved.t >= RESUME_MIN_S &&
+            saved.t < a.duration - RESUME_END_S
+          )
+            a.currentTime = saved.t;
         }}
       >
         {item.captions.map((c) => (

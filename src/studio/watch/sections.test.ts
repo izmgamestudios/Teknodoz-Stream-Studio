@@ -29,6 +29,9 @@ const item = (o: Partial<WatchItem> & { id: string }): WatchItem => ({
   episode: null,
   poster: "",
   captions: [],
+  storyUntil: null,
+  featured: false,
+  durationMs: null,
   ...o,
 });
 

@@ -56,6 +56,14 @@ export interface CatalogItem {
   poster: string;
   /** subtitle tracks (WebVTT) */
   captions: Caption[];
+  /** archived items are kept but hidden from the watch page */
+  archived: boolean;
+  /** ISO time the story stops showing in the stories bar (null = until archived) */
+  storyUntil: string | null;
+  /** shown in the hero banner at the top of the watch page */
+  featured: boolean;
+  /** length in ms when known (library uploads), shown on the card */
+  durationMs: number | null;
   createdAt: string;
 }
 
@@ -75,6 +83,10 @@ export function withDefaults(i: CatalogItem): CatalogItem {
     episode: i.episode ?? null,
     poster: i.poster ?? "",
     captions: i.captions ?? [],
+    archived: i.archived ?? false,
+    storyUntil: i.storyUntil ?? null,
+    featured: i.featured ?? false,
+    durationMs: i.durationMs ?? null,
   };
 }
 
@@ -151,6 +163,22 @@ const itemBody = z.object({
   episode: z.number().int().min(0).max(100000).nullable().default(null),
   poster: assetUrl.default(""),
   captions: z.array(captionSchema).max(8).default([]),
+  archived: z.boolean().default(false),
+  storyUntil: z.string().datetime({ offset: true }).nullable().default(null),
+  featured: z.boolean().default(false),
+  durationMs: z.number().int().min(0).max(86_400_000).nullable().default(null),
+});
+
+const bulkBody = z.object({
+  ids: z
+    .array(z.string().regex(/^[a-z0-9-]{3,40}$/))
+    .min(1)
+    .max(200),
+  action: z.enum(["archive", "unarchive", "delete", "story", "feature"]),
+  /** story / feature: switch on or off */
+  on: z.boolean().optional(),
+  /** story: expiry (null = until archived) */
+  until: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
 function hashPassword(pw: string): string {
@@ -172,11 +200,25 @@ function safeEqual(a: string, b: string): boolean {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
-export function toPublic(item: CatalogItem, unlocked = false): PublicItem {
+/** Is this item currently shown as a story? (flagged, and its expiry has not passed) */
+export function storyActive(item: CatalogItem, nowMs: number): boolean {
+  if (!item.story || item.archived) return false;
+  if (!item.storyUntil) return true;
+  const until = Date.parse(item.storyUntil);
+  return Number.isNaN(until) || until > nowMs;
+}
+
+export function toPublic(
+  item: CatalogItem,
+  unlocked = false,
+  nowMs: number = Date.now(),
+): PublicItem {
   const { passwordHash, linkKey, source, ...rest } = item;
   const locked = item.visibility === "private" && !unlocked;
   return {
     ...rest,
+    // an expired story is just a normal video again
+    story: storyActive(item, nowMs),
     locked,
     needsPassword: passwordHash !== null,
     source: locked ? null : source,
@@ -241,9 +283,11 @@ export function createCatalogApi(opts: CatalogOptions) {
     const method = req.method.toUpperCase();
     try {
       if (rest.length === 0 && method === "GET") {
-        const items = (await opts.store.list()).map((i) =>
-          toPublic(withDefaults(i)),
-        );
+        const t = now();
+        const items = (await opts.store.list())
+          .map(withDefaults)
+          .filter((i) => !i.archived)
+          .map((i) => toPublic(i, false, t));
         return json({ items, admin: opts.token !== null });
       }
 
@@ -260,11 +304,13 @@ export function createCatalogApi(opts: CatalogOptions) {
           })
           .safeParse(await readJson(req));
         if (!body.success) return json({ error: "bad-request" }, 400);
-        const item = (await opts.store.list()).find(
+        const found = (await opts.store.list()).find(
           (i) => i.id === body.data.id,
         );
-        if (!item) return json({ error: "not-found" }, 404);
-        if (item.visibility === "public") return json({ item: toPublic(item) });
+        const item = found && withDefaults(found);
+        if (!item || item.archived) return json({ error: "not-found" }, 404);
+        if (item.visibility === "public")
+          return json({ item: toPublic(item, false, now()) });
         const okKey =
           !!body.data.key &&
           !!item.linkKey &&
@@ -274,7 +320,7 @@ export function createCatalogApi(opts: CatalogOptions) {
           !!item.passwordHash &&
           checkPassword(body.data.password, item.passwordHash);
         if (!okKey && !okPw) return json({ error: "forbidden" }, 403);
-        return json({ item: toPublic(item, true) });
+        return json({ item: toPublic(item, true, now()) });
       }
 
       if (!opts.token) return json({ error: "admin-disabled" }, 503);
@@ -323,6 +369,10 @@ export function createCatalogApi(opts: CatalogOptions) {
           episode: b.episode,
           poster: b.poster,
           captions: b.captions,
+          archived: b.archived,
+          storyUntil: b.story ? b.storyUntil : null,
+          featured: b.featured,
+          durationMs: b.durationMs,
           createdAt: prev?.createdAt ?? new Date(now()).toISOString(),
         };
         await opts.store.upsert(next);
@@ -331,6 +381,39 @@ export function createCatalogApi(opts: CatalogOptions) {
           { item: { ...adminView, hasPassword: passwordHash !== null } },
           prev ? 200 : 201,
         );
+      }
+
+      if (rest[0] === "bulk" && rest.length === 1 && method === "POST") {
+        const parsed = bulkBody.safeParse(await readJson(req));
+        if (!parsed.success) return json({ error: "bad-request" }, 400);
+        const { ids, action, on, until } = parsed.data;
+        const byId = new Map(
+          (await opts.store.list()).map((i) => [i.id, withDefaults(i)]),
+        );
+        let changed = 0;
+        for (const id of ids) {
+          const it = byId.get(id);
+          if (!it) continue;
+          if (action === "delete") {
+            if (await opts.store.remove(id)) changed++;
+            continue;
+          }
+          const next: CatalogItem =
+            action === "archive"
+              ? { ...it, archived: true, featured: false }
+              : action === "unarchive"
+                ? { ...it, archived: false }
+                : action === "feature"
+                  ? { ...it, featured: on ?? true }
+                  : {
+                      ...it,
+                      story: on ?? true,
+                      storyUntil: (on ?? true) ? (until ?? null) : null,
+                    };
+          await opts.store.upsert(next);
+          changed++;
+        }
+        return json({ ok: true, changed });
       }
 
       if (rest[0] === "item" && rest.length === 2 && method === "DELETE") {

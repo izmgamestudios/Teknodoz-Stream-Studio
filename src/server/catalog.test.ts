@@ -234,3 +234,134 @@ describe("catalog: stories, playlists, captions, audio", () => {
     );
   });
 });
+
+describe("catalog: archive, story expiry, featured, bulk actions", () => {
+  const T0 = Date.parse("2026-10-22T12:00:00Z");
+  const setup = () => {
+    let clock = T0;
+    const api = createCatalogApi({
+      token: TOKEN,
+      store: memoryStore(),
+      now: () => clock,
+    });
+    return { api, tick: (ms: number) => (clock += ms) };
+  };
+  const put = (api: ReturnType<typeof mk>, body: object) =>
+    call(api, "PUT", "/api/catalog/item", { source: yt, ...body }, TOKEN);
+
+  it("archived items vanish from the public list but stay in the admin list", async () => {
+    const { api } = setup();
+    const a = await put(api, { title: "Keep" });
+    const b = await put(api, { title: "Old", archived: true });
+    const pub = (await call(api, "GET", "/api/catalog")).body.items;
+    expect(pub.map((i: any) => i.title)).toEqual(["Keep"]);
+    const adm = (await call(api, "GET", "/api/catalog/admin", undefined, TOKEN))
+      .body.items;
+    expect(adm).toHaveLength(2);
+    expect(adm.find((i: any) => i.title === "Old").archived).toBe(true);
+    expect(
+      (await call(api, "POST", "/api/catalog/unlock", { id: b.body.item.id }))
+        .status,
+    ).toBe(404);
+    expect(a.status).toBe(201);
+  });
+
+  it("a story stops being a story when its expiry passes (the video stays)", async () => {
+    const { api, tick } = setup();
+    await put(api, {
+      title: "Story",
+      story: true,
+      storyUntil: new Date(T0 + 3_600_000).toISOString(),
+    });
+    await put(api, { title: "Forever", story: true });
+    const stories = async () =>
+      (await call(api, "GET", "/api/catalog")).body.items
+        .filter((i: any) => i.story)
+        .map((i: any) => i.title);
+    expect(await stories()).toEqual(["Story", "Forever"]);
+    tick(2 * 3_600_000);
+    expect(await stories()).toEqual(["Forever"]);
+    const all = (await call(api, "GET", "/api/catalog")).body.items;
+    expect(all.map((i: any) => i.title)).toContain("Story"); // still a normal video
+  });
+
+  it("bulk: archive / unarchive / story with expiry / feature / delete", async () => {
+    const { api } = setup();
+    const ids: string[] = [];
+    for (const n of ["a1", "b2", "c3"])
+      ids.push((await put(api, { title: n })).body.item.id);
+    const bulk = (body: object) =>
+      call(api, "POST", "/api/catalog/bulk", { ids, ...body }, TOKEN);
+    const admin = async () =>
+      (await call(api, "GET", "/api/catalog/admin", undefined, TOKEN)).body
+        .items;
+
+    expect((await bulk({ action: "archive" })).body.changed).toBe(3);
+    expect((await admin()).every((i: any) => i.archived)).toBe(true);
+    await bulk({ action: "unarchive" });
+    expect((await admin()).some((i: any) => i.archived)).toBe(false);
+
+    const until = new Date(T0 + 86_400_000).toISOString();
+    await bulk({ action: "story", on: true, until });
+    expect(
+      (await admin()).every((i: any) => i.story && i.storyUntil === until),
+    ).toBe(true);
+    await bulk({ action: "story", on: false });
+    expect((await admin()).some((i: any) => i.story || i.storyUntil)).toBe(
+      false,
+    );
+
+    await bulk({ action: "feature", on: true });
+    expect((await admin()).every((i: any) => i.featured)).toBe(true);
+    await bulk({ action: "archive" }); // archiving un-features
+    expect((await admin()).some((i: any) => i.featured)).toBe(false);
+
+    expect(
+      (
+        await call(
+          api,
+          "POST",
+          "/api/catalog/bulk",
+          { ids: ["nope-nope"], action: "delete" },
+          TOKEN,
+        )
+      ).body.changed,
+    ).toBe(0);
+    expect((await bulk({ action: "delete" })).body.changed).toBe(3);
+    expect(await admin()).toHaveLength(0);
+  });
+
+  it("bulk needs the admin and a valid body", async () => {
+    const { api } = setup();
+    expect(
+      (
+        await call(api, "POST", "/api/catalog/bulk", {
+          ids: ["abc"],
+          action: "delete",
+        })
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await call(
+          api,
+          "POST",
+          "/api/catalog/bulk",
+          { ids: [], action: "delete" },
+          TOKEN,
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await call(
+          api,
+          "POST",
+          "/api/catalog/bulk",
+          { ids: ["abc"], action: "explode" },
+          TOKEN,
+        )
+      ).status,
+    ).toBe(400);
+  });
+});

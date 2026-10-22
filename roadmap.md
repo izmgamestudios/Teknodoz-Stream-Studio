@@ -31,3 +31,4 @@
 - [x] Media library: studio recordings + uploads stored on the server (DB records, Range streaming), preview + publish to /watch.
 - [x] Library editor: trim, title-card / video intro+outro, fade, loudness, burned-in captions (ffmpeg jobs); Whisper subtitles (whisper.cpp / faster-whisper CLI) with editor and VTT upload.
 - [x] Admin session (HttpOnly cookie) gating admin pages, owner/site settings and GitHub links.
+- [x] Watch management: archive, story expiry, featured hero, bulk actions, continue-watching, skeletons, sticky filters.

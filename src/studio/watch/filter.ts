@@ -22,6 +22,10 @@ export interface WatchItem {
   episode: number | null;
   poster: string;
   captions: { lang: string; label: string; url: string }[];
+  /** story expiry (ISO) or null */
+  storyUntil: string | null;
+  featured: boolean;
+  durationMs: number | null;
 }
 
 export type TimeFilter =
