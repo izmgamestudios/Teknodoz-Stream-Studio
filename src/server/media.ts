@@ -1,0 +1,437 @@
+// src/server/media.ts
+// Media library: recordings made in the studio and files uploaded by the admin, stored on disk
+// (MEDIA_DIR, default ./data/media) with a record per file in the same store as the catalog
+// (PocketBase collection `media_items`, or a JSON file).
+//
+//   POST   /api/media              admin  raw body = the file; headers x-title, x-filename, x-chapters
+//   GET    /api/media              admin  list records
+//   PATCH  /api/media/:id          admin  { title }
+//   DELETE /api/media/:id          admin  removes the record and every file of it
+//   GET    /media/:id              public streaming with Range support (unguessable 64-bit id)
+//   GET    /media/:id/poster.jpg   public
+//   GET    /media/:id/captions/:lang.vtt   public
+//
+// Uploads are streamed to disk (never buffered), capped by MEDIA_MAX_MB, restricted to audio /
+// video MIME types and verified with ffprobe when it is available.
+import { createReadStream, createWriteStream } from "node:fs";
+import { mkdir, readdir, rename, rm, stat } from "node:fs/promises";
+import { randomBytes, timingSafeEqual } from "node:crypto";
+import { join } from "node:path";
+import { Readable } from "node:stream";
+
+import { z } from "zod";
+
+import { StoreUnavailableError, type RecordStore } from "./catalog";
+
+export const MEDIA_API_PREFIX = "/api/media";
+export const MEDIA_FILE_PREFIX = "/media";
+
+export interface Chapter {
+  /** ms from the start */
+  t: number;
+  label: string;
+}
+
+export interface MediaRecord {
+  id: string;
+  kind: "video" | "audio";
+  mime: string;
+  /** file name inside MEDIA_DIR */
+  file: string;
+  size: number;
+  title: string;
+  filename: string;
+  durationMs: number | null;
+  width: number | null;
+  height: number | null;
+  chapters: Chapter[];
+  /** languages that have a <id>.<lang>.vtt file */
+  captions: { lang: string; label: string }[];
+  hasPoster: boolean;
+  origin: "studio" | "upload" | "edit";
+  parentId: string | null;
+  createdAt: string;
+}
+
+export interface ProbeResult {
+  durationMs: number | null;
+  width: number | null;
+  height: number | null;
+  hasVideo: boolean;
+  hasAudio: boolean;
+}
+
+/** Injectable so tests need no ffprobe; `null` = ffprobe not available (trust the MIME type). */
+export type Prober = (file: string) => Promise<ProbeResult | null>;
+
+const MIME_EXT: Record<string, { ext: string; kind: "video" | "audio" }> = {
+  "video/webm": { ext: "webm", kind: "video" },
+  "video/mp4": { ext: "mp4", kind: "video" },
+  "video/quicktime": { ext: "mov", kind: "video" },
+  "video/x-matroska": { ext: "mkv", kind: "video" },
+  "audio/mpeg": { ext: "mp3", kind: "audio" },
+  "audio/mp3": { ext: "mp3", kind: "audio" },
+  "audio/wav": { ext: "wav", kind: "audio" },
+  "audio/x-wav": { ext: "wav", kind: "audio" },
+  "audio/ogg": { ext: "ogg", kind: "audio" },
+  "audio/opus": { ext: "opus", kind: "audio" },
+  "audio/mp4": { ext: "m4a", kind: "audio" },
+  "audio/x-m4a": { ext: "m4a", kind: "audio" },
+  "audio/aac": { ext: "aac", kind: "audio" },
+  "audio/flac": { ext: "flac", kind: "audio" },
+  "audio/webm": { ext: "weba", kind: "audio" },
+};
+
+const SERVE_MIME: Record<string, string> = {
+  webm: "video/webm",
+  mp4: "video/mp4",
+  mov: "video/quicktime",
+  mkv: "video/x-matroska",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  ogg: "audio/ogg",
+  opus: "audio/ogg",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  flac: "audio/flac",
+  weba: "audio/webm",
+};
+
+const ID_RE = /^[a-f0-9]{16}$/;
+const LANG_RE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/;
+
+export function mediaIdOk(id: string): boolean {
+  return ID_RE.test(id);
+}
+
+const json = (body: unknown, status = 200): Response =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    },
+  });
+
+const chaptersSchema = z
+  .array(
+    z.object({
+      t: z.number().int().min(0).max(86_400_000),
+      label: z.string().max(120),
+    }),
+  )
+  .max(200);
+
+export interface MediaOptions {
+  token: string | null;
+  store: RecordStore<MediaRecord>;
+  dir: string;
+  /** upload cap in bytes (default 1 GiB) */
+  maxBytes?: number;
+  probe?: Prober;
+  now?: () => number;
+}
+
+export function mediaTokenOk(req: Request, token: string | null): boolean {
+  if (!token) return false;
+  const m = /^Bearer (.+)$/.exec(req.headers.get("authorization") ?? "");
+  if (!m) return false;
+  const a = Buffer.from(m[1] as string);
+  const b = Buffer.from(token);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+export function createMediaApi(opts: MediaOptions) {
+  const maxBytes = opts.maxBytes ?? 1024 * 1024 * 1024;
+  const now = opts.now ?? Date.now;
+  let dirReady: Promise<unknown> | null = null;
+  const ensureDir = () => (dirReady ??= mkdir(opts.dir, { recursive: true }));
+
+  async function find(id: string): Promise<MediaRecord | undefined> {
+    return (await opts.store.list()).find((r) => r.id === id);
+  }
+
+  /* ------------------------------ upload ------------------------------ */
+
+  async function upload(req: Request): Promise<Response> {
+    const mime = (req.headers.get("content-type") ?? "")
+      .split(";")[0]!
+      .trim()
+      .toLowerCase();
+    const type = MIME_EXT[mime];
+    if (!type) return json({ error: "unsupported-type" }, 415);
+    const declared = Number(req.headers.get("content-length") ?? "");
+    if (Number.isFinite(declared) && declared > maxBytes)
+      return json({ error: "too-large" }, 413);
+    if (!req.body) return json({ error: "empty" }, 400);
+
+    let chapters: Chapter[] = [];
+    const rawChapters = req.headers.get("x-chapters");
+    if (rawChapters) {
+      try {
+        const parsed = chaptersSchema.safeParse(
+          JSON.parse(decodeURIComponent(rawChapters)),
+        );
+        if (parsed.success) chapters = parsed.data;
+      } catch {
+        /* chapters are optional metadata */
+      }
+    }
+    const headerText = (name: string, max: number): string => {
+      try {
+        return decodeURIComponent(req.headers.get(name) ?? "")
+          .trim()
+          .slice(0, max);
+      } catch {
+        return "";
+      }
+    };
+    const filename = headerText("x-filename", 120) || `recording.${type.ext}`;
+    const title =
+      headerText("x-title", 120) || filename.replace(/\.[^.]+$/, "");
+    const origin =
+      req.headers.get("x-origin") === "studio" ? "studio" : "upload";
+
+    await ensureDir();
+    const id = randomBytes(8).toString("hex");
+    const file = `${id}.${type.ext}`;
+    const path = join(opts.dir, file);
+    const part = `${path}.part`;
+
+    // stream to disk with a hard cap (Content-Length can lie or be missing)
+    let size = 0;
+    const out = createWriteStream(part, { mode: 0o640 });
+    try {
+      const reader = req.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > maxBytes) throw new RangeError("too-large");
+        if (!out.write(value))
+          await new Promise<void>((r) => out.once("drain", () => r()));
+      }
+      await new Promise<void>((res, rej) => {
+        out.once("error", rej);
+        out.end(res);
+      });
+    } catch (e) {
+      out.destroy();
+      await rm(part, { force: true });
+      if (e instanceof RangeError) return json({ error: "too-large" }, 413);
+      return json({ error: "upload-failed" }, 400);
+    }
+    if (size === 0) {
+      await rm(part, { force: true });
+      return json({ error: "empty" }, 400);
+    }
+    await rename(part, path);
+
+    let info: ProbeResult | null = null;
+    if (opts.probe) {
+      info = await opts.probe(path);
+      // ffprobe is there and the file is not media of the claimed kind: reject it
+      if (info && !(type.kind === "video" ? info.hasVideo : info.hasAudio)) {
+        await rm(path, { force: true });
+        return json({ error: "not-media" }, 415);
+      }
+    }
+
+    const record: MediaRecord = {
+      id,
+      kind: type.kind,
+      mime,
+      file,
+      size,
+      title,
+      filename,
+      durationMs: info?.durationMs ?? null,
+      width: info?.width ?? null,
+      height: info?.height ?? null,
+      chapters,
+      captions: [],
+      hasPoster: false,
+      origin,
+      parentId: null,
+      createdAt: new Date(now()).toISOString(),
+    };
+    await opts.store.upsert(record);
+    return json({ media: record }, 201);
+  }
+
+  /* ------------------------------ serving ------------------------------ */
+
+  async function serveFile(
+    req: Request,
+    path: string,
+    contentType: string,
+    cache: string,
+  ): Promise<Response> {
+    let st;
+    try {
+      st = await stat(path);
+    } catch {
+      return json({ error: "not-found" }, 404);
+    }
+    const headers: Record<string, string> = {
+      "content-type": contentType,
+      "accept-ranges": "bytes",
+      "cache-control": cache,
+      "x-content-type-options": "nosniff",
+      "content-disposition": "inline",
+    };
+    const range = req.headers.get("range");
+    let start = 0;
+    let end = st.size - 1;
+    let status = 200;
+    if (range) {
+      const m = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+      if (!m || (m[1] === "" && m[2] === ""))
+        return new Response(null, {
+          status: 416,
+          headers: { "content-range": `bytes */${st.size}` },
+        });
+      if (m[1] === "") {
+        const suffix = Number(m[2]);
+        start = Math.max(0, st.size - suffix);
+      } else {
+        start = Number(m[1]);
+        if (m[2] !== "") end = Math.min(end, Number(m[2]));
+      }
+      if (start > end || start >= st.size)
+        return new Response(null, {
+          status: 416,
+          headers: { "content-range": `bytes */${st.size}` },
+        });
+      status = 206;
+      headers["content-range"] = `bytes ${start}-${end}/${st.size}`;
+    }
+    headers["content-length"] = String(end - start + 1);
+    if (req.method === "HEAD") return new Response(null, { status, headers });
+    const stream = Readable.toWeb(
+      createReadStream(path, { start, end }),
+    ) as ReadableStream;
+    return new Response(stream, { status, headers });
+  }
+
+  async function serve(req: Request, rest: string[]): Promise<Response> {
+    const id = rest[0] ?? "";
+    if (!ID_RE.test(id)) return json({ error: "not-found" }, 404);
+    const rec = await find(id);
+    if (!rec) return json({ error: "not-found" }, 404);
+    if (rest.length === 1) {
+      const ext = rec.file.split(".").pop() ?? "";
+      return serveFile(
+        req,
+        join(opts.dir, rec.file),
+        SERVE_MIME[ext] ?? "application/octet-stream",
+        "public, max-age=3600",
+      );
+    }
+    if (rest.length === 2 && rest[1] === "poster.jpg" && rec.hasPoster)
+      return serveFile(
+        req,
+        join(opts.dir, `${id}.jpg`),
+        "image/jpeg",
+        "public, max-age=3600",
+      );
+    if (
+      rest.length === 3 &&
+      rest[1] === "captions" &&
+      rest[2]!.endsWith(".vtt")
+    ) {
+      const lang = rest[2]!.slice(0, -4);
+      if (LANG_RE.test(lang) && rec.captions.some((c) => c.lang === lang))
+        return serveFile(
+          req,
+          join(opts.dir, `${id}.${lang}.vtt`),
+          "text/vtt; charset=utf-8",
+          "no-cache",
+        );
+    }
+    return json({ error: "not-found" }, 404);
+  }
+
+  /* ------------------------------ admin ------------------------------ */
+
+  async function removeFiles(id: string): Promise<void> {
+    await ensureDir();
+    for (const name of await readdir(opts.dir)) {
+      if (name === id || name.startsWith(`${id}.`))
+        await rm(join(opts.dir, name), { force: true });
+    }
+  }
+
+  async function handle(req: Request): Promise<Response | null> {
+    const url = new URL(req.url);
+    const method = req.method.toUpperCase();
+    try {
+      if (
+        url.pathname === MEDIA_FILE_PREFIX ||
+        url.pathname.startsWith(`${MEDIA_FILE_PREFIX}/`)
+      ) {
+        if (method !== "GET" && method !== "HEAD")
+          return json({ error: "method-not-allowed" }, 405);
+        return await serve(
+          req,
+          url.pathname
+            .slice(MEDIA_FILE_PREFIX.length)
+            .split("/")
+            .filter(Boolean),
+        );
+      }
+      if (
+        url.pathname !== MEDIA_API_PREFIX &&
+        !url.pathname.startsWith(`${MEDIA_API_PREFIX}/`)
+      )
+        return null;
+      if (!opts.token) return json({ error: "admin-disabled" }, 503);
+      if (!mediaTokenOk(req, opts.token))
+        return json({ error: "unauthorized" }, 401);
+      const rest = url.pathname
+        .slice(MEDIA_API_PREFIX.length)
+        .split("/")
+        .filter(Boolean);
+
+      if (rest.length === 0 && method === "POST") return await upload(req);
+      if (rest.length === 0 && method === "GET") {
+        const list = await opts.store.list();
+        return json({
+          media: [...list].sort((a, b) =>
+            b.createdAt.localeCompare(a.createdAt),
+          ),
+        });
+      }
+      const id = rest[0] ?? "";
+      if (rest.length === 1 && ID_RE.test(id)) {
+        const rec = await find(id);
+        if (!rec) return json({ error: "not-found" }, 404);
+        if (method === "PATCH") {
+          const body = z
+            .object({ title: z.string().trim().min(1).max(120) })
+            .safeParse(JSON.parse(await req.text()));
+          if (!body.success) return json({ error: "bad-request" }, 400);
+          const next = { ...rec, title: body.data.title };
+          await opts.store.upsert(next);
+          return json({ media: next });
+        }
+        if (method === "DELETE") {
+          await opts.store.remove(id);
+          await removeFiles(id);
+          return json({ ok: true });
+        }
+      }
+      return json({ error: "not-found" }, 404);
+    } catch (e) {
+      if (e instanceof StoreUnavailableError)
+        return json({ error: "store-unavailable" }, 503);
+      if (e instanceof SyntaxError) return json({ error: "bad-request" }, 400);
+      console.error("[media]", e);
+      return json({ error: "internal" }, 500);
+    }
+  }
+
+  return { handle, find, dir: opts.dir };
+}
+
+export type MediaApi = ReturnType<typeof createMediaApi>;

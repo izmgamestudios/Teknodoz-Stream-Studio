@@ -4,24 +4,35 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-import type { CatalogItem, CatalogStore } from "./catalog";
+import type { CatalogItem, CatalogStore, RecordStore } from "./catalog";
 import { isMediaSource } from "../studio/watch/media-url";
 
+/** Catalog records in a JSON file; records without a valid media source are dropped on load. */
 export function fileStore(path: string): CatalogStore {
-  let cache: CatalogItem[] | null = null;
-  const read = (): CatalogItem[] => {
+  return fileRecordStore<CatalogItem>(path, (i) =>
+    isMediaSource((i as CatalogItem | null)?.source),
+  );
+}
+
+/** Any `{ id }` records in one JSON file, written atomically (temp file + rename). */
+export function fileRecordStore<T extends { id: string }>(
+  path: string,
+  accept: (record: unknown) => boolean = () => true,
+): RecordStore<T> {
+  let cache: T[] | null = null;
+  const read = (): T[] => {
     if (cache) return cache;
     try {
       const raw: unknown = JSON.parse(readFileSync(path, "utf8"));
       cache = Array.isArray(raw)
-        ? (raw as CatalogItem[]).filter((i) => isMediaSource(i?.source))
+        ? (raw as T[]).filter((i) => i && typeof i.id === "string" && accept(i))
         : [];
     } catch {
       cache = [];
     }
     return cache;
   };
-  const write = (items: CatalogItem[]): void => {
+  const write = (items: T[]): void => {
     mkdirSync(dirname(path), { recursive: true });
     const tmp = `${path}.${process.pid}.tmp`;
     writeFileSync(tmp, JSON.stringify(items, null, 2), { mode: 0o600 });

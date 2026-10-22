@@ -78,6 +78,25 @@ dosyanın tamamını doğrular (geçersizse hiçbir şey değişmez), sonra ayn�
 Ham veriyi görmek/elle düzeltmek için PocketBase'in kendi paneli SSH tüneliyle kullanılır
 (`ssh -L 8091:127.0.0.1:8091 kullanici@sunucu` → `http://127.0.0.1:8091/_/`).
 
+## Medya kütüphanesi (`/library`)
+Stüdyoda kaydedilen videolar ve yüklenen video/ses dosyaları sunucuda saklanır:
+
+| Değişken | Varsayılan | Anlamı |
+|---|---|---|
+| `MEDIA_DIR` | `./data/media` | Dosyaların klasörü (yedeğe dahil et) |
+| `MEDIA_MAX_MB` | `1024` | Tek dosya üst sınırı |
+| `FFPROBE_PATH` | `ffprobe` | Süre/boyut okumak ve dosyanın gerçekten medya olduğunu doğrulamak için (yoksa MIME türüne güvenilir) |
+
+Kayıtlar (başlık, süre, bölüm işaretleri…) katalogla aynı yerde tutulur: PocketBase'te `media_items`
+koleksiyonu, yoksa `data/media.json`. Stüdyoda kayıt bitince **Kütüphaneye gönder** düğmesi
+(ya da “otomatik gönder”) çıkar; yönetici anahtarı gerekir. Dosyalar `/media/<kimlik>` adresinden
+Range destekli (ileri-geri sarma) yayınlanır; kimlik tahmin edilemez 64 bitlik rastgele sayıdır,
+özel (parola/bağlantı) içeriklerin kimliği kilit açılmadan sayfaya hiç gönderilmez.
+
+**Nginx sınırı:** büyük dosyalar için CloudPanel → Site → Vhost içinde `client_max_body_size 2g;`
+(ya da istenen değer) olmalı, yoksa 413 alırsın. Yükleme sürerken `proxy_request_buffering off;`
+da diske geçici yazmayı önler.
+
 ## Çeviriler (`/translations`)
 Yerleşik metinler tr/en/de/es için kodda durur. **Çeviriler** sayfasından (içerik üretici modu,
 aynı yönetici anahtarı) herhangi bir metin sunucuda değiştirilir; yeni sürüm yayınlamadan tüm

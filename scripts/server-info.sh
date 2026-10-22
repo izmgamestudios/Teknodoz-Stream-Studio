@@ -29,6 +29,11 @@ ver unzip -v
 ver openssl version
 ver nginx -v
 ver sqlite3 --version
+ver ffmpeg -version
+ver ffprobe -version
+ver python3 --version
+have pip3 && printf '%-14s %s\n' pip3 "$(pip3 --version 2>&1 | head -1)"
+for w in whisper-cli whisper-cpp faster-whisper whisper; do have "$w" && echo "$w         $(command -v "$w")"; done
 
 h "Docker"
 if have docker; then

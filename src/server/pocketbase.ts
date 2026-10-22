@@ -9,6 +9,7 @@ import {
   StoreUnavailableError,
   type CatalogItem,
   type CatalogStore,
+  type RecordStore,
 } from "./catalog";
 import type { I18nStore, Overrides } from "./i18n";
 
@@ -198,27 +199,35 @@ export class PocketBase {
   }
 }
 
-/* ----------------------------- catalog store ----------------------------- */
+/* ----------------------------- record stores ----------------------------- */
 
-const CATALOG = "catalog_items";
 const CACHE_MS = 3000;
 
 export function pbCatalogStore(
   pb: PocketBase,
   now: () => number = Date.now,
 ): CatalogStore {
-  let cache: {
-    at: number;
-    items: CatalogItem[];
-    ids: Map<string, string>;
-  } | null = null;
+  return pbRecordStore<CatalogItem>(pb, "catalog_items", now);
+}
+
+/**
+ * `{ id }` records in a PocketBase collection with two fields: `itemId` (unique) and `data`
+ * (the whole record as JSON). A short read cache avoids a round trip per page view, and the last
+ * good copy is served while PocketBase is unreachable.
+ */
+export function pbRecordStore<T extends { id: string }>(
+  pb: PocketBase,
+  collection: string,
+  now: () => number = Date.now,
+): RecordStore<T> {
+  let cache: { at: number; items: T[]; ids: Map<string, string> } | null = null;
 
   const ready = () =>
     pb.ensureCollection(
-      CATALOG,
+      collection,
       [
         { name: "itemId", type: "text", required: true, max: 40 },
-        { name: "data", type: "json", maxSize: 200_000 },
+        { name: "data", type: "json", maxSize: 2_000_000 },
       ],
       ["itemId"],
     );
@@ -227,11 +236,11 @@ export function pbCatalogStore(
     if (!force && cache && now() - cache.at < CACHE_MS) return cache;
     try {
       await ready();
-      const records = await pb.listAll(CATALOG);
-      const items: CatalogItem[] = [];
+      const records = await pb.listAll(collection);
+      const items: T[] = [];
       const ids = new Map<string, string>();
       for (const r of records) {
-        const d = r["data"] as CatalogItem | null;
+        const d = r["data"] as T | null;
         if (d && typeof d === "object" && typeof d.id === "string") {
           items.push(d);
           ids.set(d.id, r.id);
@@ -253,8 +262,8 @@ export function pbCatalogStore(
       await ready();
       const c = await load(true);
       const recordId = c.ids.get(item.id);
-      if (recordId) await pb.update(CATALOG, recordId, { data: item });
-      else await pb.create(CATALOG, { itemId: item.id, data: item });
+      if (recordId) await pb.update(collection, recordId, { data: item });
+      else await pb.create(collection, { itemId: item.id, data: item });
       cache = null;
     },
     async remove(id) {
@@ -262,7 +271,7 @@ export function pbCatalogStore(
       const c = await load(true);
       const recordId = c.ids.get(id);
       if (!recordId) return false;
-      await pb.remove(CATALOG, recordId);
+      await pb.remove(collection, recordId);
       cache = null;
       return true;
     },

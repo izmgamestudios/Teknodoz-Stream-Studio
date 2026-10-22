@@ -134,6 +134,14 @@ export interface RuntimeSnapshot {
   /** rundown automation: running, and seconds until the next scene (0 when not armed) */
   readonly autoRun: boolean;
   readonly autoLeft: number;
+  /** the last finished recording, kept in memory so it can be sent to the media library */
+  readonly lastRecording: LastRecordingInfo | null;
+}
+
+export interface LastRecordingInfo {
+  name: string;
+  size: number;
+  durationMs: number;
 }
 
 const EMPTY_PEERS: readonly PeerInfo[] = Object.freeze([]);
@@ -147,6 +155,7 @@ const INITIAL: RuntimeSnapshot = {
   countdown: 0,
   autoRun: false,
   autoLeft: 0,
+  lastRecording: null,
 };
 
 export class StudioRuntime {
@@ -161,6 +170,12 @@ export class StudioRuntime {
   private canvas: HTMLCanvasElement | null = null;
   private recorder: StudioRecorder | null = null;
   private recorderUnsub: (() => void) | null = null;
+  private lastRecordingData: {
+    blob: Blob;
+    name: string;
+    durationMs: number;
+    markers: { t: number; label: string }[];
+  } | null = null;
   private unsubProject: () => void;
   private unsubLang: () => void;
   private lastActiveId: string | null = null;
@@ -1276,6 +1291,19 @@ export class StudioRuntime {
         ? fmt.id.replace(":", "x")
         : `${st.settings.output.width}x${st.settings.output.height}`;
       const base = timestampName(`${st.name || "kayit"}-${tag}`);
+      this.lastRecordingData = {
+        blob: result.blob,
+        name: `${base}.${result.ext}`,
+        durationMs: result.durationMs,
+        markers: result.markers.map((m) => ({ t: m.t, label: m.label })),
+      };
+      this.patch({
+        lastRecording: {
+          name: this.lastRecordingData.name,
+          size: result.blob.size,
+          durationMs: result.durationMs,
+        },
+      });
       await downloadRecordingBundle(result, base);
       return true;
     } catch (e) {
@@ -1290,6 +1318,16 @@ export class StudioRuntime {
       this.recorder = null;
       this.patch({ recorder: null });
     }
+  }
+
+  /** The finished recording (blob + chapters) for uploading to the media library. */
+  getLastRecording() {
+    return this.lastRecordingData;
+  }
+
+  clearLastRecording(): void {
+    this.lastRecordingData = null;
+    this.patch({ lastRecording: null });
   }
 
   toggleRecording(): void {

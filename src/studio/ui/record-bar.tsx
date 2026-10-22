@@ -2,8 +2,23 @@
 // Record / marker controls with a live timer and chapter list.
 import { useEffect, useState } from "react";
 
+import { Link } from "@tanstack/react-router";
+
+import { useT } from "../i18n/use-t";
 import { useRuntimeSnapshot, useStudio } from "../runtime/use-studio";
-import { BTN, BTN_PRIMARY, formatMs, PANEL } from "./fields";
+import { readAdminToken, saveAdminToken } from "../watch/admin-token";
+import { uploadMedia } from "../watch/media-client";
+import {
+  BTN,
+  BTN_ACCENT,
+  BTN_PRIMARY,
+  Check,
+  formatMs,
+  INPUT_AUTO,
+  PANEL,
+} from "./fields";
+
+const AUTO_KEY = "studio.autoupload.v1";
 
 const ERROR_TEXT: Record<string, string> = {
   unsupported: "Bu tarayıcı kaydı desteklemiyor (MediaRecorder yok).",
@@ -108,6 +123,148 @@ export function RecordBar() {
         Kayıt bitince video, YouTube uyumlu <code>chapters.txt</code> ve{" "}
         <code>.srt</code> dosyalarıyla birlikte iner.
       </p>
+      {!live && snap.lastRecording && <SendToLibrary />}
     </section>
+  );
+}
+
+type UploadState =
+  | { s: "idle" }
+  | { s: "sending"; p: number }
+  | { s: "done"; id: string }
+  | {
+      s: "error";
+      key:
+        | "rec.up.err.auth"
+        | "rec.up.err.big"
+        | "rec.up.err.type"
+        | "rec.up.err.net";
+    };
+
+/** After a recording: send it to the server media library (database) for editing + publishing. */
+function SendToLibrary() {
+  const t = useT();
+  const rt = useStudio();
+  const snap = useRuntimeSnapshot();
+  const last = snap.lastRecording;
+  const [state, setState] = useState<UploadState>({ s: "idle" });
+  const [token, setToken] = useState("");
+  const [auto, setAuto] = useState(false);
+
+  useEffect(() => {
+    setToken(readAdminToken());
+    try {
+      setAuto(localStorage.getItem(AUTO_KEY) === "1");
+    } catch {
+      /* default off */
+    }
+  }, []);
+
+  const send = async (tk: string) => {
+    const data = rt.getLastRecording();
+    if (!data) return;
+    setState({ s: "sending", p: 0 });
+    const r = await uploadMedia(
+      tk,
+      data.blob,
+      {
+        title: data.name.replace(/\.[^.]+$/, ""),
+        filename: data.name,
+        origin: "studio",
+        chapters: data.markers,
+      },
+      (p) => setState({ s: "sending", p }),
+    );
+    if (r.ok) {
+      saveAdminToken(tk);
+      setState({ s: "done", id: r.media.id });
+    } else
+      setState({
+        s: "error",
+        key:
+          r.reason === "unauthorized"
+            ? "rec.up.err.auth"
+            : r.reason === "too-large"
+              ? "rec.up.err.big"
+              : r.reason === "unsupported"
+                ? "rec.up.err.type"
+                : "rec.up.err.net",
+      });
+  };
+
+  // automatic upload right after the recording ends (needs a saved admin token)
+  const lastName = last?.name;
+  useEffect(() => {
+    if (auto && lastName && token.length >= 16 && state.s === "idle")
+      void send(token);
+    // only when a new recording appears
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastName, auto]);
+
+  if (!last) return null;
+  return (
+    <div className="mt-3 rounded-lg border border-dashed p-2 text-xs">
+      <p className="font-semibold">
+        ☁ {t("rec.up.title")} — {last.name} (
+        {(last.size / 1024 / 1024).toFixed(1)} MB)
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {token.length < 16 && (
+          <input
+            type="password"
+            autoComplete="off"
+            className={`${INPUT_AUTO} w-56`}
+            placeholder={t("catalog.token")}
+            aria-label={t("catalog.token")}
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+          />
+        )}
+        <button
+          className={BTN_ACCENT}
+          disabled={
+            token.length < 16 || state.s === "sending" || state.s === "done"
+          }
+          onClick={() => void send(token)}
+        >
+          {t("rec.up.send")}
+        </button>
+        <Check
+          checked={auto}
+          onChange={(v) => {
+            setAuto(v);
+            try {
+              localStorage.setItem(AUTO_KEY, v ? "1" : "0");
+            } catch {
+              /* not persisted */
+            }
+          }}
+        >
+          {t("rec.up.auto")}
+        </Check>
+        <button className={BTN} onClick={() => rt.clearLastRecording()}>
+          {t("common.cancel")}
+        </button>
+      </div>
+      {state.s === "sending" && (
+        <div className="mt-2" role="status">
+          <progress className="w-full" value={state.p} max={1} />
+          <span>{Math.round(state.p * 100)} %</span>
+        </div>
+      )}
+      {state.s === "done" && (
+        <p className="mt-2" role="status">
+          ✓ {t("rec.up.done")}{" "}
+          <Link to="/library" className="underline">
+            {t("rec.up.open")}
+          </Link>
+        </p>
+      )}
+      {state.s === "error" && (
+        <p role="alert" className="mt-2 text-destructive">
+          {t(state.key)}
+        </p>
+      )}
+    </div>
   );
 }

@@ -6,14 +6,17 @@ import { createLiveApi } from "./server/live";
 import { liveConfigFromEnv, tokenTooShort } from "./server/live-policy";
 import { handleManifest } from "./server/manifest";
 import { createCatalogApi, catalogTokenFromEnv } from "./server/catalog";
-import { fileStore } from "./server/catalog-store";
+import { fileRecordStore, fileStore } from "./server/catalog-store";
 import { createAdminApi } from "./server/admin";
+import { ffprobeProber } from "./server/ffprobe";
+import { createMediaApi, type MediaRecord } from "./server/media";
 import { createI18nApi } from "./server/i18n";
 import { fileI18nStore } from "./server/i18n-store";
 import {
   PocketBase,
   pbCatalogStore,
   pbI18nStore,
+  pbRecordStore,
   pocketbaseFromEnv,
 } from "./server/pocketbase";
 import { createRoomsApi } from "./server/rooms";
@@ -56,6 +59,19 @@ const i18nStore = pb
   ? pbI18nStore(pb)
   : fileI18nStore(liveEnv["I18N_FILE"]?.trim() || "data/i18n.json");
 const catalog = createCatalogApi({ token: adminToken, store: catalogStore });
+// Media library: files on disk (MEDIA_DIR) + one record per file next to the catalog.
+const mediaStore = pb
+  ? pbRecordStore<MediaRecord>(pb, "media_items")
+  : fileRecordStore<MediaRecord>(
+      liveEnv["MEDIA_INDEX_FILE"]?.trim() || "data/media.json",
+    );
+const media = createMediaApi({
+  token: adminToken,
+  store: mediaStore,
+  dir: liveEnv["MEDIA_DIR"]?.trim() || "data/media",
+  maxBytes: Math.max(1, Number(liveEnv["MEDIA_MAX_MB"]) || 1024) * 1024 * 1024,
+  probe: ffprobeProber(liveEnv["FFPROBE_PATH"]?.trim() || "ffprobe"),
+});
 const i18n = createI18nApi({ token: adminToken, store: i18nStore });
 const admin = createAdminApi({
   token: adminToken,
@@ -115,6 +131,8 @@ export default {
       if (roomResponse) return roomResponse;
       const catalogResponse = await catalog.handle(request);
       if (catalogResponse) return catalogResponse;
+      const mediaResponse = await media.handle(request);
+      if (mediaResponse) return mediaResponse;
       const adminResponse = await admin.handle(request);
       if (adminResponse) return adminResponse;
       const i18nResponse = await i18n.handle(request);

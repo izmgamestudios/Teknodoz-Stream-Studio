@@ -17,6 +17,7 @@ import { Route as CommunityRouteImport } from './routes/community'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as JoinRouteImport } from './routes/join'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as RemoteRouteImport } from './routes/remote'
 import { Route as RoomRouteImport } from './routes/room'
@@ -69,6 +70,11 @@ const GuideRoute = GuideRouteImport.update({
 const JoinRoute = JoinRouteImport.update({
   id: '/join',
   path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LiveRoute = LiveRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
+  '/library': typeof LibraryRoute
   '/live': typeof LiveRoute
   '/remote': typeof RemoteRoute
   '/room': typeof RoomRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
+  '/library': typeof LibraryRoute
   '/live': typeof LiveRoute
   '/remote': typeof RemoteRoute
   '/room': typeof RoomRoute
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
+  '/library': typeof LibraryRoute
   '/live': typeof LiveRoute
   '/remote': typeof RemoteRoute
   '/room': typeof RoomRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/guide'
     | '/join'
+    | '/library'
     | '/live'
     | '/remote'
     | '/room'
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/guide'
     | '/join'
+    | '/library'
     | '/live'
     | '/remote'
     | '/room'
@@ -262,6 +273,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/guide'
     | '/join'
+    | '/library'
     | '/live'
     | '/remote'
     | '/room'
@@ -286,6 +298,7 @@ export interface RootRouteChildren {
   DownloadRoute: typeof DownloadRoute
   GuideRoute: typeof GuideRoute
   JoinRoute: typeof JoinRoute
+  LibraryRoute: typeof LibraryRoute
   LiveRoute: typeof LiveRoute
   RemoteRoute: typeof RemoteRoute
   RoomRoute: typeof RoomRoute
@@ -353,6 +366,13 @@ declare module '@tanstack/react-router' {
       path: '/join'
       fullPath: '/join'
       preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/live': {
@@ -476,6 +496,7 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadRoute: DownloadRoute,
   GuideRoute: GuideRoute,
   JoinRoute: JoinRoute,
+  LibraryRoute: LibraryRoute,
   LiveRoute: LiveRoute,
   RemoteRoute: RemoteRoute,
   RoomRoute: RoomRoute,

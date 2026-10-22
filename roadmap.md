@@ -28,3 +28,4 @@
 - [x] YouTube channel live stream in the catalog (channel id `UC…` → embed/live_stream).
 - [x] PocketBase storage for catalog + translation overrides (`scripts/pocketbase.sh`), JSON-file fallback.
 - [x] `/translations`: edit tr/en/de/es texts on the server without a release.
+- [x] Media library: studio recordings + uploads stored on the server (DB records, Range streaming), preview + publish to /watch.

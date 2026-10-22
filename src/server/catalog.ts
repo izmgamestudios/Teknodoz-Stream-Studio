@@ -94,15 +94,19 @@ export const captionSchema = z.object({
   url: assetUrl.refine((u) => u !== "", "bad-url"),
 });
 
-/** Persistence behind the catalog: memory (tests), JSON file, or PocketBase. */
-export interface CatalogStore {
-  list(): Promise<CatalogItem[]>;
-  upsert(item: CatalogItem): Promise<void>;
+/** Persistence for `{ id }` records: memory (tests), JSON file, or PocketBase. */
+export interface RecordStore<T extends { id: string }> {
+  list(): Promise<T[]>;
+  upsert(item: T): Promise<void>;
   /** false when the id did not exist */
   remove(id: string): Promise<boolean>;
 }
 
-export function memoryStore(initial: CatalogItem[] = []): CatalogStore {
+export type CatalogStore = RecordStore<CatalogItem>;
+
+export function memoryStore<T extends { id: string } = CatalogItem>(
+  initial: T[] = [],
+): RecordStore<T> {
   const items = new Map(initial.map((i) => [i.id, i]));
   return {
     list: async () => [...items.values()],
