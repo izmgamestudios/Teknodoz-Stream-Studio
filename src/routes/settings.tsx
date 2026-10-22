@@ -7,6 +7,7 @@ import {
   BrandLocalSection,
   BrandSiteSection,
 } from "@/studio/ui/brand-settings";
+import { WorkspaceBackup } from "@/studio/ui/workspace-backup";
 import { CreditsFooter } from "@/studio/ui/credits";
 import {
   ConnectionSection,
@@ -61,6 +62,7 @@ function SettingsApp() {
           <ShortcutsSection />
           <LanguageSection />
           <BrandLocalSection />
+          <WorkspaceBackup />
         </div>
       </div>
       {admin && (

@@ -562,6 +562,21 @@ export const de: Record<MessageKey, string> = {
   "libpick.loading": "Wird geladen…",
   "libpick.search": "In der Bibliothek suchen…",
   "libpick.none": "Keine passenden Dateien.",
+  "ws.title": "Arbeitsbereich-Sicherung",
+  "ws.body":
+    "Teleprompter-Text, Studio- und Classic-Vorlagen als eine JSON-Datei herunterladen und in einem anderen Browser wiederherstellen.",
+  "ws.export": "Sicherung herunterladen",
+  "ws.import": "Sicherung wiederherstellen",
+  "ws.replace": "Vorhandenes ersetzen (Standard: zusammenführen)",
+  "ws.exported": "{n} Elemente heruntergeladen.",
+  "ws.imported": "{n} Elemente wiederhergestellt, {s} übersprungen.",
+  "ws.note":
+    "Die Daten bleiben in diesem Browser; die Datei wird nie an einen Server gesendet.",
+  "ws.err.storage": "Browser-Speicher ist nicht verfügbar.",
+  "ws.err.invalid": "Das ist keine gültige Arbeitsbereich-Sicherung.",
+  "ws.err.not-json": "Die Datei konnte nicht als JSON gelesen werden.",
+  "ws.err.too-large": "Die Datei ist zu groß (max. 12 MB).",
+  "ws.err.newer-version": "Die Datei stammt von einer neueren Version.",
   "edit.clips.total": "{n} Clips · gesamt {t}",
   "edit.err.clipsBurn":
     "Eingebrannte Untertitel lassen sich nicht mit Schneiden und Verbinden kombinieren.",

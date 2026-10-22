@@ -57,6 +57,7 @@ import {
   removeTemplate,
   renameTemplate,
   updateTemplate,
+  TPL_KEY,
   type SavedTemplate,
 } from "@/classic/studio/saved-templates";
 import { LibraryPicker } from "@/studio/ui/library-picker";
@@ -85,7 +86,6 @@ export const Route = createFileRoute("/classic/")({
 });
 
 const ASPECT_KEY = "classic.aspect.v1";
-const TPL_KEY = "studio.templates.v1";
 const CORNERS: [Corner, string][] = [
   ["tl", "↖"],
   ["tr", "↗"],

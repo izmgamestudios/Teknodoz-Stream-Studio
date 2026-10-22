@@ -2,6 +2,8 @@
 // User templates of the Classic Studio: pure list operations (the page persists the result).
 import { uid, type Scene } from "./types";
 
+export const TPL_KEY = "studio.templates.v1";
+
 export type SavedTemplate = { id: string; name: string; scene: Scene };
 
 /** A scene as stored in a template: logos (object URLs of local files) are not kept. */
@@ -87,4 +89,32 @@ export function removeTemplate(
   id: string,
 ): SavedTemplate[] {
   return list.filter((t) => t.id !== id);
+}
+
+/** Reads the stored list defensively: bad rows are dropped, never thrown on. */
+export function parseSavedTemplates(raw: string | null): SavedTemplate[] {
+  if (!raw || raw.length > 2_000_000) return [];
+  try {
+    const v: unknown = JSON.parse(raw);
+    if (!Array.isArray(v)) return [];
+    const out: SavedTemplate[] = [];
+    for (const o of v.slice(0, 100) as Partial<SavedTemplate>[]) {
+      const sc = o?.scene as Partial<Scene> | undefined;
+      if (
+        typeof o?.id === "string" &&
+        typeof o.name === "string" &&
+        sc &&
+        Array.isArray(sc.items) &&
+        typeof sc.layout === "string"
+      )
+        out.push({
+          id: o.id.slice(0, 40),
+          name: clean(o.name) || "Şablon",
+          scene: o.scene as Scene,
+        });
+    }
+    return out;
+  } catch {
+    return [];
+  }
 }

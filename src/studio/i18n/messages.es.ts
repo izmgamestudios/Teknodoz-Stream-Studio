@@ -560,6 +560,21 @@ export const es: Record<MessageKey, string> = {
   "libpick.loading": "Cargando…",
   "libpick.search": "Buscar en la biblioteca…",
   "libpick.none": "No hay archivos que coincidan.",
+  "ws.title": "Copia del espacio de trabajo",
+  "ws.body":
+    "Descarga tu guion del teleprompter y las plantillas de estudio y clásicas en un único JSON y restáuralo en otro navegador.",
+  "ws.export": "Descargar copia",
+  "ws.import": "Restaurar copia",
+  "ws.replace": "Reemplazar lo existente (por defecto: combinar)",
+  "ws.exported": "{n} elementos descargados.",
+  "ws.imported": "{n} elementos restaurados, {s} omitidos.",
+  "ws.note":
+    "Los datos permanecen en este navegador; el archivo nunca se envía a un servidor.",
+  "ws.err.storage": "El almacenamiento del navegador no está disponible.",
+  "ws.err.invalid": "No es una copia válida del espacio de trabajo.",
+  "ws.err.not-json": "No se pudo leer el archivo como JSON.",
+  "ws.err.too-large": "El archivo es demasiado grande (máx. 12 MB).",
+  "ws.err.newer-version": "El archivo fue creado por una versión más reciente.",
   "edit.clips.total": "{n} clips · duración total {t}",
   "edit.err.clipsBurn":
     "Los subtítulos incrustados no se pueden combinar con cortar y unir.",
