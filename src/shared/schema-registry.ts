@@ -330,3 +330,21 @@ export function slugify(text: string, max = 80): string {
     .replace(/-+$/g, "");
   return slug || "item";
 }
+
+/** Fields a bulk "set field" may change: scalar, non-secret, not identity / body / visibility. */
+const BULK_BLOCKED = new Set([
+  "id",
+  "slug",
+  "external_id",
+  "title",
+  "body_md",
+  "visibility",
+  "faq",
+  "summary",
+]);
+export function bulkSettableFields(type: EntityType): FieldDef[] {
+  return exposedFields(type).filter(
+    (f) =>
+      !BULK_BLOCKED.has(f.key) && f.kind !== "json" && f.kind !== "longtext",
+  );
+}

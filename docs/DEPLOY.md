@@ -211,6 +211,23 @@ Eski kayıtlar silinmez; `/watch` tablo motoru gelene kadar eski katalogdan okum
 - Saatte en fazla 10 içe aktarma. Dışa aktarılan dosyalar elektronik tablo enjeksiyonuna karşı korunur (`=`, `+`, `-`, `@` ile başlayan hücrelere `'` eklenir).
 - Bu sürümde SheetJS ve `marked` **kurulmadı**: XLSX okuyucu/yazıcı ve Markdown ayrıştırıcı bağımlılıksız, sıkı sınırlarla (zip bombası, DOCTYPE/ENTITY, satır/sütun) `src/shared/` altında.
 
+### Toplu işlemler ve şifreli içerik
+
+Tabloda satırları seçince (Shift ile aralık, "sayfadakilerin tümü", en fazla 500) **Toplu işlem** çubuğu açılır; her işlem tek istektir ve tek işlemde yazılır (`POST /api/content/bulk`):
+
+| İşlem | Not |
+|---|---|
+| Görünürlüğü değiştir (taslak / özel / herkese açık) | Herkese açık için etkilenen kayıt sayısı gösterilir ve onay kutusu zorunludur |
+| Şifre ile koru | Seçilenler için **tek erişim grubu** oluşturur (şifre ≥ 8 karakter, scrypt ile saklanır), görünürlük `protected` olur |
+| Grup şifresini değiştir | Seçilenler tek grupta olmalı; gruptaki tüm kayıtlar yeni şifreyle açılır |
+| Korumayı kaldır | Kayıt taslağa döner |
+| Etiket ekle / kaldır, alan değerini ayarla | Alan listesi şema kaydından gelir; kimlik, slug, başlık, gövde, görünürlük değiştirilemez |
+| Çöp kutusuna taşı / geri al | Yumuşak silme |
+
+Her toplu işlem `content_audit` kaydına işlenir (önceki/sonraki görünürlük; şifre ve hash asla yazılmaz).
+
+Herkese açık tarafta `protected` kayıtlar yalnızca **taslak** olarak görünür (başlık, slug). Gövde yalnızca `POST /api/content/:id/unlock` ile `{ "password": "..." }` gönderilince döner; yanıt hiçbir yerde önbelleğe alınmaz. **5 yanlış denemede grup 15 dakika kilitlenir** (doğru şifre de reddedilir), başarılı girişte sayaç sıfırlanır; ayrıca istemci başına dakikada 10 deneme sınırı vardır. `access_groups` koleksiyonu yalnızca sunucudan okunur.
+
 ## Çeviriler (`/translations`)
 
 Yerleşik metinler tr/en/de/es için kodda durur. **Çeviriler** sayfasından (içerik üretici modu,

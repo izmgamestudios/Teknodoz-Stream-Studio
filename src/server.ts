@@ -14,6 +14,8 @@ import {
   type AuditSink,
   type Redirect,
 } from "./server/content";
+import { createBulkApi } from "./server/content-bulk";
+import type { AccessGroup } from "./server/content-groups";
 import { createImportApi } from "./server/content-import";
 import { createMigrationApi } from "./server/content-migrate";
 import {
@@ -142,6 +144,17 @@ const content = createContentApi({
   redirects: redirectStore,
   audit: contentAudit,
 });
+const groupStore = pb
+  ? pbRecordStore<AccessGroup>(pb, "access_groups")
+  : fileRecordStore<AccessGroup>(
+      liveEnv["ACCESS_GROUPS_FILE"]?.trim() || "data/access-groups.json",
+    );
+const contentBulk = createBulkApi({
+  token: adminToken,
+  store: contentStore,
+  groups: groupStore,
+  audit: contentAudit,
+});
 const contentImport = createImportApi({
   token: adminToken,
   store: contentStore,
@@ -216,6 +229,9 @@ export default {
       if (catalogResponse) return catalogResponse;
       const sessionResponse = await session.handle(request);
       if (sessionResponse) return sessionResponse;
+      // bulk + unlock must be tried before the generic /api/content/* admin routes
+      const bulkResponse = await contentBulk.handle(request);
+      if (bulkResponse) return bulkResponse;
       const contentResponse = await content.handle(request);
       if (contentResponse) return contentResponse;
       const importResponse = await contentImport.handle(request);

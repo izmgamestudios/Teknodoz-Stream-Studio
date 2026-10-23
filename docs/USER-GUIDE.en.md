@@ -300,18 +300,18 @@ No accounts, no database; your settings and projects stay on your device.
 
 ## ⌨️ Keyboard shortcuts
 
-| Key       | Action                         |
-| --------- | ------------------------------ |
-| `Shift+R` | Start / stop recording         |
-| `M`       | Add chapter marker             |
-| `Space`   | Prompter start / pause         |
-| `↑`       | Prompter faster                |
-| `↓`       | Prompter slower                |
-| `R`       | Prompter rewind                |
-| `Shift+M` | Mute microphone                |
-| `]`       | Next scene                     |
-| `[`       | Previous scene                 |
-| `1–9`     | Switch to scene (scene number) |
+| Key | Action |
+| --- | --- |
+| `Shift+R` | Start / stop recording |
+| `M` | Add chapter marker |
+| `Space` | Prompter start / pause |
+| `↑` | Prompter faster |
+| `↓` | Prompter slower |
+| `R` | Prompter rewind |
+| `Shift+M` | Mute microphone |
+| `]` | Next scene |
+| `[` | Previous scene |
+| `1–9` | Switch to scene (scene number) |
 
 Shortcuts can be changed on the Settings page.
 

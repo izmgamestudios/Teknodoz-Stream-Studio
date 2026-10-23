@@ -142,3 +142,33 @@ export type ImportCall = (
 
 export const postImport: ImportCall = (req) =>
   call<ImportResponse>("/api/import/content", json("POST", req));
+
+/* --------------------------------- bulk --------------------------------- */
+
+export type BulkAction =
+  | "set-visibility"
+  | "protect"
+  | "change-password"
+  | "remove-protection"
+  | "tags-add"
+  | "tags-remove"
+  | "set-field"
+  | "soft-delete"
+  | "restore";
+
+export interface BulkResult {
+  updated: number;
+  skipped: number;
+  errors: { id: string; error: string }[];
+}
+
+export const bulkAction = (
+  type: EntityType,
+  action: BulkAction,
+  ids: readonly string[],
+  params: Record<string, unknown> = {},
+) =>
+  call<BulkResult>(
+    "/api/content/bulk",
+    json("POST", { action, type, ids, params }),
+  );

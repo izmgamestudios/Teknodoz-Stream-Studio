@@ -16,6 +16,7 @@ import {
 import { buildExport, download, type FileFormat } from "../../content/files";
 import { LOCALES, type EntityType } from "../../../shared/schema-registry";
 import { BTN, BTN_ACCENT, Check, INPUT_AUTO, PANEL } from "../fields";
+import { BulkBar } from "./bulk-bar";
 import { ImportDialog } from "./import-dialog";
 import { typeLabel } from "./labels";
 import { RowDrawer } from "./row-drawer";
@@ -51,6 +52,7 @@ export function ContentTable({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [text, setText] = useState(search.q ?? "");
   const [reload, setReload] = useState(0);
+  const [bulkMsg, setBulkMsg] = useState<string | null>(null);
   const last = useRef<number | null>(null);
   const page = search.page ?? 1;
 
@@ -204,6 +206,27 @@ export function ContentTable({
           </>
         )}
       </section>
+
+      {bulkMsg && selected.size === 0 && (
+        <p
+          role="status"
+          className="rounded-md border bg-card px-3 py-2 text-xs"
+        >
+          {bulkMsg}
+        </p>
+      )}
+      {selected.size > 0 && (
+        <BulkBar
+          key={type}
+          type={type}
+          ids={[...selected]}
+          onDone={(m) => {
+            setBulkMsg(m);
+            setSelected(new Set());
+            setReload((n) => n + 1);
+          }}
+        />
+      )}
 
       <section
         className={`${PANEL} flex flex-wrap items-center gap-2`}

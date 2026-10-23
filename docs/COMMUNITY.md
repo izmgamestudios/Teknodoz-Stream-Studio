@@ -14,30 +14,30 @@ hesabıyla açar**; platformlar hesap/sayfa oluşturmayı başkası adına yapma
 
 `src/studio/community/links.ts` içinde tanımlı ve `/community` sayfasında "Katıl" düğmesi olan kanallar:
 
-| Kanal                       | Adres                                                          | Not                                                                                                                                                                                                  |
-| --------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| WhatsApp Kanalı             | `https://whatsapp.com/channel/0029VbE4O60FnSz2cQgj9U0A`        | tek yönlü duyuru                                                                                                                                                                                     |
-| LinkedIn (Showcase sayfası) | `https://www.linkedin.com/showcase/teknodoz`                   | `/showcase/` ve `/company/` yolları kabul edilir                                                                                                                                                     |
-| Instagram                   | `https://www.instagram.com/teknodoz`                           |                                                                                                                                                                                                      |
-| YouTube                     | `https://www.youtube.com/@teknodoz`                            |                                                                                                                                                                                                      |
-| X                           | `https://x.com/infoteknodoz`                                   | paylaşım kartındaki hesap (`twitterHandle`) ile aynı                                                                                                                                                 |
-| Slack                       | `https://teknodozproje-dfg7355.slack.com/archives/C0C8BR8HHHC` | ⚠️ çalışma alanının **bir kanalına** giden bağlantıdır; yalnızca üyeler açabilir. Herkese açık katılım için Slack'ten _davet bağlantısı_ (`https://join.slack.com/t/…`) üretip `slack` alanına yazın |
-| GitHub                      | `CREDITS.repo`                                                 |                                                                                                                                                                                                      |
+| Kanal | Adres | Not |
+|---|---|---|
+| WhatsApp Kanalı | `https://whatsapp.com/channel/0029VbE4O60FnSz2cQgj9U0A` | tek yönlü duyuru |
+| LinkedIn (Showcase sayfası) | `https://www.linkedin.com/showcase/teknodoz` | `/showcase/` ve `/company/` yolları kabul edilir |
+| Instagram | `https://www.instagram.com/teknodoz` | |
+| YouTube | `https://www.youtube.com/@teknodoz` | |
+| X | `https://x.com/infoteknodoz` | paylaşım kartındaki hesap (`twitterHandle`) ile aynı |
+| Slack | `https://teknodozproje-dfg7355.slack.com/archives/C0C8BR8HHHC` | ⚠️ çalışma alanının **bir kanalına** giden bağlantıdır; yalnızca üyeler açabilir. Herkese açık katılım için Slack'ten *davet bağlantısı* (`https://join.slack.com/t/…`) üretip `slack` alanına yazın |
+| GitHub | `CREDITS.repo` | |
 
 Henüz tanımlı olmayanlar: **Telegram**, **Discord**, **Facebook grubu**, **TikTok** (boş bırakıldı; kanal açılınca adresi yazın).
 Adresler derleme zamanındadır: değiştirince yeniden derleyip dağıtın.
 
 ## 1. Kanal mimarisi (öneri)
 
-| Rol                  | Kanal                                              | Neden                                                                              |
-| -------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Kaynak ve geliştirme | **GitHub** (Issues + Discussions)                  | Hata bildirimi, katkı, sürüm notları tek yerde                                     |
-| Tek yönlü duyuru     | **WhatsApp Kanalı**, **Telegram Kanalı**           | Yayın zamanı ve sürüm haberleri; spam/gürültü yok                                  |
-| Sohbet ve destek     | **Telegram grubu** (kanala bağlı) veya **Discord** | Herkese açık, hızlı soru-cevap                                                     |
-| Kurumsal / B2B       | **LinkedIn Sayfası**                               | Ortaklıklar, sponsorlar, yatırımcılar için vitrin                                  |
-| Geniş kitle          | **Facebook grubu**                                 | Topluluk üyeliği, paylaşım; marka için ayrıca Sayfa                                |
-| Ortak/sponsor odası  | **Slack** (özel)                                   | Sponsor ve ortaklarla kapalı çalışma alanı; herkese açık topluluk için uygun değil |
-| İçerik               | **YouTube** (+ Instagram/TikTok kısa videolar)     | Yayın kayıtları, eğitimler                                                         |
+| Rol | Kanal | Neden |
+|---|---|---|
+| Kaynak ve geliştirme | **GitHub** (Issues + Discussions) | Hata bildirimi, katkı, sürüm notları tek yerde |
+| Tek yönlü duyuru | **WhatsApp Kanalı**, **Telegram Kanalı** | Yayın zamanı ve sürüm haberleri; spam/gürültü yok |
+| Sohbet ve destek | **Telegram grubu** (kanala bağlı) veya **Discord** | Herkese açık, hızlı soru-cevap |
+| Kurumsal / B2B | **LinkedIn Sayfası** | Ortaklıklar, sponsorlar, yatırımcılar için vitrin |
+| Geniş kitle | **Facebook grubu** | Topluluk üyeliği, paylaşım; marka için ayrıca Sayfa |
+| Ortak/sponsor odası | **Slack** (özel) | Sponsor ve ortaklarla kapalı çalışma alanı; herkese açık topluluk için uygun değil |
+| İçerik | **YouTube** (+ Instagram/TikTok kısa videolar) | Yayın kayıtları, eğitimler |
 
 Önce **2–3 kanalla başlayın** (GitHub + WhatsApp/Telegram duyuru + LinkedIn). Her kanal bir moderasyon yüküdür; 90 gün
 sonra neyin kullanıldığına bakıp ekleyin/kapatın.
@@ -46,15 +46,15 @@ sonra neyin kullanıldığına bakıp ekleyin/kapatın.
 
 > Arayüz adları platformlarca değişebilir; adımlar güncel yardım sayfalarıyla doğrulanmalıdır.
 
-| Kanal                | Oluşturma                                                     | Ayar notları                                                                                                          | Adresi nereye yazın                                                                    |
-| -------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **WhatsApp Kanalı**  | WhatsApp → Güncellemeler → Kanallar → oluştur                 | Ad "Teknodoz Studio Duyurular", simge = logo. Yalnızca yöneticiler yazar. Kanal bağlantısını kopyalayın.              | `links.ts` → `whatsapp` (`https://whatsapp.com/channel/…`)                             |
-| **Telegram**         | Yeni Kanal → herkese açık `t.me/kullaniciadi`                 | Kanal ayarlarından bir **tartışma grubu** bağlayın; grupta yavaş mod (slow mode) açın.                                | `telegram` (`https://t.me/…`)                                                          |
-| **LinkedIn Sayfası** | İş için → Sayfa oluştur → Şirket (ya da Showcase)             | Kişisel profil ≠ Sayfa. Logo, kapak, tek cümlelik slogan, web sitesi, "Hakkında" metni. İkinci bir yönetici ekleyin.  | `linkedin` (`…/company/…`)                                                             |
-| **Facebook**         | Gruplar → yeni grup (herkese açık/gizli seç)                  | Üyelik soruları (spam için 1–2 soru), kurallar sekmesi. Marka sayfası ayrıca gerekiyorsa Sayfa açın.                  | `facebook` (`…/groups/…`)                                                              |
-| **Slack**            | Çalışma alanı oluştur → `#sponsorlar`, `#ortaklar`, `#duyuru` | Davet bağlantısı süreli olabilir; ücretsiz planın geçmiş/entegrasyon sınırlarını güncel fiyat sayfasından doğrulayın. | `slack` (`join.slack.com/…`; çalışma alanı kanal bağlantıları yalnızca üyelere açılır) |
-| **Discord**          | Sunucu oluştur → Community'yi etkinleştir                     | `#kurallar`, `#duyuru`, `#sohbet`, `#destek`, `#yayın-sohbeti`. Kalıcı (süresiz) davet bağlantısı üretin.             | `discord` (`discord.gg/…`)                                                             |
-| **GitHub**           | Depoda Settings → Features → **Discussions**                  | Kategoriler: Duyurular, Fikirler, Soru-Cevap, Sergi.                                                                  | zaten tanımlı                                                                          |
+| Kanal | Oluşturma | Ayar notları | Adresi nereye yazın |
+|---|---|---|---|
+| **WhatsApp Kanalı** | WhatsApp → Güncellemeler → Kanallar → oluştur | Ad "Teknodoz Studio Duyurular", simge = logo. Yalnızca yöneticiler yazar. Kanal bağlantısını kopyalayın. | `links.ts` → `whatsapp` (`https://whatsapp.com/channel/…`) |
+| **Telegram** | Yeni Kanal → herkese açık `t.me/kullaniciadi` | Kanal ayarlarından bir **tartışma grubu** bağlayın; grupta yavaş mod (slow mode) açın. | `telegram` (`https://t.me/…`) |
+| **LinkedIn Sayfası** | İş için → Sayfa oluştur → Şirket (ya da Showcase) | Kişisel profil ≠ Sayfa. Logo, kapak, tek cümlelik slogan, web sitesi, "Hakkında" metni. İkinci bir yönetici ekleyin. | `linkedin` (`…/company/…`) |
+| **Facebook** | Gruplar → yeni grup (herkese açık/gizli seç) | Üyelik soruları (spam için 1–2 soru), kurallar sekmesi. Marka sayfası ayrıca gerekiyorsa Sayfa açın. | `facebook` (`…/groups/…`) |
+| **Slack** | Çalışma alanı oluştur → `#sponsorlar`, `#ortaklar`, `#duyuru` | Davet bağlantısı süreli olabilir; ücretsiz planın geçmiş/entegrasyon sınırlarını güncel fiyat sayfasından doğrulayın. | `slack` (`join.slack.com/…`; çalışma alanı kanal bağlantıları yalnızca üyelere açılır) |
+| **Discord** | Sunucu oluştur → Community'yi etkinleştir | `#kurallar`, `#duyuru`, `#sohbet`, `#destek`, `#yayın-sohbeti`. Kalıcı (süresiz) davet bağlantısı üretin. | `discord` (`discord.gg/…`) |
+| **GitHub** | Depoda Settings → Features → **Discussions** | Kategoriler: Duyurular, Fikirler, Soru-Cevap, Sergi. | zaten tanımlı |
 
 ## 3. Hazır metinler
 
@@ -65,7 +65,6 @@ prototip yayını stüdyosu. Güncellemeler, yayın duyuruları ve topluluk."
 broadcast studio. Updates, stream announcements and community."
 
 **Topluluk kuralları (kısa):**
-
 1. Saygılı olun; kişisel saldırı, ayrımcılık ve taciz yok.
 2. Konu dışı reklam/spam ve izinsiz toplu mesaj yok; sponsorluk ve iş birliği için yöneticilere yazın.
 3. Başkasının kişisel verisini, yayın anahtarını veya parolasını paylaşmayın.
@@ -79,12 +78,12 @@ fikirler için GitHub Issues/Discussions'a bakın. Haftalık demo yayınımızı
 
 ## 4. Haftalık ritim (küçük ama sürdürülebilir)
 
-| Gün | İçerik                                                                     | Kanallar                                  |
-| --- | -------------------------------------------------------------------------- | ----------------------------------------- |
-| Pzt | Haftalık yayın duyurusu (uygulamadaki **Yayın duyurusu** kartı)            | WhatsApp/Telegram duyuru, LinkedIn, X     |
-| Çar | Kısa ipucu/ekran kaydı ("şablonla haber stüdyosu 60 sn")                   | YouTube Shorts/Instagram/TikTok, kanallar |
-| Cum | Haftalık demo yayını (`/live`) + sohbette Soru-Cevap (moderasyonlu sohbet) | YouTube/Facebook/Twitch…                  |
-| Cmt | Özet + sürüm notu (GitHub Releases)                                        | tüm duyuru kanalları                      |
+| Gün | İçerik | Kanallar |
+|---|---|---|
+| Pzt | Haftalık yayın duyurusu (uygulamadaki **Yayın duyurusu** kartı) | WhatsApp/Telegram duyuru, LinkedIn, X |
+| Çar | Kısa ipucu/ekran kaydı ("şablonla haber stüdyosu 60 sn") | YouTube Shorts/Instagram/TikTok, kanallar |
+| Cum | Haftalık demo yayını (`/live`) + sohbette Soru-Cevap (moderasyonlu sohbet) | YouTube/Facebook/Twitch… |
+| Cmt | Özet + sürüm notu (GitHub Releases) | tüm duyuru kanalları |
 
 Yayın başlamadan 24 saat ve 1 saat önce iki hatırlatma; yayın sonrası kayıt bağlantısı.
 

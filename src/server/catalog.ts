@@ -181,12 +181,12 @@ const bulkBody = z.object({
   until: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
-function hashPassword(pw: string): string {
+export function hashPassword(pw: string): string {
   const salt = randomBytes(16);
   return `${salt.toString("hex")}:${scryptSync(pw, salt, 32).toString("hex")}`;
 }
 
-function checkPassword(pw: string, stored: string): boolean {
+export function checkPassword(pw: string, stored: string): boolean {
   const [saltHex, hashHex] = stored.split(":");
   if (!saltHex || !hashHex) return false;
   const want = Buffer.from(hashHex, "hex");

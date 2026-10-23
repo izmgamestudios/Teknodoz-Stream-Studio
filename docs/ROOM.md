@@ -18,12 +18,12 @@ Nothing is written to disk and there is no database: restarting the process drop
 
 ## What the relay sees and keeps (in memory only)
 
-| Data                                                               | Why                                | Lifetime                                               |
-| ------------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------ |
-| room code (6 chars, no `0/O/1/I`) and a secret host token          | find the room / authorise the host | idle room: 6 h; closed room: 2 min                     |
-| guest display name + requested role                                | shown to the host in the pool      | until approved/left; stale (no poll for 90 s): removed |
-| SDP offer/answer codes (contain ICE candidates, i.e. IP addresses) | complete the handshake             | removed 2 min after the answer                         |
-| client IP (last `X-Forwarded-For` entry)                           | rate limiting only                 | counters expire after ≤ 1 h                            |
+| Data | Why | Lifetime |
+|---|---|---|
+| room code (6 chars, no `0/O/1/I`) and a secret host token | find the room / authorise the host | idle room: 6 h; closed room: 2 min |
+| guest display name + requested role | shown to the host in the pool | until approved/left; stale (no poll for 90 s): removed |
+| SDP offer/answer codes (contain ICE candidates, i.e. IP addresses) | complete the handshake | removed 2 min after the answer |
+| client IP (last `X-Forwarded-For` entry) | rate limiting only | counters expire after ≤ 1 h |
 
 The activity log shown on `/room` is stored **only in the host's browser** (IndexedDB) and can be exported as CSV.
 
@@ -41,26 +41,26 @@ The activity log shown on `/room` is stored **only in the host's browser** (Inde
 
 ## API (`src/server/rooms.ts`)
 
-| Method + path                                          | Auth               | Purpose                                                             |
-| ------------------------------------------------------ | ------------------ | ------------------------------------------------------------------- |
-| `GET /api/room/health`                                 | –                  | relay available?                                                    |
-| `POST /api/room`                                       | –                  | create room → `{code, hostToken}`                                   |
-| `GET /api/room/:code`                                  | –                  | `{exists, open, hostOnline}`                                        |
-| `DELETE /api/room/:code`                               | host               | close room                                                          |
-| `POST /api/room/:code/join`                            | –                  | guest asks to join → `{guestId, guestToken}`                        |
-| `GET /api/room/:code/host/events?since=N&wait=20`      | host               | long-poll `join` / `answer` / `leave` events                        |
-| `POST /api/room/:code/host/offer`                      | host               | approve: deliver the offer to a guest                               |
-| `POST /api/room/:code/host/reject`                     | host               | reject a guest                                                      |
-| `GET /api/room/:code/guest/:id/events?since=N&wait=20` | guest              | long-poll `offer` / `rejected` / `closed`                           |
-| `POST /api/room/:code/guest/:id/answer`                | guest              | send the answer code                                                |
-| `POST /api/room/:code/guest/:id/leave`                 | guest              | leave the pool                                                      |
-| `POST /api/room/:code/host/editor` / `DELETE`          | host               | issue / rotate / revoke the chat **editor key**                     |
-| `POST /api/room/:code/host/chat-mode`                  | host               | `moderated` (default) · `open` · `off`                              |
-| `GET /api/room/:code/chat?since=N&wait=20`             | host **or** editor | long-poll the whole chat (queue included)                           |
-| `POST /api/room/:code/chat`                            | host or editor     | post as "Reji" / "Editör" (published at once)                       |
-| `POST /api/room/:code/chat/:id`                        | host or editor     | `approve` · `reject` · `edit`; `onair` / `offair` are **host only** |
-| `GET /api/room/:code/guest/:id/chat?since=N&wait=20`   | guest              | approved messages + the guest's own                                 |
-| `POST /api/room/:code/guest/:id/chat`                  | guest              | post a message (goes to the approval queue)                         |
+| Method + path | Auth | Purpose |
+|---|---|---|
+| `GET /api/room/health` | – | relay available? |
+| `POST /api/room` | – | create room → `{code, hostToken}` |
+| `GET /api/room/:code` | – | `{exists, open, hostOnline}` |
+| `DELETE /api/room/:code` | host | close room |
+| `POST /api/room/:code/join` | – | guest asks to join → `{guestId, guestToken}` |
+| `GET /api/room/:code/host/events?since=N&wait=20` | host | long-poll `join` / `answer` / `leave` events |
+| `POST /api/room/:code/host/offer` | host | approve: deliver the offer to a guest |
+| `POST /api/room/:code/host/reject` | host | reject a guest |
+| `GET /api/room/:code/guest/:id/events?since=N&wait=20` | guest | long-poll `offer` / `rejected` / `closed` |
+| `POST /api/room/:code/guest/:id/answer` | guest | send the answer code |
+| `POST /api/room/:code/guest/:id/leave` | guest | leave the pool |
+| `POST /api/room/:code/host/editor` / `DELETE` | host | issue / rotate / revoke the chat **editor key** |
+| `POST /api/room/:code/host/chat-mode` | host | `moderated` (default) · `open` · `off` |
+| `GET /api/room/:code/chat?since=N&wait=20` | host **or** editor | long-poll the whole chat (queue included) |
+| `POST /api/room/:code/chat` | host or editor | post as "Reji" / "Editör" (published at once) |
+| `POST /api/room/:code/chat/:id` | host or editor | `approve` · `reject` · `edit`; `onair` / `offair` are **host only** |
+| `GET /api/room/:code/guest/:id/chat?since=N&wait=20` | guest | approved messages + the guest's own |
+| `POST /api/room/:code/guest/:id/chat` | guest | post a message (goes to the approval queue) |
 
 ## Moderated chat (director / editor desk)
 
@@ -73,11 +73,11 @@ participant ──post──▶ [pending] ──editor/director approve──▶
                          └─ reject (never shown to others)
 ```
 
-| Seat                | Credential                                                                        | Can                                                                                               |
-| ------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| **Reji / director** | the room's host token (the `/room` page)                                          | everything: approve, reject, edit, **put on air**, chat mode, issue/rotate/revoke the editor link |
-| **Editör / editor** | rotatable editor key in a link `/chat/<CODE>#k=<key>` (open it on another device) | approve, reject, edit, post announcements. **Cannot** put a message on air or change the mode     |
-| **Participant**     | its guest token                                                                   | post (queue), read approved messages and its own status                                           |
+| Seat | Credential | Can |
+|---|---|---|
+| **Reji / director** | the room's host token (the `/room` page) | everything: approve, reject, edit, **put on air**, chat mode, issue/rotate/revoke the editor link |
+| **Editör / editor** | rotatable editor key in a link `/chat/<CODE>#k=<key>` (open it on another device) | approve, reject, edit, post announcements. **Cannot** put a message on air or change the mode |
+| **Participant** | its guest token | post (queue), read approved messages and its own status |
 
 **Chat-only audience** (`/r/<CODE>?as=chat`, 4th link on `/room`): for events/webinars where people watch the stream
 elsewhere (YouTube, a hall screen) and only want to write. They join **without approval and without WebRTC**
