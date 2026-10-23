@@ -13,7 +13,8 @@ export type NewLayerKind =
   | "text"
   | "prompter"
   | "chat"
-  | "sponsor";
+  | "sponsor"
+  | "audioviz";
 
 export const LAYER_KIND_LABEL: Record<Layer["kind"], string> = {
   webcam: "Kamera",
@@ -27,6 +28,7 @@ export const LAYER_KIND_LABEL: Record<Layer["kind"], string> = {
   prompter: "Prompter (burn-in)",
   chat: "Sohbet (oda)",
   sponsor: "Sponsorlar",
+  audioviz: "Ses görseli (frekans)",
 };
 
 export const LAYER_ICON: Record<Layer["kind"], string> = {
@@ -41,6 +43,7 @@ export const LAYER_ICON: Record<Layer["kind"], string> = {
   prompter: "📜",
   chat: "💬",
   sponsor: "🏷",
+  audioviz: "🎚",
 };
 
 export function classifyFile(file: File): AssetType | null {

@@ -2,7 +2,7 @@
 // Declarative broadcast-frame templates. A template is pure data: `buildTemplateScene`
 // turns it into a normal Scene made of the existing layer kinds, so everything stays
 // editable in the layer panel / inspector afterwards.
-import type { DeviceFrameKind } from "../types";
+import type { AudioVizStyle, DeviceFrameKind } from "../types";
 
 export interface Rect {
   x: number;
@@ -11,7 +11,7 @@ export interface Rect {
   h: number;
 }
 
-export type PanelKind = "webcam" | "guest" | "screen" | "web";
+export type PanelKind = "webcam" | "guest" | "screen" | "web" | "viz";
 
 export interface PanelSpec {
   /** Stable within a template; used for layer names. */
@@ -22,6 +22,8 @@ export interface PanelSpec {
   rect: Rect;
   /** Only for `web` panels. */
   frame?: DeviceFrameKind;
+  /** Only for `viz` panels: how the voices are drawn. */
+  viz?: AudioVizStyle;
 }
 
 export interface LowerThirdSpec {
@@ -46,7 +48,8 @@ export interface TemplateOptions {
   backgroundAssetId?: string;
 }
 
-export type TemplateGroup = "news" | "talk" | "demo" | "learn" | "social";
+export type TemplateGroup =
+  "news" | "talk" | "demo" | "learn" | "social" | "podcast";
 
 export interface TemplateDef {
   id: string;

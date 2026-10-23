@@ -59,7 +59,7 @@ function t(rect: Rect) {
   return { x: rect.x, y: rect.y, w: rect.w, h: rect.h, rotation: 0 };
 }
 
-function mediaLayer(p: PanelSpec): Layer {
+function mediaLayer(p: PanelSpec, accent: string): Layer {
   const common = { name: p.label, transform: t(p.rect) };
   switch (p.kind) {
     case "webcam":
@@ -70,6 +70,13 @@ function mediaLayer(p: PanelSpec): Layer {
       return createLayer("screen", common);
     case "web":
       return createLayer("web", { ...common, frame: p.frame ?? "none" });
+    case "viz":
+      return createLayer("audioviz", {
+        ...common,
+        style: p.viz ?? "mirror",
+        accent,
+        sources: ["voices"],
+      });
   }
 }
 
@@ -177,7 +184,7 @@ export function buildTemplateScene(
 
   for (const p of def.panels) {
     if (p.kind === "guest" || p.kind === "screen") layers.push(placeholder(p));
-    layers.push(mediaLayer(p));
+    layers.push(mediaLayer(p, o.accent));
     if (def.frames) layers.push(frame(p));
     if (def.captions) {
       layers.push(

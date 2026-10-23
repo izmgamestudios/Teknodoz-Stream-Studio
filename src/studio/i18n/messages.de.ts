@@ -1101,4 +1101,14 @@ export const de: Record<MessageKey, string> = {
   "pe.shorten.done":
     "{n} Teile · {s} s kürzer. Wird beim Klick auf „Bearbeiten“ unten angewendet.",
   "pe.shorten.undo": "Rückgängig",
+  "settings.output.wav": "Zusätzlich eine WAV-Audiodatei zum Video aufnehmen",
+  "settings.output.wav.hint":
+    "Nach dem Stopp lädt derselbe Audiomix auch verlustfrei als 48-kHz-/16-Bit-WAV herunter (ca. 11 MB pro Minute). Für Podcast-Mastering und Hoster.",
+  "rec.up.wav": "Die Audioaufnahme (WAV) wird mitgesendet:",
+  "pod.monitor": "Gäste im Kopfhörer hören (Kopfhörer tragen)",
+  "pod.err.login": "Zum Öffnen eines Raums ist eine Kreativ-Anmeldung nötig.",
+  "pod.inStudio":
+    "Zum Studio-Mix hinzugefügt: Aufnahmen und Live-Streams enthalten diesen Ton.",
+  "pod.rec.inStudio":
+    "Zum Aufnehmen die „Aufnahme“-Taste des Studios nutzen: Video (mit Visualisierung) und WAV des Podcast-Mixes werden zusammen gespeichert.",
 };

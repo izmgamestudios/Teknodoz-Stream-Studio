@@ -1101,4 +1101,15 @@ export const es: Record<MessageKey, string> = {
   "pe.shorten.done":
     "{n} partes · {s} s menos. Se aplica al pulsar «Editar» abajo.",
   "pe.shorten.undo": "Deshacer",
+  "settings.output.wav": "Grabar también un WAV (audio) junto al vídeo",
+  "settings.output.wav.hint":
+    "Al parar, la misma mezcla de audio se descarga también como WAV sin pérdidas de 48 kHz / 16 bits (unos 11 MB por minuto). Para masterizar podcasts.",
+  "rec.up.wav": "También se envía la grabación de audio (WAV):",
+  "pod.monitor":
+    "Escuchar a los invitados en mis auriculares (use auriculares)",
+  "pod.err.login": "Abrir una sala requiere iniciar sesión como creador.",
+  "pod.inStudio":
+    "Añadido a la mezcla del estudio: las grabaciones y el directo incluyen este audio.",
+  "pod.rec.inStudio":
+    "Para grabar use el botón «Grabar» del estudio: se guardan juntos el vídeo (con el visualizador) y un WAV de la mezcla del podcast.",
 };

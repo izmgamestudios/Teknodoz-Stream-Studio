@@ -36,6 +36,7 @@ export function defaultOutput(): OutputSettings {
     audioBitrate: 192_000,
     container: "auto",
     usePublicStun: true,
+    wavAlongside: true,
   };
 }
 
@@ -114,6 +115,7 @@ const NAMES: Record<LayerKind, string> = {
   prompter: "Prompter (burn-in)",
   chat: "Sohbet",
   sponsor: "Sponsorlar",
+  audioviz: "Ses görseli",
 };
 
 /**
@@ -237,6 +239,21 @@ export function createLayer<K extends LayerKind>(
         dwellMs: 6000,
         heading: "Sponsorlarımız",
         showTagline: true,
+      };
+      break;
+    case "audioviz":
+      layer = {
+        ...base,
+        kind: "audioviz",
+        transform: box(160, 320, 1600, 440),
+        style: "mirror",
+        sources: ["voices"],
+        bars: 48,
+        accent: "#22d3ee",
+        accent2: "#a78bfa",
+        smoothing: 0.8,
+        labels: true,
+        background: "transparent",
       };
       break;
     default:

@@ -28,7 +28,20 @@ import {
 import { planAutoAdvance, secondsLeft } from "./auto-advance";
 import { createMusicPlayer, TRACKS, type MusicPlayer } from "../engine/music";
 import { buildSfxBuffer, SFX_PRESETS } from "../engine/sfx-presets";
-import { downloadRecordingBundle, timestampName } from "../engine/download";
+import {
+  downloadBlob,
+  downloadRecordingBundle,
+  timestampName,
+} from "../engine/download";
+import { WavRecorder } from "../engine/wav-recorder";
+import { PodcastHost } from "../podcast/host";
+import {
+  binSpectrum,
+  drawViz,
+  seriesColors,
+  smoothBars,
+  type VizSeries,
+} from "../viz/draw";
 import {
   StudioRecorder,
   type RecorderSnapshot,
@@ -142,6 +155,8 @@ export interface LastRecordingInfo {
   name: string;
   size: number;
   durationMs: number;
+  /** the WAV that was recorded with it, when there is one */
+  wav?: { name: string; size: number };
 }
 
 const EMPTY_PEERS: readonly PeerInfo[] = Object.freeze([]);
@@ -170,11 +185,14 @@ export class StudioRuntime {
   private canvas: HTMLCanvasElement | null = null;
   private recorder: StudioRecorder | null = null;
   private recorderUnsub: (() => void) | null = null;
+  private wav: WavRecorder | null = null;
   private lastRecordingData: {
     blob: Blob;
     name: string;
     durationMs: number;
     markers: { t: number; label: string }[];
+    /** lossless audio of the same take (settings.output.wavAlongside) */
+    wav?: { blob: Blob; name: string; durationMs: number };
   } | null = null;
   private unsubProject: () => void;
   private unsubLang: () => void;
@@ -379,8 +397,192 @@ export class StudioRuntime {
     return this.compositor;
   }
 
+  /* --------------------------------- podcast --------------------------------- */
+
+  private podcast: PodcastHost | null = null;
+  private podcastUnsub: (() => void) | null = null;
+  private podcastOnBus = false;
+  private podcastViz = new Map<string, { label: string; off: () => void }>();
+  private micBeforePodcast: boolean | null = null;
+
+  /**
+   * The podcast room of this studio. The director opens it from the studio panel; while it is
+   * live its mix (moderator mic + on-air guests) is a channel of the studio mixer — so recording,
+   * live streaming and the WAV include it — and every voice is offered to audio visualisers.
+   */
+  getPodcastHost(): PodcastHost {
+    if (!this.podcast) {
+      this.podcast = new PodcastHost();
+      this.podcastUnsub = this.podcast.subscribe(() => this.syncPodcast());
+    }
+    return this.podcast;
+  }
+
+  isPodcastLive(): boolean {
+    return this.podcastOnBus;
+  }
+
+  private syncPodcast(): void {
+    const p = this.podcast;
+    if (!p) return;
+    const live = p.getSnapshot().phase === "live";
+    if (live && !this.podcastOnBus) {
+      const mix = p.getMixStream();
+      if (mix) {
+        this.podcastOnBus = true;
+        void this.audio
+          .ensureRunning()
+          .then(() => {
+            if (!this.podcastOnBus) return;
+            this.audio.addChannel(
+              { id: "podcast", label: "Podcast karışımı", kind: "system" },
+              mix,
+              { monitor: false },
+            );
+          })
+          .catch(() => {
+            this.podcastOnBus = false;
+          });
+        // the moderator's voice is inside the podcast mix: the studio mic would double it
+        this.micBeforePodcast = this.snap.micMuted;
+        this.setMicMuted(true);
+      }
+    } else if (!live && this.podcastOnBus) {
+      this.podcastOnBus = false;
+      this.audio.removeChannel("podcast");
+      if (this.micBeforePodcast === false) this.setMicMuted(false);
+      this.micBeforePodcast = null;
+    }
+    // visualiser voices follow who is on air
+    const want = new Map<string, string>();
+    if (live) for (const v of p.voices()) want.set(`pod:${v.id}`, v.label);
+    for (const [id, cur] of [...this.podcastViz]) {
+      if (want.get(id) !== cur.label) {
+        cur.off();
+        this.podcastViz.delete(id);
+      }
+    }
+    for (const [id, label] of want)
+      if (!this.podcastViz.has(id)) {
+        const voice = id.slice(4);
+        this.podcastViz.set(id, {
+          label,
+          off: this.registerVizSource(id, label, (out) =>
+            p.readSpectrum(voice, out),
+          ),
+        });
+      }
+  }
+
+  /* ----------------------------- audio visualiser ----------------------------- */
+
+  /** Extra voices a visualiser can show (the podcast room registers host + guests here). */
+  private vizExtra = new Map<
+    string,
+    { label: string; read: (out: Uint8Array<ArrayBuffer>) => boolean }
+  >();
+  private vizBuf = new Uint8Array(512);
+  private vizState = new Map<string, number[][]>();
+
+  /** Registers a voice for `audioviz` layers; returns the function that removes it again. */
+  registerVizSource(
+    id: string,
+    label: string,
+    read: (out: Uint8Array<ArrayBuffer>) => boolean,
+  ): () => void {
+    this.vizExtra.set(id, { label, read });
+    return () => {
+      if (this.vizExtra.get(id)?.read === read) this.vizExtra.delete(id);
+    };
+  }
+
+  /**
+   * `"voices"` = everyone who is talking right now: the podcast host and guests when a podcast
+   * room is open (they replace the studio mic, whose sound they already contain), otherwise the
+   * studio mic and the video guests. Falls back to the final mix when nobody is live.
+   */
+  private expandViz(ids: readonly string[]): string[] {
+    const out: string[] = [];
+    for (const id of ids) {
+      if (id !== "voices") {
+        out.push(id);
+        continue;
+      }
+      const pod = [...this.vizExtra.keys()].filter((k) => k.startsWith("pod:"));
+      for (const c of this.audio.getState().channels) {
+        if (!c.active) continue;
+        if (c.kind === "mic" && pod.length > 0) continue;
+        if (c.kind === "mic" || c.kind === "guest") out.push(c.id);
+      }
+      out.push(...pod);
+    }
+    const uniq = [...new Set(out)].slice(0, 6);
+    return uniq.length > 0 ? uniq : ["master"];
+  }
+
+  /** Everything an `audioviz` layer can show: the mix, the live audio channels, extra voices. */
+  getVizSources(): { id: string; label: string }[] {
+    const out = [
+      { id: "voices", label: "Konuşanlar (otomatik: yönetici + konuklar)" },
+      { id: "master", label: "Genel karışım" },
+    ];
+    for (const c of this.audio.getState().channels)
+      if (c.active && c.kind !== "sfx") out.push({ id: c.id, label: c.label });
+    for (const [id, v] of this.vizExtra) out.push({ id, label: v.label });
+    return out;
+  }
+
+  private readViz(id: string): { label: string; ok: boolean } {
+    if (id === "master")
+      return {
+        label: "Genel karışım",
+        ok: this.audio.getFrequencyData("master", this.vizBuf),
+      };
+    const extra = this.vizExtra.get(id);
+    if (extra) return { label: extra.label, ok: extra.read(this.vizBuf) };
+    const ch = this.audio.getState().channels.find((c) => c.id === id);
+    if (!ch || !ch.active) return { label: "", ok: false };
+    return {
+      label: ch.label,
+      ok: this.audio.getFrequencyData(id, this.vizBuf),
+    };
+  }
+
   private hooks: CompositorHooks = {
     resolveSource: (layer: Layer) => this.sources.resolve(layer),
+    drawAudioViz: (ctx, layer, box) => {
+      const ids = this.expandViz(
+        layer.sources.length > 0 ? layer.sources : ["voices"],
+      );
+      const prevAll = this.vizState.get(layer.id) ?? [];
+      const nextAll: number[][] = [];
+      const colors = seriesColors(ids.length, layer.accent, layer.accent2);
+      const series: VizSeries[] = [];
+      ids.forEach((id, i) => {
+        const r = this.readViz(id);
+        if (!r.ok && !this.vizExtra.has(id) && id !== "master") return;
+        const bars = smoothBars(
+          prevAll[i],
+          r.ok
+            ? binSpectrum(this.vizBuf, layer.bars)
+            : new Array<number>(layer.bars).fill(0),
+          layer.smoothing,
+        );
+        nextAll[i] = bars;
+        series.push({
+          label: r.label,
+          color: colors[i] as string,
+          bars,
+          level: Math.max(0, ...bars),
+        });
+      });
+      this.vizState.set(layer.id, nextAll);
+      drawViz(ctx, box, series, {
+        style: layer.style,
+        labels: layer.labels,
+        background: layer.background,
+      });
+    },
     drawSponsors: (ctx, layer: SponsorLayer, box, now) => {
       const items: SponsorItem[] = sortForAir(
         this.project.getState().sponsors.filter((s) => s.onAir),
@@ -1267,6 +1469,15 @@ export class StudioRuntime {
         this.patch({ recorder: rec.getState() }),
       );
       rec.start();
+      // the same mix, lossless: started together with the video so both begin at the same moment
+      if (o.wavAlongside !== false) {
+        const w = new WavRecorder();
+        this.wav = w;
+        w.start(this.audio.getMixStream()).catch(() => {
+          w.dispose();
+          if (this.wav === w) this.wav = null;
+        });
+      }
       this.patch({
         recorder: rec.getState(),
         recorderWarning: null,
@@ -1296,20 +1507,34 @@ export class StudioRuntime {
         ? fmt.id.replace(":", "x")
         : `${st.settings.output.width}x${st.settings.output.height}`;
       const base = timestampName(`${st.name || "kayit"}-${tag}`);
+      const wavRes = (await this.wav?.stop().catch(() => null)) ?? null;
+      this.wav = null;
+      const wav = wavRes
+        ? {
+            blob: wavRes.blob,
+            name: `${base}.wav`,
+            durationMs: wavRes.durationMs,
+          }
+        : undefined;
       this.lastRecordingData = {
         blob: result.blob,
         name: `${base}.${result.ext}`,
         durationMs: result.durationMs,
         markers: result.markers.map((m) => ({ t: m.t, label: m.label })),
+        ...(wav ? { wav } : {}),
       };
       this.patch({
         lastRecording: {
           name: this.lastRecordingData.name,
           size: result.blob.size,
           durationMs: result.durationMs,
+          ...(wav ? { wav: { name: wav.name, size: wav.blob.size } } : {}),
         },
       });
       await downloadRecordingBundle(result, base);
+      if (wav) {
+        downloadBlob(wav.blob, wav.name);
+      }
       return true;
     } catch (e) {
       this.patch({
@@ -1555,6 +1780,11 @@ export class StudioRuntime {
     this.music.clear();
     if (this.duckTimer) clearInterval(this.duckTimer);
     if (this.countdownTimer) clearInterval(this.countdownTimer);
+    this.wav?.dispose();
+    this.wav = null;
+    this.podcastUnsub?.();
+    this.podcast?.dispose();
+    this.podcast = null;
     this.micFx.detach();
     for (const u of this.syncUnsubs) u();
     this.syncUnsubs = [];

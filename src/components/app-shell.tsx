@@ -21,7 +21,6 @@ const NAV: readonly {
     | "/classic"
     | "/room"
     | "/live"
-    | "/podcast"
     | "/community"
     | "/guide"
     | "/download"
@@ -41,12 +40,6 @@ const NAV: readonly {
   },
   { to: "/room", label: "nav.room", hint: "nav.room.hint", icon: "🚪" },
   { to: "/live", label: "nav.live", hint: "nav.live.hint", icon: "📡" },
-  {
-    to: "/podcast",
-    label: "nav.podcast",
-    hint: "nav.podcast.hint",
-    icon: "🎙️",
-  },
   {
     to: "/community",
     label: "nav.community",

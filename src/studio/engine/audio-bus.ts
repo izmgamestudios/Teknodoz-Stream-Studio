@@ -1049,6 +1049,26 @@ export class AudioBus {
     return this.measure(ch.nodes.analyser, ch.samples, ch.level);
   }
 
+  /**
+   * Frequency magnitudes (0..255, `fftSize / 2` bins, linear Hz) of one channel or of the final
+   * mix (`"master"`), for visualisers. Fills `out` and returns false when there is nothing to
+   * read (unknown channel, no audio yet).
+   */
+  getFrequencyData(id: string, out: Uint8Array<ArrayBuffer>): boolean {
+    let analyser: AnalyserNode | null = null;
+    if (id === "master") analyser = this.graph?.masterAnalyser ?? null;
+    else {
+      const ch = this.channels.get(id);
+      if (ch && ch.source !== null) analyser = ch.nodes.analyser;
+    }
+    if (!analyser || typeof analyser.getByteFrequencyData !== "function") {
+      out.fill(0);
+      return false;
+    }
+    analyser.getByteFrequencyData(out);
+    return true;
+  }
+
   /** Level of the final mix (after master gain, mute and limiter). */
   getMasterLevel(): Readonly<AudioLevel> {
     if (!this.graph) return SILENT_LEVEL;

@@ -1110,6 +1110,16 @@ export const tr = {
   "pe.shorten.done":
     "{n} parça · {s} sn kısaldı. Aşağıdaki “Düzenle”ye basınca uygulanır.",
   "pe.shorten.undo": "Geri al",
+  "settings.output.wav": "Videoyla birlikte WAV (ses) kaydı al",
+  "settings.output.wav.hint":
+    "Kayıt bitince aynı ses karışımı kayıpsız 48 kHz / 16 bit WAV olarak da iner (dakikada yaklaşık 11 MB). Podcast mastering ve yayıncılar için.",
+  "rec.up.wav": "Ses kaydı (WAV) da gönderilir:",
+  "pod.monitor": "Konukları kulaklıktan dinle (kulaklık takın)",
+  "pod.err.login": "Oda açmak için içerik üretici girişi gerekir.",
+  "pod.inStudio":
+    "Studio karışımına eklendi: kayıt ve canlı yayın bu sesi içerir.",
+  "pod.rec.inStudio":
+    "Kayıt için stüdyonun “Kayda başla” düğmesini kullanın: video (ekrandaki ses görseliyle) ve podcast karışımının WAV'ı birlikte alınır.",
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -2197,6 +2207,16 @@ export const en: Record<MessageKey, string> = {
   "pe.shorten.done":
     "{n} parts · {s} s shorter. Applied when you press Edit below.",
   "pe.shorten.undo": "Undo",
+  "settings.output.wav": "Also record a WAV (audio) file with the video",
+  "settings.output.wav.hint":
+    "When you stop, the same audio mix also downloads as lossless 48 kHz / 16-bit WAV (about 11 MB per minute). For podcast mastering and hosts.",
+  "rec.up.wav": "The audio recording (WAV) is sent too:",
+  "pod.monitor": "Hear the guests in my headphones (wear headphones)",
+  "pod.err.login": "Opening a room needs a creator sign-in.",
+  "pod.inStudio":
+    "Added to the studio mix: recordings and live streams include this audio.",
+  "pod.rec.inStudio":
+    "To record, use the studio's “Record” button: the video (with the on-screen visualiser) and a WAV of the podcast mix are saved together.",
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = {

@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { normalizePrototypeUrl } from "../proto";
 import type { LayerPatch } from "../project/store";
 import { useProject, useSources, useStudio } from "../runtime/use-studio";
-import type { Layer } from "../types";
+import type { AudioVizStyle, Layer } from "../types";
+import { VIZ_STYLES } from "../viz/draw";
 import {
   BTN,
   Check,
@@ -278,6 +279,8 @@ export function KindFields({
           </p>
         </div>
       );
+    case "audioviz":
+      return <AudioVizFields layer={layer} patch={patch} />;
     case "sponsor":
       return (
         <div className="space-y-2">
@@ -484,6 +487,118 @@ function WebFields({
       <p className="text-xs text-muted-foreground">
         Prototip görüntüsü ekran/sekme yakalamayla sahneye girer. Altta
         “Prototip” panelinden sayfayı gömüp bölgeyi otomatik kırpabilirsiniz.
+      </p>
+    </div>
+  );
+}
+
+const VIZ_STYLE_LABEL: Record<AudioVizStyle, string> = {
+  bars: "Çubuklar",
+  mirror: "Simetrik çubuklar",
+  wave: "Dalga çizgisi",
+  ring: "Halka",
+};
+
+/** Frequency picture of the voices on air: which voices, style, colours. */
+function AudioVizFields({
+  layer,
+  patch,
+}: {
+  layer: Extract<Layer, { kind: "audioviz" }>;
+  patch: Patch;
+}) {
+  const rt = useStudio();
+  // refresh the list of voices while the inspector is open (guests come and go)
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => tick((n) => n + 1), 1500);
+    return () => window.clearInterval(id);
+  }, []);
+  const available = rt.getVizSources();
+  const chosen = layer.sources.length > 0 ? layer.sources : ["voices"];
+  const toggle = (id: string, on: boolean) => {
+    const next = on ? [...chosen, id] : chosen.filter((x) => x !== id);
+    patch({ sources: next.slice(0, 6) });
+  };
+  return (
+    <div className="space-y-2">
+      <Field label="Görünüm">
+        <SelectInput
+          value={layer.style}
+          options={VIZ_STYLES.map((v) => ({
+            value: v,
+            label: VIZ_STYLE_LABEL[v],
+          }))}
+          onChange={(style) => patch({ style })}
+        />
+      </Field>
+      <fieldset className="space-y-1">
+        <legend className="text-xs text-muted-foreground">
+          Hangi sesler (konuşan yönetici + konuklar)
+        </legend>
+        {available.map((s) => (
+          <Check
+            key={s.id}
+            checked={chosen.includes(s.id)}
+            onChange={(on) => toggle(s.id, on)}
+          >
+            {s.label}
+          </Check>
+        ))}
+        {chosen
+          .filter((id) => !available.some((s) => s.id === id))
+          .map((id) => (
+            <p key={id} className="text-[11px] text-muted-foreground">
+              {id}: şu an yayında değil (geri gelince çizilir)
+            </p>
+          ))}
+      </fieldset>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Çubuk sayısı">
+          <NumInput
+            value={layer.bars}
+            min={16}
+            max={96}
+            step={4}
+            onChange={(bars) => patch({ bars })}
+          />
+        </Field>
+        <Field label="Yumuşatma">
+          <RangeInput
+            label="Yumuşatma"
+            min={0}
+            max={95}
+            value={Math.round(layer.smoothing * 100)}
+            onChange={(v) => patch({ smoothing: v / 100 })}
+          />
+        </Field>
+        <Field label="Renk 1">
+          <ColorInput
+            value={layer.accent}
+            onChange={(accent) => patch({ accent })}
+          />
+        </Field>
+        <Field label="Renk 2">
+          <ColorInput
+            value={layer.accent2}
+            onChange={(accent2) => patch({ accent2 })}
+          />
+        </Field>
+      </div>
+      <Check checked={layer.labels} onChange={(labels) => patch({ labels })}>
+        Konuşanın adını göster
+      </Check>
+      <Check
+        checked={layer.background !== "transparent"}
+        onChange={(on) =>
+          patch({ background: on ? "rgba(7,11,24,0.78)" : "transparent" })
+        }
+      >
+        Koyu zemin
+      </Check>
+      <p className="text-xs text-muted-foreground">
+        Kayıtta ve canlı yayında ekrana işlenir. Birden çok ses seçerseniz her
+        biri kendi şeridinde ve renginde çizilir.
       </p>
     </div>
   );

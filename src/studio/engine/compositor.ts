@@ -821,6 +821,9 @@ export class Compositor {
       case "sponsor":
         if (!this.hooks.drawSponsors) return;
         break;
+      case "audioviz":
+        if (!this.hooks.drawAudioViz) return;
+        break;
       default:
         break;
     }
@@ -875,6 +878,11 @@ export class Compositor {
         case "sponsor":
           this.callHook(ctx, () =>
             this.hooks.drawSponsors?.(ctx, layer, box, nowMs),
+          );
+          break;
+        case "audioviz":
+          this.callHook(ctx, () =>
+            this.hooks.drawAudioViz?.(ctx, layer, box, nowMs),
           );
           break;
       }

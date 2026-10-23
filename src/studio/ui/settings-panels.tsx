@@ -189,6 +189,17 @@ export function OutputSection() {
             />
           </Field>
         </div>
+        <div className="sm:col-span-2">
+          <Check
+            checked={o.wavAlongside}
+            onChange={(wavAlongside) => set({ wavAlongside })}
+          >
+            {t("settings.output.wav")}
+          </Check>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("settings.output.wav.hint")}
+          </p>
+        </div>
       </fieldset>
       <p className="mt-3 text-xs text-muted-foreground">
         {t("settings.output.estimate", { mb: mbPerMin })}

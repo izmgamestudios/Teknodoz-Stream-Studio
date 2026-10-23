@@ -14,6 +14,7 @@ import { MediaLibrary } from "@/studio/ui/media-library";
 import { MobileBar } from "@/studio/ui/mobile-bar";
 import { PrompterPanel } from "@/studio/ui/prompter-panel";
 import { ProjectMenu } from "@/studio/ui/project-menu";
+import { PodcastPanel } from "@/studio/ui/podcast-panel";
 import { PrototypePanel } from "@/studio/ui/prototype-panel";
 import { RecordBar } from "@/studio/ui/record-bar";
 import { ScenePanel } from "@/studio/ui/scene-panel";
@@ -153,6 +154,9 @@ function StudioApp() {
           <FormatPicker />
           <Stage selectedId={selected} onSelect={setSelected} />
           <RecordBar />
+          <section id="podcast" aria-label="Podcast">
+            <PodcastPanel />
+          </section>
           <HealthPanel />
           <LivePanel />
           <PrototypePanel selectedId={selected} />

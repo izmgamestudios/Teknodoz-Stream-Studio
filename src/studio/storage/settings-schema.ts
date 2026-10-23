@@ -96,6 +96,7 @@ export const outputSchema = z.preprocess(
     ),
     container: containerField,
     usePublicStun: booleanField(DEFAULTS.output.usePublicStun),
+    wavAlongside: booleanField(DEFAULTS.output.wavAlongside),
   }),
 );
 

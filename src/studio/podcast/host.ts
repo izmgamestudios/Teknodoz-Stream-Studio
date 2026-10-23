@@ -49,6 +49,8 @@ export interface PodcastSnapshot {
   readonly room: RoomSnapshot | null;
   readonly peers: readonly PeerInfo[];
   readonly micMuted: boolean;
+  /** the moderator hears the guests (use headphones) */
+  readonly monitorOn: boolean;
   readonly micLabel: string;
   readonly voice: PodcastVoicePlan["summary"] | null;
   readonly recording: { on: boolean; startedAt: number | null };
@@ -79,6 +81,8 @@ export class PodcastHost {
     { src: MediaStreamAudioSourceNode; gain: GainNode; el: HTMLAudioElement }
   >();
   private levels = new Map<string, Level>();
+  /** what the moderator hears in the headphones: the on-air guests (never their own mic) */
+  private monitor: GainNode | null = null;
   /** mix-minus buses: what guest `id` hears = host mic + every other guest, never itself */
   private rets = new Map<
     string,
@@ -95,6 +99,7 @@ export class PodcastHost {
     phase: "idle" as PodcastSnapshot["phase"],
     error: null as string | null,
     micMuted: false,
+    monitorOn: true,
     recordingStartedAt: null as number | null,
     last: null as PodcastSnapshot["lastRecording"],
     prompter: normalizePrompter({}),
@@ -127,6 +132,7 @@ export class PodcastHost {
       room,
       peers: this.p2p?.getPeers() ?? [],
       micMuted: this.state.micMuted,
+      monitorOn: this.state.monitorOn,
       micLabel: this.mic?.label ?? "",
       voice: this.mic?.plan.summary ?? null,
       recording: {
@@ -176,6 +182,9 @@ export class PodcastHost {
       this.master = ctx.createGain();
       this.dest = ctx.createMediaStreamDestination();
       this.master.connect(this.dest);
+      this.monitor = ctx.createGain();
+      this.monitor.gain.value = this.state.monitorOn ? 1 : 0;
+      this.monitor.connect(ctx.destination);
 
       // host microphone through the voice chain
       this.voice = new VoiceProcessor();
@@ -249,6 +258,7 @@ export class PodcastHost {
     this.voice?.detach();
     this.mic?.stream.getTracks().forEach((t) => t.stop());
     void this.ctx?.close().catch(() => undefined);
+    this.monitor = null;
     this.session =
       this.p2p =
       this.ctx =
@@ -266,7 +276,7 @@ export class PodcastHost {
     const ctx = this.ctx;
     if (!ctx) return;
     const an = ctx.createAnalyser();
-    an.fftSize = 512;
+    an.fftSize = 1024;
     node.connect(an);
     this.levels.set(id, { an, buf: new Uint8Array(an.fftSize) });
   }
@@ -282,6 +292,35 @@ export class PodcastHost {
       sum += x * x;
     }
     return Math.min(1, Math.sqrt(sum / l.buf.length) * 3.2);
+  }
+
+  /** Frequency bytes (512 bins) of "host" or a peer id, for visualisers; false when unknown. */
+  readSpectrum(id: string, out: Uint8Array<ArrayBuffer>): boolean {
+    const l = this.levels.get(id);
+    if (!l) return false;
+    l.an.getByteFrequencyData(out);
+    return true;
+  }
+
+  /** The finished mix (host mic + on-air guests) as a stream, e.g. to feed the studio mixer. */
+  getMixStream(): MediaStream | null {
+    return this.dest?.stream ?? null;
+  }
+
+  /** Who is on the air right now: the moderator and every on-air guest, with display names. */
+  voices(): { id: string; label: string }[] {
+    const out = [{ id: "host", label: "Yönetici" }];
+    for (const p of this.p2p?.getPeers() ?? [])
+      if (p.role === "guest" && p.status === "on-air")
+        out.push({ id: p.id, label: p.name || "Konuk" });
+    return out;
+  }
+
+  setMonitor(on: boolean): void {
+    this.state.monitorOn = on;
+    if (this.monitor && this.ctx)
+      this.monitor.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, 0.02);
+    this.emit();
   }
 
   private onGuestStream(id: string, stream: MediaStream | null): void {
@@ -307,6 +346,7 @@ export class PodcastHost {
     gain.gain.value = 0;
     src.connect(gain);
     gain.connect(this.master);
+    if (this.monitor) gain.connect(this.monitor);
     this.tap(id, src);
     this.guests.set(id, { src, gain, el });
     this.syncReturns();

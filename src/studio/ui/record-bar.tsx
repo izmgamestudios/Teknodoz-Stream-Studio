@@ -177,6 +177,14 @@ function SendToLibrary() {
       (p) => setState({ s: "sending", p }),
     );
     if (r.ok) {
+      // the lossless audio of the same take goes up as its own (audio) library item
+      if (data.wav)
+        await uploadMedia("", data.wav.blob, {
+          title: `${data.name.replace(/\.[^.]+$/, "")} (WAV)`,
+          filename: data.wav.name,
+          origin: "studio",
+          chapters: data.markers,
+        });
       setState({ s: "done", id: r.media.id });
     } else
       setState({
@@ -209,6 +217,12 @@ function SendToLibrary() {
         ☁ {t("rec.up.title")} — {last.name} (
         {(last.size / 1024 / 1024).toFixed(1)} MB)
       </p>
+      {last.wav && (
+        <p className="mt-1 text-muted-foreground">
+          🎧 {t("rec.up.wav")} {last.wav.name} (
+          {(last.wav.size / 1024 / 1024).toFixed(1)} MB)
+        </p>
+      )}
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {admin ? (
           <button

@@ -183,6 +183,18 @@ export const layerSchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     ...layerBase,
+    kind: z.literal("audioviz"),
+    style: z.enum(["bars", "mirror", "wave", "ring"]),
+    sources: z.array(z.string().max(80)).max(8),
+    bars: num(8, 128),
+    accent: cssColor,
+    accent2: cssColor,
+    smoothing: num(0, 0.95),
+    labels: z.boolean(),
+    background: cssColor,
+  }),
+  z.object({
+    ...layerBase,
     kind: z.literal("chat"),
     mode: z.enum(["spotlight", "feed"]),
     fontSize: num(8, 400),

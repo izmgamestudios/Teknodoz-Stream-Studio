@@ -39,6 +39,19 @@ const guest = (
   h: number,
 ): PanelSpec => ({ id, kind: "guest", label, rect: { x, y, w, h } });
 
+const viz = (
+  id: string,
+  label: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  style: "bars" | "mirror" | "wave" | "ring" = "mirror",
+): PanelSpec => ({ id, kind: "viz", label, rect: { x, y, w, h }, viz: style });
+
+const PODCAST_TICKER =
+  "Teknodoz Podcast • Canlı dinleyin, sorularınızı sohbete yazın";
+
 export const TEMPLATES: readonly TemplateDef[] = [
   {
     id: "news",
@@ -510,6 +523,94 @@ export const TEMPLATES: readonly TemplateDef[] = [
     ticker: true,
     defaults: opts(TEAL, "SOHBET", "", TICKER),
   },
+  {
+    id: "pod-wave",
+    name: "Podcast · Ses dalgası",
+    description:
+      "Yalnızca ses: konuşan herkesin frekans görseli büyük ekranda, başlık şeridi ve isim bandı.",
+    group: "podcast",
+    panels: [viz("voices", "Konuşanlar", 120, 210, 1680, 560)],
+    backdrop: true,
+    frames: false,
+    captions: false,
+    topTitle: true,
+    lowerThird: { x: 120, y: 830, w: 1100 },
+    logo: { x: 1560, y: 810, w: 240, h: 130 },
+    ticker: true,
+    defaults: opts("#7c3aed", "PODCAST", "BÖLÜM 1 · KONUK ADI", PODCAST_TICKER),
+  },
+  {
+    id: "pod-bars",
+    name: "Podcast · Konuşan şeritleri",
+    description:
+      "Her konuşana ayrı renkli şerit (yönetici + konuklar), üstte başlık, altta isim bandı.",
+    group: "podcast",
+    panels: [viz("voices", "Konuşanlar", 160, 200, 1600, 600, "bars")],
+    backdrop: true,
+    frames: false,
+    captions: false,
+    topTitle: true,
+    lowerThird: { x: 160, y: 850, w: 1000 },
+    logo: { x: 1560, y: 830, w: 200, h: 120 },
+    ticker: false,
+    defaults: opts(TEAL, "PODCAST", "YÖNETİCİ & KONUK", PODCAST_TICKER),
+  },
+  {
+    id: "pod-video2",
+    name: "Podcast · Videolu iki kişi",
+    description:
+      "Üstte yönetici ve konuk görüntüsü, altında ses dalgası şeridi; başlık şeridi ve isim etiketleri.",
+    group: "podcast",
+    panels: [
+      cam("host", "Yönetici", 60, 130, 900, 506),
+      guest("guest", "Konuk", 960, 130, 900, 506),
+      viz("voices", "Konuşanlar", 60, 740, 1800, 240),
+    ],
+    backdrop: true,
+    frames: true,
+    captions: true,
+    topTitle: true,
+    logo: { x: 1640, y: 992, w: 220, h: 76 },
+    ticker: false,
+    defaults: opts(BLUE, "PODCAST · CANLI", "", PODCAST_TICKER),
+  },
+  {
+    id: "pod-cam-ring",
+    name: "Podcast · Kamera + halka",
+    description:
+      "Solda sunucu kamerası, sağda konuşanların halka görseli; isim bandı altta.",
+    group: "podcast",
+    panels: [
+      cam("host", "Yönetici", 60, 130, 900, 760),
+      viz("voices", "Konuşanlar", 1000, 130, 860, 760, "ring"),
+    ],
+    backdrop: true,
+    frames: true,
+    captions: false,
+    topTitle: true,
+    lowerThird: { x: 60, y: 930, w: 1000 },
+    logo: { x: 1620, y: 920, w: 240, h: 130 },
+    ticker: false,
+    defaults: opts(ORANGE, "PODCAST", "KONUK: AD SOYAD", PODCAST_TICKER),
+  },
+  {
+    id: "v-pod",
+    name: "Dikey podcast (Reels / Shorts)",
+    description:
+      "9:16: ortada konuşanların ses görseli, başlık şeridi, isim bandı ve kayan yazı.",
+    group: "podcast",
+    format: "9:16",
+    stage: VERT,
+    panels: [viz("voices", "Konuşanlar", 40, 220, 1000, 1100)],
+    backdrop: true,
+    frames: false,
+    captions: false,
+    topTitle: true,
+    lowerThird: { x: 40, y: 1400, w: 1000 },
+    logo: { x: 800, y: 1620, w: 240, h: 120 },
+    ticker: true,
+    defaults: opts(VIOLET, "PODCAST", "BÖLÜM ADI", PODCAST_TICKER),
+  },
 ] as const;
 
 export function getTemplate(id: string): TemplateDef | undefined {
@@ -521,5 +622,6 @@ export const TEMPLATE_GROUPS = [
   { id: "talk", label: "Konuşma" },
   { id: "demo", label: "Prototip" },
   { id: "learn", label: "Eğitim" },
+  { id: "podcast", label: "Podcast (sesli ve videolu)" },
   { id: "social", label: "Dikey, 4:5 ve kare (Reels, Shorts, Instagram)" },
 ] as const;

@@ -23,7 +23,8 @@ export type LayerKind =
   | "text"
   | "prompter"
   | "chat"
-  | "sponsor";
+  | "sponsor"
+  | "audioviz";
 
 export type BlendMode =
   | "source-over"
@@ -189,6 +190,28 @@ export interface SponsorLayer extends LayerBase {
   showTagline: boolean;
 }
 
+/**
+ * Live frequency picture of the voices on air (host + guests): bars, mirrored bars, a wave line
+ * or a ring, one lane per source. `sources` lists audio-bus channel ids / podcast voices
+ * (`"master"` = the final mix); empty means the final mix.
+ */
+export type AudioVizStyle = "bars" | "mirror" | "wave" | "ring";
+export interface AudioVizLayer extends LayerBase {
+  kind: "audioviz";
+  style: AudioVizStyle;
+  sources: string[];
+  /** bars per lane, 16..96 */
+  bars: number;
+  accent: string;
+  accent2: string;
+  /** 0..0.95: higher = bars fall more slowly */
+  smoothing: number;
+  /** show the speaker's name on each lane */
+  labels: boolean;
+  /** CSS color behind the lanes ("transparent" = none) */
+  background: string;
+}
+
 export type Layer =
   | WebcamLayer
   | ScreenLayer
@@ -200,7 +223,8 @@ export type Layer =
   | TextLayer
   | PrompterLayer
   | ChatLayer
-  | SponsorLayer;
+  | SponsorLayer
+  | AudioVizLayer;
 
 /* ------------------------------------------------------------------ */
 /* Scenes                                                              */
@@ -267,6 +291,8 @@ export interface OutputSettings {
   container: "auto" | "mp4" | "webm";
   /** allow public STUN for WebRTC (leaks IP to the STUN operator only; no media) */
   usePublicStun: boolean;
+  /** also keep the lossless audio of every recording as a 48 kHz 16-bit WAV (default on) */
+  wavAlongside: boolean;
 }
 
 export type ShortcutAction =
@@ -506,6 +532,13 @@ export interface CompositorHooks {
   drawSponsors?(
     ctx: CanvasRenderingContext2D,
     layer: SponsorLayer,
+    box: Rect,
+    nowMs: number,
+  ): void;
+  /** Audio visualiser (see `AudioVizLayer`). `box` is the layer transform in output px. */
+  drawAudioViz?(
+    ctx: CanvasRenderingContext2D,
+    layer: AudioVizLayer,
     box: Rect,
     nowMs: number,
   ): void;

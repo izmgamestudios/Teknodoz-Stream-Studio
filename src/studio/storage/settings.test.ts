@@ -72,6 +72,7 @@ describe("loadSettings", () => {
         audioBitrate: 128_000,
         container: "webm",
         usePublicStun: false,
+        wavAlongside: false,
       },
       shortcuts: { ...defaultShortcuts(), "marker.add": "Ctrl+Alt+K" },
       lang: "en",
