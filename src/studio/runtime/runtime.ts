@@ -1542,6 +1542,9 @@ export class StudioRuntime {
       });
       return false;
     } finally {
+      // a failed stop must not leave the WAV tap running for the rest of the session
+      this.wav?.dispose();
+      this.wav = null;
       this.recorderUnsub?.();
       this.recorderUnsub = null;
       rec.dispose();

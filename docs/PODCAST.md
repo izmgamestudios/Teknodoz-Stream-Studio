@@ -67,6 +67,7 @@ Röleye `join` isteğinde `audio: true` bayrağı eklenir; onaylanınca yalnızc
 | P2 | Protokol (prompter/mute/mic), yalnızca-ses davet, röle `audio` bayrağı, rol filtreli prompter gönderimi, testler |
 | P3 ✅ | `/podcast` yönetici sayfası, konuk ve dinleyici görünümleri, ses zinciri (NVIDIA algılama + RNNoise), kayıt → kütüphane, 4 dil |
 | P4 ✅ | Konuk başına mix-minus, ikinci moderatör cihazı |
+| P5 ✅ | Podcast stüdyonun içinde: panel, ses görseli katmanı, podcast şablonları, video ile birlikte WAV, kütüphanede ses analizi ve podcast düzenleme, İzle & Dinle sayfasında herkese açık podcast |
 | sonraki | Sunucu tarafı karışım (SFU) ile yüzlerce dinleyici, otomatik bölüm işaretleri/altyazı |
 
 ## Kullanım (P3)
@@ -90,3 +91,17 @@ Doğrulama (Chromium, sahte mikrofon): tek konukta dönüş seviyesi ≈ 0 (kend
 ## İkinci moderatör cihazı (P4)
 
 Yönetici sayfasında üçüncü bağlantı: **telefon kumandası** (`/r/KOD?as=remote`). Mevcut video stüdyosu kumandası (yeni protokol yok) podcast'e bağlandı: mikrofon aç/kapat, konuk metni oynat/hız/başa sar, kayıt başlat/bitir, bölüm işareti. Kumanda **her zaman elle onay** ister (otomatik onay yalnızca konuk ve dinleyici içindir), medyası yoktur, sahne düğmeleri boş gelir.
+
+## Stüdyoda podcast (P5)
+
+**Tek yer:** `/podcast` artık `/studio#podcast` adresine yönlenir. Stüdyodaki **Podcast** paneli odayı açar (QR, konuk / dinleyici / telefon kumandası bağlantıları, onaylar, konuk metni, yönetici notu). Oda açıkken podcast karışımı (yönetici mikrofonu + yayındaki konuklar) stüdyo mikserinde **"Podcast karışımı"** kanalıdır: stüdyo kaydı, canlı yayın ve WAV bu sesi içerir. Yönetici sesi karışımda zaten olduğu için stüdyo mikrofonu otomatik susturulur, oda kapanınca eski hâline döner. Yönetici konukları kulaklıktan duyar (kapatılabilir).
+
+**Ses görseli (frekans) katmanı:** Katman ekle → *Ses görseli*. Görünüm: çubuklar, simetrik çubuklar, dalga çizgisi, halka. **Konuşanlar (otomatik)** = yönetici + yayındaki konuklar; her biri kendi şeridinde, renginde ve adıyla çizilir. İsterseniz belirli sesleri ya da genel karışımı seçersiniz. Kayıtta ve canlı yayında ekrana işlenir.
+
+**Şablonlar (Podcast grubu):** Ses dalgası · Konuşan şeritleri · Videolu iki kişi (kamera + konuk + dalga) · Kamera + halka · Dikey podcast (9:16). Videolu podcast için "Videolu iki kişi" ile konuğu video odasından davet edin; yalnızca ses isteyenler için podcast bağlantısı yeterlidir.
+
+**Kayıt:** Stüdyonun *Kayda başla* düğmesi videoyu (ekrandaki ses görseliyle) kaydeder ve **aynı anda** 48 kHz / 16 bit WAV de alır (Ayarlar → Çıkış → "Videoyla birlikte WAV"). İkisi birlikte iner; "Kütüphaneye gönder" ikisini de gönderir.
+
+**Kütüphane:** Her kayıt *video* ya da *ses* olarak tutulur; **Ses analizi** (loudness LUFS, tepe, dinamik aralık, duraklamalar, konuşma oranı + öneriler), indirme paneli (ham kayıt, altyazısız, altyazılı, .srt/.vtt, WAV) ve **Podcast düzenleme** (tek tık ön ayar: ses temizleme + gürültü + sıkıştırma + −16 LUFS; "uzun sessizlikleri kısalt") vardır.
+
+**Herkese açık:** Yayınlanan (public) podcast / video / hikâye içerikleri **İzle & Dinle** sayfasında da görünür; kategoriler İlçede Pembe Haber konularıyla aynıdır.

@@ -150,14 +150,35 @@ export function PrefBar({ withMode = false }: { withMode?: boolean }) {
       {withMode && audience === "creator" && (
         <button
           className={`${SEL} hover:bg-accent`}
-          onClick={() => {
-            if (creator.creator) void logoutCreator();
-            setAudience("viewer" as Audience);
-          }}
+          onClick={() => setAudience("viewer" as Audience)}
         >
           {t("mode.toViewer")}
         </button>
       )}
+      {withMode && audience === "creator" && creator.creator && (
+        <button
+          className={`${SEL} hover:bg-accent`}
+          title={creator.creator.name}
+          onClick={() => {
+            void logoutCreator();
+            setAudience("viewer" as Audience);
+          }}
+        >
+          {t("cr.logout")}
+        </button>
+      )}
+      {/* only someone who is already signed in (creator / admin) can step back into creator mode */}
+      {withMode &&
+        audience === "viewer" &&
+        canCreate(creator) &&
+        creator.enabled && (
+          <button
+            className={`${SEL} hover:bg-accent`}
+            onClick={() => setAudience("creator" as Audience)}
+          >
+            {t("mode.toCreator")}
+          </button>
+        )}
     </div>
   );
 }

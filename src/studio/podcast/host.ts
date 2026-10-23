@@ -181,7 +181,15 @@ export class PodcastHost {
       this.ctx = ctx;
       this.master = ctx.createGain();
       this.dest = ctx.createMediaStreamDestination();
-      this.master.connect(this.dest);
+      // two people talking at once add up: a fast limiter keeps the mix (and the WAV) off 0 dBFS
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -4;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.002;
+      limiter.release.value = 0.12;
+      this.master.connect(limiter);
+      limiter.connect(this.dest);
       this.monitor = ctx.createGain();
       this.monitor.gain.value = this.state.monitorOn ? 1 : 0;
       this.monitor.connect(ctx.destination);

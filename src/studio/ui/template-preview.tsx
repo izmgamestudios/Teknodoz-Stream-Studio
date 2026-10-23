@@ -89,6 +89,42 @@ function PreviewLayer({
           <span>{PANEL_ICON[layer.kind]}</span>
         </div>
       );
+    case "audioviz": {
+      // a still picture of the visualiser: a speech-like bump of bars in the layer colour
+      const n = layer.style === "ring" ? 0 : 36;
+      return (
+        <div
+          style={boxStyle(layer, stage)}
+          className="flex items-center justify-center gap-[1.5%] px-[4%]"
+        >
+          {layer.style === "ring" ? (
+            <span
+              style={{
+                width: "55%",
+                aspectRatio: "1",
+                border: `${cqw(18, stage)} dotted ${layer.accent}`,
+              }}
+              className="rounded-full"
+            />
+          ) : (
+            Array.from({ length: n }, (_, i) => {
+              const h =
+                14 + 76 * Math.abs(Math.sin(i * 0.55) * Math.cos(i * 0.21));
+              return (
+                <span
+                  key={i}
+                  className="flex-1 rounded-full"
+                  style={{
+                    height: `${h}%`,
+                    background: i % 2 === 0 ? layer.accent : layer.accent2,
+                  }}
+                />
+              );
+            })
+          )}
+        </div>
+      );
+    }
     case "shape":
       return (
         <div
