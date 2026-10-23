@@ -68,12 +68,16 @@ export async function openPodcastMic(
   };
 }
 
-/** Invite links: guests and listeners open the podcast view of the room page. */
+/**
+ * Invite links: guests and listeners open the podcast view of the room page; the second
+ * moderator device opens the normal phone remote (it has no media, only commands).
+ */
 export function podcastLink(
   origin: string,
   code: string,
-  seat: "guest" | "listener",
+  seat: "guest" | "listener" | "remote",
 ): string {
   const base = `${origin.replace(/\/+$/, "")}/r/${code.toUpperCase()}`;
+  if (seat === "remote") return `${base}?as=remote`;
   return `${base}?as=${seat === "guest" ? "guest" : "viewer"}&mode=podcast`;
 }

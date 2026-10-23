@@ -66,7 +66,8 @@ Röleye `join` isteğinde `audio: true` bayrağı eklenir; onaylanınca yalnızc
 | P1 | Bu belge |
 | P2 | Protokol (prompter/mute/mic), yalnızca-ses davet, röle `audio` bayrağı, rol filtreli prompter gönderimi, testler |
 | P3 ✅ | `/podcast` yönetici sayfası, konuk ve dinleyici görünümleri, ses zinciri (NVIDIA algılama + RNNoise), kayıt → kütüphane, 4 dil |
-| sonraki | İkinci moderatör cihazı, sunucu tarafı karışım (SFU) ile yüzlerce dinleyici, otomatik bölüm işaretleri/altyazı |
+| P4 ✅ | Konuk başına mix-minus, ikinci moderatör cihazı |
+| sonraki | Sunucu tarafı karışım (SFU) ile yüzlerce dinleyici, otomatik bölüm işaretleri/altyazı |
 
 ## Kullanım (P3)
 
@@ -79,3 +80,13 @@ Röleye `join` isteğinde `audio: true` bayrağı eklenir; onaylanınca yalnızc
 Odalar ayrı saklanır (`podcast:` önekli yerel depolama): Podcast odası ile video stüdyo odası aynı anda açık olabilir.
 
 Doğrulama: gerçek Chromium + sahte mikrofonla yönetici, konuk ve dinleyici oturumu uçtan uca denendi (yayına alma, dinleyicide prompter sayısı 0, konuk metni kayması, sustur/kilit, kayıt → kütüphane).
+
+## Mix-minus (P4)
+
+Konuk, odayı **kendi sesi olmadan** duyar: yönetici tarayıcısı her konuk için ayrı bir "dönüş" karışımı üretir (yönetici mikrofonu + kendisi dışındaki yayındaki konuklar) ve `StudioHost.setPeerProgram(peerId, stream)` ile yalnızca o konuğa gönderir. Dinleyiciler ve kayıt, herkesin karışımını alır. Susturulmuş veya bekleyen konuk kimsenin karışımında yoktur. Kulaklık yine önerilir (hoparlörden gelen ses mikrofona girebilir), ama konuk kendi gecikmeli sesini duymaz.
+
+Doğrulama (Chromium, sahte mikrofon): tek konukta dönüş seviyesi ≈ 0 (kendini duymuyor), yönetici açınca ≈ 1, ikinci konuk gelince diğerini duyuyor, ikinci konuk kendini susturunca ≈ 0.
+
+## İkinci moderatör cihazı (P4)
+
+Yönetici sayfasında üçüncü bağlantı: **telefon kumandası** (`/r/KOD?as=remote`). Mevcut video stüdyosu kumandası (yeni protokol yok) podcast'e bağlandı: mikrofon aç/kapat, konuk metni oynat/hız/başa sar, kayıt başlat/bitir, bölüm işareti. Kumanda **her zaman elle onay** ister (otomatik onay yalnızca konuk ve dinleyici içindir), medyası yoktur, sahne düğmeleri boş gelir.

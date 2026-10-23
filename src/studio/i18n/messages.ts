@@ -1009,6 +1009,9 @@ export const tr = {
   "pod.listen.waiting": "Yayın başlayınca ses gelecek…",
   "pod.listen.live": "Canlı dinliyorsunuz",
   "pod.listen.volume": "Ses",
+  "pod.invite.remote": "İkinci moderatör cihazı (telefon kumandası)",
+  "pod.invite.remote.hint":
+    "Elle onaylamanız gerekir; mikrofon, konuk metni ve kaydı uzaktan yönetir.",
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -1997,6 +2000,9 @@ export const en: Record<MessageKey, string> = {
   "pod.listen.waiting": "Audio starts when the show begins…",
   "pod.listen.live": "You are listening live",
   "pod.listen.volume": "Volume",
+  "pod.invite.remote": "Second moderator device (phone remote)",
+  "pod.invite.remote.hint":
+    "Needs your manual approval; controls the mic, the guest script and recording remotely.",
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = {

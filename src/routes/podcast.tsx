@@ -156,10 +156,16 @@ function PodcastPage() {
                 [
                   ["guest", s.links.guest, "pod.invite.guest"],
                   ["listener", s.links.listener, "pod.invite.listener"],
+                  ["remote", s.links.remote, "pod.invite.remote"],
                 ] as const
               ).map(([id, url, label]) => (
                 <div key={id} className="space-y-1">
                   <p className="text-xs text-muted-foreground">{t(label)}</p>
+                  {id === "remote" && (
+                    <p className="text-[11px] text-muted-foreground">
+                      {t("pod.invite.remote.hint")}
+                    </p>
+                  )}
                   <input
                     readOnly
                     className={INPUT}
@@ -193,7 +199,12 @@ function PodcastPage() {
               {waiting.map((e) => (
                 <div key={e.guestId} className="flex items-center gap-2">
                   <span className="flex-1 truncate text-sm">
-                    {e.name || "—"} · {e.role === "viewer" ? "🎧" : "🎙️"}
+                    {e.name || "—"} ·{" "}
+                    {e.role === "viewer"
+                      ? "🎧"
+                      : e.role === "remote"
+                        ? "📱"
+                        : "🎙️"}
                   </span>
                   <button
                     className={BTN_ACCENT}

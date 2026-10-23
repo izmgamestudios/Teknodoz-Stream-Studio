@@ -44,7 +44,7 @@ export const Route = createFileRoute("/r/$code")({
 function RoomEntry() {
   const { code } = Route.useParams();
   const search = Route.useSearch();
-  if (search.mode === "podcast")
+  if (search.mode === "podcast" && search.as !== "remote")
     return (
       <PodcastRoomPage
         code={code}

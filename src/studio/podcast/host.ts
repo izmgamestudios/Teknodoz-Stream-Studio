@@ -8,7 +8,7 @@ import { VoiceProcessor } from "../engine/voice";
 import { StudioHost } from "../p2p";
 import { RoomHostSession, type RoomSnapshot } from "../room/host-session";
 import { createKvStore } from "../storage";
-import type { PeerInfo, PodcastPrompter } from "../types";
+import type { PeerInfo, PodcastPrompter, RemoteCommand } from "../types";
 import {
   uploadMedia,
   type Chapter,
@@ -20,7 +20,7 @@ import {
   type MediaDevicesLike,
   type OpenedMic,
 } from "./mic";
-import { normalizePrompter } from "./prompter";
+import { normalizePrompter, stepSpeed } from "./prompter";
 import type { PodcastVoicePlan } from "./voice-setup";
 
 /** Gains of the guests that belong in the mix (on air and not muted); everybody else is silent. */
@@ -55,7 +55,7 @@ export interface PodcastSnapshot {
   readonly lastRecording: { blob: Blob; ms: number; markers: Chapter[] } | null;
   readonly guestPrompter: PodcastPrompter;
   readonly autoOnAir: boolean;
-  readonly links: { guest: string; listener: string } | null;
+  readonly links: { guest: string; listener: string; remote: string } | null;
 }
 
 export interface PodcastHostDeps {
@@ -138,6 +138,7 @@ export class PodcastHost {
       autoOnAir: this.state.autoOnAir,
       links: code
         ? {
+            remote: podcastLink(this.origin(), code, "remote"),
             guest: podcastLink(this.origin(), code, "guest"),
             listener: podcastLink(this.origin(), code, "listener"),
           }
@@ -146,6 +147,7 @@ export class PodcastHost {
   }
   private emit(): void {
     this.snap = this.build();
+    this.pushRemoteState();
     for (const l of [...this.listeners]) l();
   }
 
@@ -191,6 +193,7 @@ export class PodcastHost {
       this.offs.push(
         p2p.subscribe(() => this.onPeers()),
         p2p.onGuestStream((id, stream) => this.onGuestStream(id, stream)),
+        p2p.onRemoteCommand((_id, cmd) => this.onRemote(cmd)),
       );
       const session = new RoomHostSession({
         bridge: {
@@ -377,6 +380,59 @@ export class PodcastHost {
           if (p.role === "guest" && p.status === "waiting")
             p2p.bringOnAir(p.id);
       }, 0);
+  }
+
+  /* ------------------------- second moderator device ------------------------- */
+
+  /**
+   * Commands from an approved "remote" peer (a phone as a second moderator): the same ones the
+   * video studio remote sends, mapped onto the podcast controls. No scenes here.
+   */
+  private onRemote(cmd: RemoteCommand): void {
+    switch (cmd.kind) {
+      case "mute":
+        this.setMicMuted(cmd.value ?? !this.state.micMuted);
+        break;
+      case "prompter": {
+        const p = this.state.prompter;
+        if (cmd.action === "toggle")
+          this.setGuestPrompter({ playing: !p.playing });
+        else if (cmd.action === "rewind")
+          this.setGuestPrompter({ playing: false, pos: 0 });
+        else
+          this.setGuestPrompter({
+            speed: stepSpeed(p.speed, cmd.action === "speedUp" ? 1 : -1),
+          });
+        break;
+      }
+      case "record": {
+        const on = this.recorder?.state === "recording";
+        if (cmd.action === "stop" || (cmd.action === "toggle" && on))
+          void this.stopRecording();
+        else if (!on) this.startRecording();
+        break;
+      }
+      case "marker":
+        this.addMarker("");
+        break;
+      default:
+        break; // scenes do not exist in a podcast room
+    }
+  }
+
+  private pushRemoteState(): void {
+    const s = this.snap;
+    this.p2p?.broadcastRemoteState({
+      scenes: [],
+      activeSceneId: "",
+      recording: s.recording.on,
+      micMuted: s.micMuted,
+      prompterPlaying: s.guestPrompter.playing,
+      prompterSpeed: s.guestPrompter.speed,
+      recordingMs: s.recording.startedAt
+        ? Date.now() - s.recording.startedAt
+        : 0,
+    });
   }
 
   /* -------------------------------- controls -------------------------------- */

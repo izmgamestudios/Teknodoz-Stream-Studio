@@ -1002,4 +1002,7 @@ export const de: Record<MessageKey, string> = {
   "pod.listen.waiting": "Der Ton startet mit der Sendung…",
   "pod.listen.live": "Sie hören live zu",
   "pod.listen.volume": "Lautstärke",
+  "pod.invite.remote": "Zweites Moderatorgerät (Handy-Fernbedienung)",
+  "pod.invite.remote.hint":
+    "Muss manuell freigegeben werden; steuert Mikrofon, Gast-Text und Aufnahme aus der Ferne.",
 };

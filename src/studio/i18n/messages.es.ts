@@ -1001,4 +1001,7 @@ export const es: Record<MessageKey, string> = {
   "pod.listen.waiting": "El audio empezará con el programa…",
   "pod.listen.live": "Está escuchando en directo",
   "pod.listen.volume": "Volumen",
+  "pod.invite.remote": "Segundo dispositivo de moderador (mando en el móvil)",
+  "pod.invite.remote.hint":
+    "Requiere su aprobación manual; controla micrófono, texto del invitado y grabación a distancia.",
 };
