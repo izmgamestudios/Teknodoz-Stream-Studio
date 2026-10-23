@@ -93,14 +93,12 @@ export function sitemapUrls(
   return `${XML}<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">\n${entries.join("\n")}\n</urlset>\n`;
 }
 
-export function sitemapPages(site: SiteConfig, lastmod: string): string {
-  const paths = [
-    "/library",
-    "/library/stories",
-    "/library/videos",
-    "/library/podcasts",
-    "/docs",
-  ];
+/** Only pages that have content: empty lists are served noindex and must not be advertised. */
+export function sitemapPages(
+  site: SiteConfig,
+  lastmod: string,
+  paths: readonly string[],
+): string {
   return `${XML}<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${paths.map((p) => `<url><loc>${esc(site.origin + p)}</loc><lastmod>${esc(day(lastmod))}</lastmod></url>`).join("\n")}\n</urlset>\n`;
 }
 

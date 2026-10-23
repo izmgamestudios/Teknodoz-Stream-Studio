@@ -8,6 +8,7 @@
 // Pure `Request -> Response`; Node APIs (child_process, dns, net) are imported lazily so this
 // file is harmless in bundles for targets that cannot run it.
 import { z } from "zod";
+import { clientIp } from "./client-ip";
 
 import {
   BUILTIN_HOSTS,
@@ -271,15 +272,6 @@ export function createLiveApi(opts: LiveApiOptions) {
   let version: Promise<string | null> | null = null;
 
   /* ------------------------------ helpers ------------------------------ */
-
-  function clientIp(req: Request): string {
-    const fwd = req.headers.get("x-forwarded-for");
-    // the reverse proxy appends the real client address: only the last entry is trustworthy
-    return (
-      (fwd ? fwd.split(",").pop()?.trim() : req.headers.get("x-real-ip")) ||
-      "unknown"
-    );
-  }
 
   function authorize(req: Request): void {
     if (!cfg.token) throw new HttpError(503, "disabled");

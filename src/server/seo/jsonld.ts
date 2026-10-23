@@ -112,6 +112,16 @@ export function itemGraph(
           }
         : "",
     });
+  } else if (!media.src && !media.embed) {
+    // no playable media: a VideoObject without contentUrl/embedUrl is invalid structured data
+    const { name, ...rest } = common;
+    node = drop({
+      ...rest,
+      "@type": "Article",
+      headline: name,
+      author: { "@id": `${site.origin}/#org` },
+      mainEntityOfPage: url,
+    });
   } else {
     node = drop({
       ...common,
@@ -119,7 +129,6 @@ export function itemGraph(
       uploadDate: row.created_at,
       contentUrl: media.src,
       embedUrl: media.embed || "",
-      ...(media.kind === "none" ? {} : {}),
     });
   }
 

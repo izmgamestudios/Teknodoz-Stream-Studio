@@ -61,6 +61,22 @@ describe("session api", () => {
       }),
     ) as Promise<Response>;
 
+  it("a rotating client-typed X-Forwarded-For does not reset the login lock-out", async () => {
+    const fresh = createSessionApi({ token: TOKEN, now: () => NOW });
+    let last = 0;
+    for (let i = 0; i < 40; i++) {
+      const r = (await fresh.handle(
+        new Request("https://studio.test/api/session", {
+          method: "POST",
+          headers: { "x-forwarded-for": `9.9.9.${i}, 10.0.0.7` },
+          body: JSON.stringify({ token: `wrong-${i}` }),
+        }),
+      )) as Response;
+      last = r.status;
+    }
+    expect(last).toBe(429);
+  });
+
   it("ignores other paths", async () => {
     expect(await api.handle(new Request("https://x/api/catalog"))).toBeNull();
   });

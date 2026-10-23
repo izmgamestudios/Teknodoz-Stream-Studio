@@ -205,12 +205,23 @@ export function createSeoApi(opts: SeoOptions) {
         "public, max-age=3600",
       );
     }
-    if (path === "/sitemap-pages.xml")
+    if (path === "/sitemap-pages.xml") {
+      const paths: string[] = [];
+      for (const type of PUBLIC_TYPES)
+        if ((await allPublic(type, 1)).length) paths.push(listPath(type));
+      if (paths.length) paths.unshift("/library");
+      const src = await opts.store.list({
+        type: "source",
+        visibility: ["public"],
+        perPage: 1,
+      });
+      if (src.items.length) paths.push("/docs");
       return text(
-        sitemapPages(site, new Date(now()).toISOString()),
+        sitemapPages(site, new Date(now()).toISOString(), paths),
         "application/xml; charset=utf-8",
         "public, max-age=3600",
       );
+    }
     const sm = /^\/sitemap-(stories|videos|podcasts)-(\d+)\.xml$/.exec(path);
     if (sm) {
       const rows = await allPublic(PATH_TYPE[sm[1]!]!);

@@ -9,6 +9,7 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 import { isAdminRequest } from "./auth";
+import { clientIp } from "./client-ip";
 
 import { z } from "zod";
 
@@ -292,8 +293,7 @@ export function createCatalogApi(opts: CatalogOptions) {
       }
 
       if (rest[0] === "unlock" && rest.length === 1 && method === "POST") {
-        const ip =
-          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "?";
+        const ip = clientIp(req);
         if (limited(`unlock:${ip}`))
           return json({ error: "rate-limited" }, 429);
         const body = z

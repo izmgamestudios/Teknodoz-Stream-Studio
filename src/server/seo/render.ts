@@ -121,20 +121,26 @@ export function playerHtml(
 
 /* --------------------------------- cards --------------------------------- */
 
-function card(site: SiteConfig, row: ContentRow, locale: Locale): string {
+function card(
+  site: SiteConfig,
+  row: ContentRow,
+  locale: Locale,
+  h: 2 | 3,
+): string {
   const href = itemPath(row.type, row.slug);
   const media = mediaOf(row, site);
   const poster = posterOf(row, site, media);
   const lock = row.visibility === "protected";
-  return `<li class="card"><a class="cover" href="${esc(href)}" aria-hidden="true" tabindex="-1">${poster ? `<img src="${esc(poster)}" alt="" loading="lazy" width="480" height="270">` : ""}</a><div class="body"><h3><a href="${esc(href)}">${lock ? "🔒 " : ""}${esc(row.title)}</a></h3>${lock ? `<p>${esc(tx(locale, "locked"))}</p>` : row.summary ? `<p>${esc(clip(row.summary, 140))}</p>` : ""}</div></li>`;
+  return `<li class="card"><a class="cover" href="${esc(href)}" aria-hidden="true" tabindex="-1">${poster ? `<img src="${esc(poster)}" alt="" loading="lazy" width="480" height="270">` : ""}</a><div class="body"><h${h}><a href="${esc(href)}">${lock ? "🔒 " : ""}${esc(row.title)}</a></h${h}>${lock ? `<p>${esc(tx(locale, "locked"))}</p>` : row.summary ? `<p>${esc(clip(row.summary, 140))}</p>` : ""}</div></li>`;
 }
 
 const cards = (
   site: SiteConfig,
   rows: readonly ContentRow[],
   locale: Locale,
+  h: 2 | 3 = 3,
 ): string =>
-  `<ul class="grid">${rows.map((r) => card(site, r, locale)).join("")}</ul>`;
+  `<ul class="grid">${rows.map((r) => card(site, r, locale, h)).join("")}</ul>`;
 
 const typeLabel = (locale: Locale, type: string): string =>
   tx(locale, TYPE_PATH[type] as TextKey);
@@ -193,7 +199,7 @@ export function renderList(
     site: site.siteName,
   });
   const pager = `<nav class="pager" aria-label="${esc(tx(locale, "page"))}">${page > 1 ? `<a rel="prev" href="${esc(`${path}${page > 2 ? `?page=${page - 1}` : ""}`)}">← ${esc(tx(locale, "prev"))}</a>` : ""}<span>${esc(tx(locale, "page"))} ${page}</span>${hasMore ? `<a rel="next" href="${esc(`${path}?page=${page + 1}`)}">${esc(tx(locale, "next"))} →</a>` : ""}</nav>`;
-  const body = `<nav class="crumbs" aria-label="breadcrumb"><a href="/library">${esc(tx(locale, "library"))}</a> › ${esc(label)}</nav><h1>${esc(label)}</h1><p class="meta">${esc(desc)}</p>${rows.length ? cards(site, rows, locale) : `<p>${esc(tx(locale, "empty"))}</p>`}${pager}`;
+  const body = `<nav class="crumbs" aria-label="breadcrumb"><a href="/library">${esc(tx(locale, "library"))}</a> › ${esc(label)}</nav><h1>${esc(label)}</h1><p class="meta">${esc(desc)}</p>${rows.length ? cards(site, rows, locale, 2) : `<p>${esc(tx(locale, "empty"))}</p>`}${pager}`;
   const head = baseHead(site, locale, {
     title: `${label}${page > 1 ? ` (${tx(locale, "page")} ${page})` : ""} | ${site.siteName}`,
     description: desc,

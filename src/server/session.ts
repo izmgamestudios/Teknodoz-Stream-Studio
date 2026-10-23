@@ -3,6 +3,7 @@
 //   GET    /api/session   { admin: boolean, enabled: boolean }
 //   POST   /api/session   { token }  -> sets the signed HttpOnly session cookie
 //   DELETE /api/session   -> clears it
+import { clientIp } from "./client-ip";
 import { z } from "zod";
 
 import {
@@ -38,8 +39,7 @@ export function createSessionApi(opts: {
   const now = opts.now ?? Date.now;
   const attempts = new Map<string, number[]>();
 
-  const ipOf = (req: Request): string =>
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "?";
+  const ipOf = clientIp;
 
   function tooMany(ip: string): boolean {
     const t = now();

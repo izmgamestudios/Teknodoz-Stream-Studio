@@ -45,6 +45,8 @@ import {
   pocketbaseFromEnv,
 } from "./server/pocketbase";
 import { createRoomsApi } from "./server/rooms";
+import { createGuard } from "./server/guard";
+import { withSecurityHeaders } from "./server/security-headers";
 
 type ServerEntry = {
   fetch: (
@@ -241,47 +243,55 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+const guard = createGuard();
+
+async function dispatch(request: Request, env: unknown, ctx: unknown) {
+  try {
+    const manifestResponse = handleManifest(request);
+    if (manifestResponse) return manifestResponse;
+    const seoResponse = await seo.handle(request);
+    if (seoResponse) return seoResponse;
+    const roomResponse = await rooms.handle(request);
+    if (roomResponse) return roomResponse;
+    const catalogResponse = await catalog.handle(request);
+    if (catalogResponse) return catalogResponse;
+    const sessionResponse = await session.handle(request);
+    if (sessionResponse) return sessionResponse;
+    // bulk + unlock must be tried before the generic /api/content/* admin routes
+    const bulkResponse = await contentBulk.handle(request);
+    if (bulkResponse) return bulkResponse;
+    const contentResponse = await content.handle(request);
+    if (contentResponse) return contentResponse;
+    const importResponse = await contentImport.handle(request);
+    if (importResponse) return importResponse;
+    const migrateResponse = await contentMigration.handle(request);
+    if (migrateResponse) return migrateResponse;
+    const mediaEditResponse = await mediaEdit.handle(request);
+    if (mediaEditResponse) return mediaEditResponse;
+    const mediaResponse = await media.handle(request);
+    if (mediaResponse) return mediaResponse;
+    const adminResponse = await admin.handle(request);
+    if (adminResponse) return adminResponse;
+    const i18nResponse = await i18n.handle(request);
+    if (i18nResponse) return i18nResponse;
+    const liveResponse = await live.handle(request);
+    if (liveResponse) return liveResponse;
+    const handler = await getServerEntry();
+    const response = await handler.fetch(request, env, ctx);
+    return await normalizeCatastrophicSsrResponse(response);
+  } catch (error) {
+    console.error(error);
+    return new Response(renderErrorPage(), {
+      status: 500,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    });
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
-    try {
-      const manifestResponse = handleManifest(request);
-      if (manifestResponse) return manifestResponse;
-      const seoResponse = await seo.handle(request);
-      if (seoResponse) return seoResponse;
-      const roomResponse = await rooms.handle(request);
-      if (roomResponse) return roomResponse;
-      const catalogResponse = await catalog.handle(request);
-      if (catalogResponse) return catalogResponse;
-      const sessionResponse = await session.handle(request);
-      if (sessionResponse) return sessionResponse;
-      // bulk + unlock must be tried before the generic /api/content/* admin routes
-      const bulkResponse = await contentBulk.handle(request);
-      if (bulkResponse) return bulkResponse;
-      const contentResponse = await content.handle(request);
-      if (contentResponse) return contentResponse;
-      const importResponse = await contentImport.handle(request);
-      if (importResponse) return importResponse;
-      const migrateResponse = await contentMigration.handle(request);
-      if (migrateResponse) return migrateResponse;
-      const mediaEditResponse = await mediaEdit.handle(request);
-      if (mediaEditResponse) return mediaEditResponse;
-      const mediaResponse = await media.handle(request);
-      if (mediaResponse) return mediaResponse;
-      const adminResponse = await admin.handle(request);
-      if (adminResponse) return adminResponse;
-      const i18nResponse = await i18n.handle(request);
-      if (i18nResponse) return i18nResponse;
-      const liveResponse = await live.handle(request);
-      if (liveResponse) return liveResponse;
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
-    } catch (error) {
-      console.error(error);
-      return new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
-    }
+    const limited = guard(request);
+    const response = limited ?? (await dispatch(request, env, ctx));
+    return withSecurityHeaders(request, response);
   },
 };

@@ -11,6 +11,7 @@
 // Needs ONE long-lived process (node-server preset behind a reverse proxy); on serverless
 // platforms with per-request isolates the in-memory state is not shared.
 import { z } from "zod";
+import { clientIp } from "./client-ip";
 
 import {
   ChatError,
@@ -265,11 +266,7 @@ export function createRoomsApi(options: RoomsOptions = {}) {
     max: number,
     windowMs: number,
   ): void {
-    const fwd = req.headers.get("x-forwarded-for");
-    // The reverse proxy APPENDS the real client address: only the last entry is trustworthy.
-    const ip =
-      (fwd ? fwd.split(",").pop()?.trim() : req.headers.get("x-real-ip")) ||
-      "unknown";
+    const ip = clientIp(req);
     const key = `${bucket}|${ip}`;
     const t = now();
     const h = hits.get(key);

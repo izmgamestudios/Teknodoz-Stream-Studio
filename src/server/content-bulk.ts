@@ -4,6 +4,7 @@
 //   POST /api/content/:id/unlock      public { password } -> body of a protected item
 // Passwords are hashed once (scrypt), never logged, echoed or put in a URL.
 import { z } from "zod";
+import { clientIp } from "./client-ip";
 
 import {
   ENTITY_TYPES,
@@ -89,10 +90,6 @@ export function createBulkApi(opts: {
         if (v.every((x) => t - x >= 60_000)) unlockHits.delete(k);
     return hits.length > UNLOCK_PER_MINUTE;
   };
-  const clientIp = (req: Request): string =>
-    req.headers.get("cf-connecting-ip") ??
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "?";
 
   async function bulk(req: Request): Promise<Response> {
     if (!isAdminRequest(req, opts.token, now().getTime()))

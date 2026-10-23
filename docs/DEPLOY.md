@@ -255,7 +255,15 @@ PUBLISHER_URL=https://...                           # (isteğe bağlı) kurumun 
 PUBLISHER_LOGO=https://.../logo-512.png             # (isteğe bağlı) en az 112×112, kare
 AI_CRAWLERS=allow                                   # block = GPTBot, ClaudeBot, PerplexityBot, Google-Extended vb. engellenir
 EMBED_ORIGINS=*                                     # gömme sayfasını çerçeveleyebilecek kaynaklar (CSP frame-ancestors)
+TRUSTED_IP_HEADER=cf-connecting-ip                  # YALNIZCA sitenin önünde Cloudflare varsa: istemci IP'si buradan okunur
 ```
+
+### Sertleştirme (S6)
+
+- **İstemci IP'si:** giriş kilidi, şifreli içerik kilidi, oda katılımı ve toplu işlem sınırları tek yerden (`src/server/client-ip.ts`) IP alır. `X-Forwarded-For`'un **ilk** değerini istemci kendisi yazabildiği için artık kullanılmaz; proxy'nin eklediği **son** değer okunur. Cloudflare arkasındaysanız `TRUSTED_IP_HEADER=cf-connecting-ip` verin (sunucuya yalnızca Cloudflare'dan erişilebiliyorsa); aksi hâlde bu değişkeni boş bırakın.
+- **Genel hız sınırı:** IP başına dakikada 120 yazma isteği (`/api/*` POST/PUT/PATCH/DELETE) ve 600 herkese açık sayfa isteği; aşılırsa `429` + `Retry-After`. Oda, canlı yayın, medya akışı ve `/assets` bunun dışındadır (kendi sınırları var).
+- **Başlıklar:** her yanıta `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy` (yalnızca kamera/mikrofon/ekran paylaşımı kendi sayfada), `Cross-Origin-Opener-Policy`; https'te `Strict-Transport-Security`; uygulama HTML'ine `object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'`. Herkese açık sayfalar kendi katı (hash'li) CSP'sini taşır.
+- **Denetim:** `node --experimental-strip-types scripts/check-public.ts https://teknodoz-studio.ortakofis.org` robots/sitemap/llms.txt'yi ve sitemap'teki sayfaları (başlık, kanonik, tek h1, başlık sırası, JSON-LD zorunlu alanları, görünür SSS, alt metinleri, başlıklar) denetler; hata varsa çıkış kodu 1.
 
 Yayına aldıktan sonra:
 
