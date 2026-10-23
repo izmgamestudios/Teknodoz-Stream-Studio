@@ -56,7 +56,7 @@ Every `public` item has one canonical, server-rendered URL: `/library/{type}/{sl
 | Database | PocketBase (SQLite, WAL). `content_items` uses **real, indexed columns** for `type, visibility, slug, external_id, locale, is_deleted, updated`; JSON only for `body_blocks` and `meta`. Comfortable to **~1 M rows** on one small VPS. Lists are always **cursor-paged** (50), never full-table. | Read replica / Litestream backup; move to Postgres behind `RecordStore` if write load demands. |
 | Today's problem | `catalog_items` keeps one JSON blob per row and the API lists everything. Fine for tens of items, **not** for thousands. | Fixed by the S2 migration (columns + indexes + paging). |
 | Media | Streamed from disk with Range (already). Posters are small JPEGs. | Cloudflare R2 + custom domain (no egress fees); keep `MEDIA_QUOTA_GB`. |
-| Search (admin) | SQLite FTS5 virtual table on title + summary + tags + transcript, built by the migration. | Meilisearch / Typesense if needed. |
+| Search (admin) | PocketBase filter (`~`) on title / summary / tags. FTS5 cannot be created through the PocketBase API, so it is **deferred**. | Meilisearch / Typesense when the table passes a few thousand rows. |
 | Sitemaps / llms | Generated on demand, cached 1 h; paged files keep each response small. | Pre-generate on publish. |
 | Writes | Bulk / import chunks of 500 in one transaction; rate limits per admin. | Background queue. |
 | Ops | PM2 (no sudo); nightly `pb_data` snapshot via `sqlite3 .backup` + `rclone` off-server; one restore drill in S2. | systemd + Litestream when there is root access. |
@@ -72,7 +72,7 @@ Every `public` item has one canonical, server-rendered URL: `/library/{type}/{sl
 | Sprint | Scope (changes vs spec in **bold**) |
 |---|---|
 | **S1** | `src/shared/schema-registry` (zod per type, secret flags, **SEO fields: summary, seoTitle, seoDescription, ogImage, faq, noindex**), local workspace JSON export/import (scripts, scenes, classic templates) with round-trip test. |
-| S2 | **Node-gateway storage:** `content_items` / `sources` / `access_groups` / `content_audit` / `redirects` collections with columns + indexes + FTS (idempotent migration code, no `pb_migrations`), `visibleTo` rules + tests, `/watch` data migration script, backup + restore drill. |
+| S2 | **Node-gateway storage:** `content_items` / `content_audit` / `content_redirects` collections with columns + indexes (idempotent creation code, no `pb_migrations`; `access_groups` moves to S4, FTS deferred), `visibleTo` rules + tests, `/watch` data migration script, backup + restore drill. |
 | S3 | Templates (CSV/XLSX/JSON), dry-run + commit import, matching, table engine at `/admin/tables/:type`. Adds SheetJS + `marked`. |
 | S4 | Bulk API, access groups, unlock + lock-out, protected stubs. |
 | **S5** | **Public SSR pages `/library/*`, `/docs`, JSON-LD, sitemap index + video sitemap, `robots.txt`, `llms.txt`, Markdown twins, RSS, oEmbed, redirects, cache headers.** URL-tree import/export. |

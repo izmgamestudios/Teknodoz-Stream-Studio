@@ -42,9 +42,9 @@ export interface PbRecord {
   [field: string]: unknown;
 }
 
-interface FieldDef {
+export interface FieldDef {
   name: string;
-  type: "text" | "json";
+  type: "text" | "json" | "bool" | "number";
   required?: boolean;
   max?: number;
   maxSize?: number;
@@ -139,6 +139,50 @@ export class PocketBase {
     return out;
   }
 
+  /** One record, or null when it does not exist. */
+  async findRecord(collection: string, id: string): Promise<PbRecord | null> {
+    let res = await this.raw(
+      "GET",
+      `/api/collections/${collection}/records/${encodeURIComponent(id)}`,
+      undefined,
+      await this.auth(),
+    );
+    if (res.status === 401 || res.status === 403)
+      res = await this.raw(
+        "GET",
+        `/api/collections/${collection}/records/${encodeURIComponent(id)}`,
+        undefined,
+        await this.auth(true),
+      );
+    if (res.status === 404) return null;
+    if (!res.ok)
+      throw new StoreUnavailableError(
+        `pocketbase GET ${collection}/${id} -> ${res.status}`,
+      );
+    return (await res.json()) as PbRecord;
+  }
+
+  /** One page of records (server-side filter / sort / paging). */
+  async listPage(
+    collection: string,
+    o: {
+      page: number;
+      perPage: number;
+      filter?: string;
+      sort?: string;
+      withTotal?: boolean;
+    },
+  ): Promise<{ items: PbRecord[]; totalItems: number; totalPages: number }> {
+    const q = new URLSearchParams({
+      page: String(o.page),
+      perPage: String(o.perPage),
+    });
+    if (o.filter) q.set("filter", o.filter);
+    if (o.sort) q.set("sort", o.sort);
+    if (!o.withTotal) q.set("skipTotal", "1");
+    return this.request("GET", `/api/collections/${collection}/records?${q}`);
+  }
+
   create(collection: string, data: Record<string, unknown>): Promise<PbRecord> {
     return this.request("POST", `/api/collections/${collection}/records`, data);
   }
@@ -167,6 +211,8 @@ export class PocketBase {
     name: string,
     fields: FieldDef[],
     uniqueOn: string[],
+    /** extra raw `CREATE [UNIQUE] INDEX …` statements (names must be unique per collection) */
+    indexes: string[] = [],
   ): Promise<void> {
     const have = this.ensured.get(name);
     if (have) return have;
@@ -188,7 +234,12 @@ export class PocketBase {
         type: "base",
         fields,
         indexes: [
-          `CREATE UNIQUE INDEX idx_${name}_uq ON ${name} (${uniqueOn.join(", ")})`,
+          ...(uniqueOn.length
+            ? [
+                `CREATE UNIQUE INDEX idx_${name}_uq ON ${name} (${uniqueOn.join(", ")})`,
+              ]
+            : []),
+          ...indexes,
         ],
       });
     })();
@@ -219,6 +270,8 @@ export function pbRecordStore<T extends { id: string }>(
   pb: PocketBase,
   collection: string,
   now: () => number = Date.now,
+  /** longest record id the collection must accept */
+  idMax = 40,
 ): RecordStore<T> {
   let cache: { at: number; items: T[]; ids: Map<string, string> } | null = null;
 
@@ -226,7 +279,7 @@ export function pbRecordStore<T extends { id: string }>(
     pb.ensureCollection(
       collection,
       [
-        { name: "itemId", type: "text", required: true, max: 40 },
+        { name: "itemId", type: "text", required: true, max: idMax },
         { name: "data", type: "json", maxSize: 2_000_000 },
       ],
       ["itemId"],

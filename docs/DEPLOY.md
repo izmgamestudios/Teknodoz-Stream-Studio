@@ -146,6 +146,44 @@ da diske geçici yazmayı önler.
 - **Altyazı:** Altyazılar sekmesinde satır satır düzenleme (başlangıç/bitiş, bölme/birleştirme, toplu kaydırma, bul-değiştir, okuma hızı uyarıları, yeni boş parça).
 - **Stüdyolara aktarma:** Klasik Stüdyo (arka plan videosu / müzik / ses efekti) ve Canlı Stüdyo (sahneye katman / müzik) "Sunucu kütüphanesinden" düğmesini kullanır (yönetici girişi gerekir).
 
+## Yedekleme — Google Drive (rclone)
+
+Gecelik yedek: PocketBase'in tutarlı anlık görüntüsü (`sqlite3 .backup`) + `data/*.json(l)` → tek `.tar.gz` + SHA-256 → Google Drive, 14 gün saklama. `.env.production` (sırlar) yedeğe **girmez**.
+
+```bash
+cd ~/htdocs/teknodoz-studio.ortakofis.org
+git pull
+bash scripts/rclone-setup.sh      # rclone'u ~/bin'e kurar, Drive kurulum adımlarını yazar (bir kez)
+bash scripts/backup.sh            # ilk yedek
+bash scripts/restore.sh           # arşivleri listeler
+bash scripts/restore.sh teknodoz-YYYYMMDD-HHMMSS.tar.gz --drill   # GÜVENLİ prova: indirir, sağlamasını ve satır sayılarını doğrular, hiçbir şeyi değiştirmez
+```
+
+Cron (CloudPanel → Cron Jobs veya `crontab -e`):
+
+```
+PATH=/home/<kullanıcı>/bin:/usr/local/bin:/usr/bin:/bin
+17 3 * * * cd ~/htdocs/teknodoz-studio.ortakofis.org && bash scripts/backup.sh >> ~/backup.log 2>&1
+```
+
+Gerçek geri yükleme: `bash scripts/restore.sh <arşiv> --yes` (PocketBase kısa süre durur, eski veritabanı `data.db.before-restore` olarak kalır). Medya dosyaları için `BACKUP_MEDIA=1` ekleyin (Drive'a artımlı kopya). Sunucu Drive kotası dolarsa `KEEP_DAYS` düşürün.
+
+## İçerik motoru (content_items)
+
+- Yönetici API'si (`/api/content`) ve herkese açık API (`/api/library/:tür[/:slug]`) tek geçittir; görünürlük kuralları `src/server/content-model.ts` içindedir. PocketBase'e tarayıcı erişmez.
+- PocketBase açıkken `content_items` gerçek sütunlar + indeksler ile oluşur (`type, visibility, is_deleted, updated_at`; `(type, slug)` ve `(type, external_id)` benzersiz). PocketBase yoksa `data/content.json` kullanılır.
+- Eski `/watch` kataloğunu aktarma (güvenli, tekrar çalıştırılabilir):
+
+```bash
+# Prova (hiçbir şey yazmaz): kaç kayıt oluşacağını gösterir
+curl -sS -X POST -H "Authorization: Bearer $CATALOG_ADMIN_TOKEN" https://teknodoz-studio.ortakofis.org/api/admin/migrate/watch
+# Gerçek aktarma
+curl -sS -X POST -H "Authorization: Bearer $CATALOG_ADMIN_TOKEN" "https://teknodoz-studio.ortakofis.org/api/admin/migrate/watch?commit=1"
+```
+
+  Eski kayıtlar silinmez; `/watch` tablo motoru gelene kadar eski katalogdan okumaya devam eder. Şifre hash'leri ve gizli bağlantı anahtarları kopyalanmaz.
+- Arama (başlık / özet / etiket) şimdilik PocketBase süzgeci ile yapılır; SQLite FTS5 PocketBase API'siyle oluşturulamadığı için binlerce kayıttan sonra Meilisearch/Typesense düşünülecek.
+
 ## Çeviriler (`/translations`)
 Yerleşik metinler tr/en/de/es için kodda durur. **Çeviriler** sayfasından (içerik üretici modu,
 aynı yönetici anahtarı) herhangi bir metin sunucuda değiştirilir; yeni sürüm yayınlamadan tüm

@@ -9,6 +9,20 @@ import { createCatalogApi, catalogTokenFromEnv } from "./server/catalog";
 import { fileRecordStore, fileStore } from "./server/catalog-store";
 import { createAdminApi } from "./server/admin";
 import { createSessionApi } from "./server/session";
+import {
+  createContentApi,
+  type AuditSink,
+  type Redirect,
+} from "./server/content";
+import { createMigrationApi } from "./server/content-migrate";
+import {
+  pbAuditSink,
+  pbContentStore,
+  recordBackedContentStore,
+} from "./server/content-store";
+import { appendFile, mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
+import type { ContentRow } from "./server/content-model";
 import { ffmpegPoster } from "./server/ffmpeg";
 import { ffprobeProber } from "./server/ffprobe";
 import { createMediaApi, type MediaRecord } from "./server/media";
@@ -93,6 +107,46 @@ const mediaEdit = createMediaEditApi({
   probe: prober,
   whisper: whisperFromEnv(liveEnv),
 });
+// Content engine (content_items): PocketBase columns + indexes, or JSON files without PocketBase.
+const contentStore = pb
+  ? pbContentStore(pb)
+  : recordBackedContentStore(
+      fileRecordStore<ContentRow>(
+        liveEnv["CONTENT_FILE"]?.trim() || "data/content.json",
+      ),
+    );
+const redirectStore = pb
+  ? pbRecordStore<Redirect>(pb, "content_redirects", Date.now, 200)
+  : fileRecordStore<Redirect>(
+      liveEnv["CONTENT_REDIRECTS_FILE"]?.trim() ||
+        "data/content-redirects.json",
+    );
+const auditFile =
+  liveEnv["CONTENT_AUDIT_FILE"]?.trim() || "data/content-audit.jsonl";
+const contentAudit: AuditSink = pb
+  ? pbAuditSink(pb)
+  : {
+      async append(e) {
+        try {
+          await mkdir(dirname(auditFile), { recursive: true });
+          await appendFile(auditFile, `${JSON.stringify(e)}\n`);
+        } catch (err) {
+          console.error("[audit]", err);
+        }
+      },
+    };
+const content = createContentApi({
+  token: adminToken,
+  store: contentStore,
+  redirects: redirectStore,
+  audit: contentAudit,
+});
+const contentMigration = createMigrationApi({
+  token: adminToken,
+  catalog: catalogStore,
+  store: contentStore,
+  audit: contentAudit,
+});
 const i18n = createI18nApi({ token: adminToken, store: i18nStore });
 const session = createSessionApi({ token: adminToken });
 const admin = createAdminApi({
@@ -155,6 +209,10 @@ export default {
       if (catalogResponse) return catalogResponse;
       const sessionResponse = await session.handle(request);
       if (sessionResponse) return sessionResponse;
+      const contentResponse = await content.handle(request);
+      if (contentResponse) return contentResponse;
+      const migrateResponse = await contentMigration.handle(request);
+      if (migrateResponse) return migrateResponse;
       const mediaEditResponse = await mediaEdit.handle(request);
       if (mediaEditResponse) return mediaEditResponse;
       const mediaResponse = await media.handle(request);

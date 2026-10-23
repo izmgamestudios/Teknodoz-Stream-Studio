@@ -215,6 +215,19 @@ const httpUrl = z
 
 const isoDate = z.string().refine((v) => !Number.isNaN(Date.parse(v)), "date");
 
+/** Media fields may also point into this site's own library (`/media/<id>`). */
+const MEDIA_URL_KEYS = new Set([
+  "media_url",
+  "poster_url",
+  "transcript_url",
+  "og_image",
+]);
+const mediaPath = z
+  .string()
+  .max(500)
+  .regex(/^\/media\/[A-Za-z0-9._-]+(\/[A-Za-z0-9._-]+)*$/)
+  .refine((v) => !v.split("/").includes(".."), "path");
+
 function zodField(d: FieldDef): z.ZodTypeAny {
   let t: z.ZodTypeAny;
   switch (d.kind) {
@@ -234,7 +247,7 @@ function zodField(d: FieldDef): z.ZodTypeAny {
       t = z.array(z.string().trim().min(1).max(40)).max(d.max ?? 20);
       break;
     case "url":
-      t = httpUrl;
+      t = MEDIA_URL_KEYS.has(d.key) ? z.union([httpUrl, mediaPath]) : httpUrl;
       break;
     case "number":
       t = z.number().finite();
