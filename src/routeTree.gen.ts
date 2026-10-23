@@ -8,492 +8,512 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as AdminRouteImport } from "./routes/admin";
-import { Route as CatalogRouteImport } from "./routes/catalog";
-import { Route as ClassicRouteRouteImport } from "./routes/classic/route";
-import { Route as CommunityRouteImport } from "./routes/community";
-import { Route as DownloadRouteImport } from "./routes/download";
-import { Route as GuideRouteImport } from "./routes/guide";
-import { Route as JoinRouteImport } from "./routes/join";
-import { Route as LiveRouteImport } from "./routes/live";
-import { Route as RemoteRouteImport } from "./routes/remote";
-import { Route as RoomRouteImport } from "./routes/room";
-import { Route as SettingsRouteImport } from "./routes/settings";
-import { Route as StudioRouteImport } from "./routes/studio";
-import { Route as TranslationsRouteImport } from "./routes/translations";
-import { Route as WatchRouteImport } from "./routes/watch";
-import { Route as AdminMediaRouteImport } from "./routes/admin_.media";
-import { Route as ChatCodeRouteImport } from "./routes/chat.$code";
-import { Route as ClassicIndexRouteImport } from "./routes/classic/index";
-import { Route as ClassicJoinRouteImport } from "./routes/classic/join";
-import { Route as ClassicPrompterRouteImport } from "./routes/classic/prompter";
-import { Route as ClassicRemoteRouteImport } from "./routes/classic/remote";
-import { Route as RCodeRouteImport } from "./routes/r.$code";
-import { Route as AdminTablesTypeRouteImport } from "./routes/admin_.tables.$type";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CatalogRouteImport } from './routes/catalog'
+import { Route as ClassicRouteRouteImport } from './routes/classic/route'
+import { Route as CommunityRouteImport } from './routes/community'
+import { Route as DownloadRouteImport } from './routes/download'
+import { Route as GuideRouteImport } from './routes/guide'
+import { Route as JoinRouteImport } from './routes/join'
+import { Route as LiveRouteImport } from './routes/live'
+import { Route as PodcastRouteImport } from './routes/podcast'
+import { Route as RemoteRouteImport } from './routes/remote'
+import { Route as RoomRouteImport } from './routes/room'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as StudioRouteImport } from './routes/studio'
+import { Route as TranslationsRouteImport } from './routes/translations'
+import { Route as WatchRouteImport } from './routes/watch'
+import { Route as AdminMediaRouteImport } from './routes/admin_.media'
+import { Route as ChatCodeRouteImport } from './routes/chat.$code'
+import { Route as ClassicIndexRouteImport } from './routes/classic/index'
+import { Route as ClassicJoinRouteImport } from './routes/classic/join'
+import { Route as ClassicPrompterRouteImport } from './routes/classic/prompter'
+import { Route as ClassicRemoteRouteImport } from './routes/classic/remote'
+import { Route as RCodeRouteImport } from './routes/r.$code'
+import { Route as AdminTablesTypeRouteImport } from './routes/admin_.tables.$type'
 
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AdminRoute = AdminRouteImport.update({
-  id: "/admin",
-  path: "/admin",
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const CatalogRoute = CatalogRouteImport.update({
-  id: "/catalog",
-  path: "/catalog",
+  id: '/catalog',
+  path: '/catalog',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ClassicRouteRoute = ClassicRouteRouteImport.update({
-  id: "/classic",
-  path: "/classic",
+  id: '/classic',
+  path: '/classic',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const CommunityRoute = CommunityRouteImport.update({
-  id: "/community",
-  path: "/community",
+  id: '/community',
+  path: '/community',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DownloadRoute = DownloadRouteImport.update({
-  id: "/download",
-  path: "/download",
+  id: '/download',
+  path: '/download',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const GuideRoute = GuideRouteImport.update({
-  id: "/guide",
-  path: "/guide",
+  id: '/guide',
+  path: '/guide',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const JoinRoute = JoinRouteImport.update({
-  id: "/join",
-  path: "/join",
+  id: '/join',
+  path: '/join',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const LiveRoute = LiveRouteImport.update({
-  id: "/live",
-  path: "/live",
+  id: '/live',
+  path: '/live',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
+const PodcastRoute = PodcastRouteImport.update({
+  id: '/podcast',
+  path: '/podcast',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RemoteRoute = RemoteRouteImport.update({
-  id: "/remote",
-  path: "/remote",
+  id: '/remote',
+  path: '/remote',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const RoomRoute = RoomRouteImport.update({
-  id: "/room",
-  path: "/room",
+  id: '/room',
+  path: '/room',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
-  id: "/settings",
-  path: "/settings",
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const StudioRoute = StudioRouteImport.update({
-  id: "/studio",
-  path: "/studio",
+  id: '/studio',
+  path: '/studio',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const TranslationsRoute = TranslationsRouteImport.update({
-  id: "/translations",
-  path: "/translations",
+  id: '/translations',
+  path: '/translations',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const WatchRoute = WatchRouteImport.update({
-  id: "/watch",
-  path: "/watch",
+  id: '/watch',
+  path: '/watch',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AdminMediaRoute = AdminMediaRouteImport.update({
-  id: "/admin_/media",
-  path: "/admin/media",
+  id: '/admin_/media',
+  path: '/admin/media',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ChatCodeRoute = ChatCodeRouteImport.update({
-  id: "/chat/$code",
-  path: "/chat/$code",
+  id: '/chat/$code',
+  path: '/chat/$code',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ClassicIndexRoute = ClassicIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => ClassicRouteRoute,
-} as any);
+} as any)
 const ClassicJoinRoute = ClassicJoinRouteImport.update({
-  id: "/join",
-  path: "/join",
+  id: '/join',
+  path: '/join',
   getParentRoute: () => ClassicRouteRoute,
-} as any);
+} as any)
 const ClassicPrompterRoute = ClassicPrompterRouteImport.update({
-  id: "/prompter",
-  path: "/prompter",
+  id: '/prompter',
+  path: '/prompter',
   getParentRoute: () => ClassicRouteRoute,
-} as any);
+} as any)
 const ClassicRemoteRoute = ClassicRemoteRouteImport.update({
-  id: "/remote",
-  path: "/remote",
+  id: '/remote',
+  path: '/remote',
   getParentRoute: () => ClassicRouteRoute,
-} as any);
+} as any)
 const RCodeRoute = RCodeRouteImport.update({
-  id: "/r/$code",
-  path: "/r/$code",
+  id: '/r/$code',
+  path: '/r/$code',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AdminTablesTypeRoute = AdminTablesTypeRouteImport.update({
-  id: "/admin_/tables/$type",
-  path: "/admin/tables/$type",
+  id: '/admin_/tables/$type',
+  path: '/admin/tables/$type',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/classic": typeof ClassicRouteRouteWithChildren;
-  "/admin": typeof AdminRoute;
-  "/catalog": typeof CatalogRoute;
-  "/community": typeof CommunityRoute;
-  "/download": typeof DownloadRoute;
-  "/guide": typeof GuideRoute;
-  "/join": typeof JoinRoute;
-  "/live": typeof LiveRoute;
-  "/remote": typeof RemoteRoute;
-  "/room": typeof RoomRoute;
-  "/settings": typeof SettingsRoute;
-  "/studio": typeof StudioRoute;
-  "/translations": typeof TranslationsRoute;
-  "/watch": typeof WatchRoute;
-  "/admin/media": typeof AdminMediaRoute;
-  "/chat/$code": typeof ChatCodeRoute;
-  "/classic/join": typeof ClassicJoinRoute;
-  "/classic/prompter": typeof ClassicPrompterRoute;
-  "/classic/remote": typeof ClassicRemoteRoute;
-  "/r/$code": typeof RCodeRoute;
-  "/classic/": typeof ClassicIndexRoute;
-  "/admin/tables/$type": typeof AdminTablesTypeRoute;
+  '/': typeof IndexRoute
+  '/classic': typeof ClassicRouteRouteWithChildren
+  '/admin': typeof AdminRoute
+  '/catalog': typeof CatalogRoute
+  '/community': typeof CommunityRoute
+  '/download': typeof DownloadRoute
+  '/guide': typeof GuideRoute
+  '/join': typeof JoinRoute
+  '/live': typeof LiveRoute
+  '/podcast': typeof PodcastRoute
+  '/remote': typeof RemoteRoute
+  '/room': typeof RoomRoute
+  '/settings': typeof SettingsRoute
+  '/studio': typeof StudioRoute
+  '/translations': typeof TranslationsRoute
+  '/watch': typeof WatchRoute
+  '/admin/media': typeof AdminMediaRoute
+  '/chat/$code': typeof ChatCodeRoute
+  '/classic/join': typeof ClassicJoinRoute
+  '/classic/prompter': typeof ClassicPrompterRoute
+  '/classic/remote': typeof ClassicRemoteRoute
+  '/r/$code': typeof RCodeRoute
+  '/classic/': typeof ClassicIndexRoute
+  '/admin/tables/$type': typeof AdminTablesTypeRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/admin": typeof AdminRoute;
-  "/catalog": typeof CatalogRoute;
-  "/community": typeof CommunityRoute;
-  "/download": typeof DownloadRoute;
-  "/guide": typeof GuideRoute;
-  "/join": typeof JoinRoute;
-  "/live": typeof LiveRoute;
-  "/remote": typeof RemoteRoute;
-  "/room": typeof RoomRoute;
-  "/settings": typeof SettingsRoute;
-  "/studio": typeof StudioRoute;
-  "/translations": typeof TranslationsRoute;
-  "/watch": typeof WatchRoute;
-  "/admin/media": typeof AdminMediaRoute;
-  "/chat/$code": typeof ChatCodeRoute;
-  "/classic/join": typeof ClassicJoinRoute;
-  "/classic/prompter": typeof ClassicPrompterRoute;
-  "/classic/remote": typeof ClassicRemoteRoute;
-  "/r/$code": typeof RCodeRoute;
-  "/classic": typeof ClassicIndexRoute;
-  "/admin/tables/$type": typeof AdminTablesTypeRoute;
+  '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/catalog': typeof CatalogRoute
+  '/community': typeof CommunityRoute
+  '/download': typeof DownloadRoute
+  '/guide': typeof GuideRoute
+  '/join': typeof JoinRoute
+  '/live': typeof LiveRoute
+  '/podcast': typeof PodcastRoute
+  '/remote': typeof RemoteRoute
+  '/room': typeof RoomRoute
+  '/settings': typeof SettingsRoute
+  '/studio': typeof StudioRoute
+  '/translations': typeof TranslationsRoute
+  '/watch': typeof WatchRoute
+  '/admin/media': typeof AdminMediaRoute
+  '/chat/$code': typeof ChatCodeRoute
+  '/classic/join': typeof ClassicJoinRoute
+  '/classic/prompter': typeof ClassicPrompterRoute
+  '/classic/remote': typeof ClassicRemoteRoute
+  '/r/$code': typeof RCodeRoute
+  '/classic': typeof ClassicIndexRoute
+  '/admin/tables/$type': typeof AdminTablesTypeRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/classic": typeof ClassicRouteRouteWithChildren;
-  "/admin": typeof AdminRoute;
-  "/catalog": typeof CatalogRoute;
-  "/community": typeof CommunityRoute;
-  "/download": typeof DownloadRoute;
-  "/guide": typeof GuideRoute;
-  "/join": typeof JoinRoute;
-  "/live": typeof LiveRoute;
-  "/remote": typeof RemoteRoute;
-  "/room": typeof RoomRoute;
-  "/settings": typeof SettingsRoute;
-  "/studio": typeof StudioRoute;
-  "/translations": typeof TranslationsRoute;
-  "/watch": typeof WatchRoute;
-  "/admin_/media": typeof AdminMediaRoute;
-  "/chat/$code": typeof ChatCodeRoute;
-  "/classic/join": typeof ClassicJoinRoute;
-  "/classic/prompter": typeof ClassicPrompterRoute;
-  "/classic/remote": typeof ClassicRemoteRoute;
-  "/r/$code": typeof RCodeRoute;
-  "/classic/": typeof ClassicIndexRoute;
-  "/admin_/tables/$type": typeof AdminTablesTypeRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/classic': typeof ClassicRouteRouteWithChildren
+  '/admin': typeof AdminRoute
+  '/catalog': typeof CatalogRoute
+  '/community': typeof CommunityRoute
+  '/download': typeof DownloadRoute
+  '/guide': typeof GuideRoute
+  '/join': typeof JoinRoute
+  '/live': typeof LiveRoute
+  '/podcast': typeof PodcastRoute
+  '/remote': typeof RemoteRoute
+  '/room': typeof RoomRoute
+  '/settings': typeof SettingsRoute
+  '/studio': typeof StudioRoute
+  '/translations': typeof TranslationsRoute
+  '/watch': typeof WatchRoute
+  '/admin_/media': typeof AdminMediaRoute
+  '/chat/$code': typeof ChatCodeRoute
+  '/classic/join': typeof ClassicJoinRoute
+  '/classic/prompter': typeof ClassicPrompterRoute
+  '/classic/remote': typeof ClassicRemoteRoute
+  '/r/$code': typeof RCodeRoute
+  '/classic/': typeof ClassicIndexRoute
+  '/admin_/tables/$type': typeof AdminTablesTypeRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/classic"
-    | "/admin"
-    | "/catalog"
-    | "/community"
-    | "/download"
-    | "/guide"
-    | "/join"
-    | "/live"
-    | "/remote"
-    | "/room"
-    | "/settings"
-    | "/studio"
-    | "/translations"
-    | "/watch"
-    | "/admin/media"
-    | "/chat/$code"
-    | "/classic/join"
-    | "/classic/prompter"
-    | "/classic/remote"
-    | "/r/$code"
-    | "/classic/"
-    | "/admin/tables/$type";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/classic'
+    | '/admin'
+    | '/catalog'
+    | '/community'
+    | '/download'
+    | '/guide'
+    | '/join'
+    | '/live'
+    | '/podcast'
+    | '/remote'
+    | '/room'
+    | '/settings'
+    | '/studio'
+    | '/translations'
+    | '/watch'
+    | '/admin/media'
+    | '/chat/$code'
+    | '/classic/join'
+    | '/classic/prompter'
+    | '/classic/remote'
+    | '/r/$code'
+    | '/classic/'
+    | '/admin/tables/$type'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/admin"
-    | "/catalog"
-    | "/community"
-    | "/download"
-    | "/guide"
-    | "/join"
-    | "/live"
-    | "/remote"
-    | "/room"
-    | "/settings"
-    | "/studio"
-    | "/translations"
-    | "/watch"
-    | "/admin/media"
-    | "/chat/$code"
-    | "/classic/join"
-    | "/classic/prompter"
-    | "/classic/remote"
-    | "/r/$code"
-    | "/classic"
-    | "/admin/tables/$type";
+    | '/'
+    | '/admin'
+    | '/catalog'
+    | '/community'
+    | '/download'
+    | '/guide'
+    | '/join'
+    | '/live'
+    | '/podcast'
+    | '/remote'
+    | '/room'
+    | '/settings'
+    | '/studio'
+    | '/translations'
+    | '/watch'
+    | '/admin/media'
+    | '/chat/$code'
+    | '/classic/join'
+    | '/classic/prompter'
+    | '/classic/remote'
+    | '/r/$code'
+    | '/classic'
+    | '/admin/tables/$type'
   id:
-    | "__root__"
-    | "/"
-    | "/classic"
-    | "/admin"
-    | "/catalog"
-    | "/community"
-    | "/download"
-    | "/guide"
-    | "/join"
-    | "/live"
-    | "/remote"
-    | "/room"
-    | "/settings"
-    | "/studio"
-    | "/translations"
-    | "/watch"
-    | "/admin_/media"
-    | "/chat/$code"
-    | "/classic/join"
-    | "/classic/prompter"
-    | "/classic/remote"
-    | "/r/$code"
-    | "/classic/"
-    | "/admin_/tables/$type";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/classic'
+    | '/admin'
+    | '/catalog'
+    | '/community'
+    | '/download'
+    | '/guide'
+    | '/join'
+    | '/live'
+    | '/podcast'
+    | '/remote'
+    | '/room'
+    | '/settings'
+    | '/studio'
+    | '/translations'
+    | '/watch'
+    | '/admin_/media'
+    | '/chat/$code'
+    | '/classic/join'
+    | '/classic/prompter'
+    | '/classic/remote'
+    | '/r/$code'
+    | '/classic/'
+    | '/admin_/tables/$type'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  ClassicRouteRoute: typeof ClassicRouteRouteWithChildren;
-  AdminRoute: typeof AdminRoute;
-  CatalogRoute: typeof CatalogRoute;
-  CommunityRoute: typeof CommunityRoute;
-  DownloadRoute: typeof DownloadRoute;
-  GuideRoute: typeof GuideRoute;
-  JoinRoute: typeof JoinRoute;
-  LiveRoute: typeof LiveRoute;
-  RemoteRoute: typeof RemoteRoute;
-  RoomRoute: typeof RoomRoute;
-  SettingsRoute: typeof SettingsRoute;
-  StudioRoute: typeof StudioRoute;
-  TranslationsRoute: typeof TranslationsRoute;
-  WatchRoute: typeof WatchRoute;
-  AdminMediaRoute: typeof AdminMediaRoute;
-  ChatCodeRoute: typeof ChatCodeRoute;
-  RCodeRoute: typeof RCodeRoute;
-  AdminTablesTypeRoute: typeof AdminTablesTypeRoute;
+  IndexRoute: typeof IndexRoute
+  ClassicRouteRoute: typeof ClassicRouteRouteWithChildren
+  AdminRoute: typeof AdminRoute
+  CatalogRoute: typeof CatalogRoute
+  CommunityRoute: typeof CommunityRoute
+  DownloadRoute: typeof DownloadRoute
+  GuideRoute: typeof GuideRoute
+  JoinRoute: typeof JoinRoute
+  LiveRoute: typeof LiveRoute
+  PodcastRoute: typeof PodcastRoute
+  RemoteRoute: typeof RemoteRoute
+  RoomRoute: typeof RoomRoute
+  SettingsRoute: typeof SettingsRoute
+  StudioRoute: typeof StudioRoute
+  TranslationsRoute: typeof TranslationsRoute
+  WatchRoute: typeof WatchRoute
+  AdminMediaRoute: typeof AdminMediaRoute
+  ChatCodeRoute: typeof ChatCodeRoute
+  RCodeRoute: typeof RCodeRoute
+  AdminTablesTypeRoute: typeof AdminTablesTypeRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/admin": {
-      id: "/admin";
-      path: "/admin";
-      fullPath: "/admin";
-      preLoaderRoute: typeof AdminRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/catalog": {
-      id: "/catalog";
-      path: "/catalog";
-      fullPath: "/catalog";
-      preLoaderRoute: typeof CatalogRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/classic": {
-      id: "/classic";
-      path: "/classic";
-      fullPath: "/classic";
-      preLoaderRoute: typeof ClassicRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/community": {
-      id: "/community";
-      path: "/community";
-      fullPath: "/community";
-      preLoaderRoute: typeof CommunityRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/download": {
-      id: "/download";
-      path: "/download";
-      fullPath: "/download";
-      preLoaderRoute: typeof DownloadRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/guide": {
-      id: "/guide";
-      path: "/guide";
-      fullPath: "/guide";
-      preLoaderRoute: typeof GuideRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/join": {
-      id: "/join";
-      path: "/join";
-      fullPath: "/join";
-      preLoaderRoute: typeof JoinRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/live": {
-      id: "/live";
-      path: "/live";
-      fullPath: "/live";
-      preLoaderRoute: typeof LiveRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/remote": {
-      id: "/remote";
-      path: "/remote";
-      fullPath: "/remote";
-      preLoaderRoute: typeof RemoteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/room": {
-      id: "/room";
-      path: "/room";
-      fullPath: "/room";
-      preLoaderRoute: typeof RoomRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/settings": {
-      id: "/settings";
-      path: "/settings";
-      fullPath: "/settings";
-      preLoaderRoute: typeof SettingsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/studio": {
-      id: "/studio";
-      path: "/studio";
-      fullPath: "/studio";
-      preLoaderRoute: typeof StudioRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/translations": {
-      id: "/translations";
-      path: "/translations";
-      fullPath: "/translations";
-      preLoaderRoute: typeof TranslationsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/watch": {
-      id: "/watch";
-      path: "/watch";
-      fullPath: "/watch";
-      preLoaderRoute: typeof WatchRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/admin_/media": {
-      id: "/admin_/media";
-      path: "/admin/media";
-      fullPath: "/admin/media";
-      preLoaderRoute: typeof AdminMediaRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/chat/$code": {
-      id: "/chat/$code";
-      path: "/chat/$code";
-      fullPath: "/chat/$code";
-      preLoaderRoute: typeof ChatCodeRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/classic/": {
-      id: "/classic/";
-      path: "/";
-      fullPath: "/classic/";
-      preLoaderRoute: typeof ClassicIndexRouteImport;
-      parentRoute: typeof ClassicRouteRoute;
-    };
-    "/classic/join": {
-      id: "/classic/join";
-      path: "/join";
-      fullPath: "/classic/join";
-      preLoaderRoute: typeof ClassicJoinRouteImport;
-      parentRoute: typeof ClassicRouteRoute;
-    };
-    "/classic/prompter": {
-      id: "/classic/prompter";
-      path: "/prompter";
-      fullPath: "/classic/prompter";
-      preLoaderRoute: typeof ClassicPrompterRouteImport;
-      parentRoute: typeof ClassicRouteRoute;
-    };
-    "/classic/remote": {
-      id: "/classic/remote";
-      path: "/remote";
-      fullPath: "/classic/remote";
-      preLoaderRoute: typeof ClassicRemoteRouteImport;
-      parentRoute: typeof ClassicRouteRoute;
-    };
-    "/r/$code": {
-      id: "/r/$code";
-      path: "/r/$code";
-      fullPath: "/r/$code";
-      preLoaderRoute: typeof RCodeRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/admin_/tables/$type": {
-      id: "/admin_/tables/$type";
-      path: "/admin/tables/$type";
-      fullPath: "/admin/tables/$type";
-      preLoaderRoute: typeof AdminTablesTypeRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/catalog': {
+      id: '/catalog'
+      path: '/catalog'
+      fullPath: '/catalog'
+      preLoaderRoute: typeof CatalogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/classic': {
+      id: '/classic'
+      path: '/classic'
+      fullPath: '/classic'
+      preLoaderRoute: typeof ClassicRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/download': {
+      id: '/download'
+      path: '/download'
+      fullPath: '/download'
+      preLoaderRoute: typeof DownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide': {
+      id: '/guide'
+      path: '/guide'
+      fullPath: '/guide'
+      preLoaderRoute: typeof GuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/live': {
+      id: '/live'
+      path: '/live'
+      fullPath: '/live'
+      preLoaderRoute: typeof LiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/podcast': {
+      id: '/podcast'
+      path: '/podcast'
+      fullPath: '/podcast'
+      preLoaderRoute: typeof PodcastRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/remote': {
+      id: '/remote'
+      path: '/remote'
+      fullPath: '/remote'
+      preLoaderRoute: typeof RemoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/room': {
+      id: '/room'
+      path: '/room'
+      fullPath: '/room'
+      preLoaderRoute: typeof RoomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/studio': {
+      id: '/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof StudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/translations': {
+      id: '/translations'
+      path: '/translations'
+      fullPath: '/translations'
+      preLoaderRoute: typeof TranslationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/watch': {
+      id: '/watch'
+      path: '/watch'
+      fullPath: '/watch'
+      preLoaderRoute: typeof WatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin_/media': {
+      id: '/admin_/media'
+      path: '/admin/media'
+      fullPath: '/admin/media'
+      preLoaderRoute: typeof AdminMediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat/$code': {
+      id: '/chat/$code'
+      path: '/chat/$code'
+      fullPath: '/chat/$code'
+      preLoaderRoute: typeof ChatCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/classic/': {
+      id: '/classic/'
+      path: '/'
+      fullPath: '/classic/'
+      preLoaderRoute: typeof ClassicIndexRouteImport
+      parentRoute: typeof ClassicRouteRoute
+    }
+    '/classic/join': {
+      id: '/classic/join'
+      path: '/join'
+      fullPath: '/classic/join'
+      preLoaderRoute: typeof ClassicJoinRouteImport
+      parentRoute: typeof ClassicRouteRoute
+    }
+    '/classic/prompter': {
+      id: '/classic/prompter'
+      path: '/prompter'
+      fullPath: '/classic/prompter'
+      preLoaderRoute: typeof ClassicPrompterRouteImport
+      parentRoute: typeof ClassicRouteRoute
+    }
+    '/classic/remote': {
+      id: '/classic/remote'
+      path: '/remote'
+      fullPath: '/classic/remote'
+      preLoaderRoute: typeof ClassicRemoteRouteImport
+      parentRoute: typeof ClassicRouteRoute
+    }
+    '/r/$code': {
+      id: '/r/$code'
+      path: '/r/$code'
+      fullPath: '/r/$code'
+      preLoaderRoute: typeof RCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin_/tables/$type': {
+      id: '/admin_/tables/$type'
+      path: '/admin/tables/$type'
+      fullPath: '/admin/tables/$type'
+      preLoaderRoute: typeof AdminTablesTypeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface ClassicRouteRouteChildren {
-  ClassicJoinRoute: typeof ClassicJoinRoute;
-  ClassicPrompterRoute: typeof ClassicPrompterRoute;
-  ClassicRemoteRoute: typeof ClassicRemoteRoute;
-  ClassicIndexRoute: typeof ClassicIndexRoute;
+  ClassicJoinRoute: typeof ClassicJoinRoute
+  ClassicPrompterRoute: typeof ClassicPrompterRoute
+  ClassicRemoteRoute: typeof ClassicRemoteRoute
+  ClassicIndexRoute: typeof ClassicIndexRoute
 }
 
 const ClassicRouteRouteChildren: ClassicRouteRouteChildren = {
@@ -501,11 +521,11 @@ const ClassicRouteRouteChildren: ClassicRouteRouteChildren = {
   ClassicPrompterRoute: ClassicPrompterRoute,
   ClassicRemoteRoute: ClassicRemoteRoute,
   ClassicIndexRoute: ClassicIndexRoute,
-};
+}
 
 const ClassicRouteRouteWithChildren = ClassicRouteRoute._addFileChildren(
   ClassicRouteRouteChildren,
-);
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -517,6 +537,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuideRoute: GuideRoute,
   JoinRoute: JoinRoute,
   LiveRoute: LiveRoute,
+  PodcastRoute: PodcastRoute,
   RemoteRoute: RemoteRoute,
   RoomRoute: RoomRoute,
   SettingsRoute: SettingsRoute,
@@ -527,17 +548,17 @@ const rootRouteChildren: RootRouteChildren = {
   ChatCodeRoute: ChatCodeRoute,
   RCodeRoute: RCodeRoute,
   AdminTablesTypeRoute: AdminTablesTypeRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./router.tsx";
-import type { startInstance } from "./start.ts";
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

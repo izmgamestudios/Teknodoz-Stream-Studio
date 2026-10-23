@@ -65,5 +65,17 @@ Röleye `join` isteğinde `audio: true` bayrağı eklenir; onaylanınca yalnızc
 |---|---|
 | P1 | Bu belge |
 | P2 | Protokol (prompter/mute/mic), yalnızca-ses davet, röle `audio` bayrağı, rol filtreli prompter gönderimi, testler |
-| P3 | `/podcast` yönetici sayfası, konuk ve dinleyici görünümleri, ses zinciri (NVIDIA algılama + RNNoise), kayıt → kütüphane, 4 dil |
+| P3 ✅ | `/podcast` yönetici sayfası, konuk ve dinleyici görünümleri, ses zinciri (NVIDIA algılama + RNNoise), kayıt → kütüphane, 4 dil |
 | sonraki | İkinci moderatör cihazı, sunucu tarafı karışım (SFU) ile yüzlerce dinleyici, otomatik bölüm işaretleri/altyazı |
+
+## Kullanım (P3)
+
+1. **Yönetici:** menüden **Podcast** (`/podcast`, admin girişi) → "Podcast odasını aç". Mikrofon açılır, NVIDIA/RNNoise zinciri otomatik kurulur.
+2. QR kodu / **konuk bağlantısı** konuğa, **dinleyici bağlantısı** dinleyiciye gönderilir. "Gelenleri otomatik onayla" ve "Onaylanan konuk otomatik yayına girsin" açıksa elle bir şey yapmanız gerekmez.
+3. **Konuk metni** yazılır, oynatılır; konuğun ekranında hız/konum yöneticiyle eşzamanlı akar. Konuk satırındaki 📝 ile yalnızca o konuğa özel metin verilir. **Yönetici notu** yalnızca yöneticide kalır (bu tarayıcıda saklanır).
+4. **Kaydı başlat** → bölüm işaretleri → **Kaydı bitir** → "Kütüphaneye gönder" (medya kütüphanesinde düzenlenir, gürültü/altyazı araçlarıyla).
+5. Konuk sayfasında yalnızca **mikrofon aç/kapat**, seviye çubuğu ve kendi metni vardır; moderatör susturduğunda düğme kilitlenir. Dinleyici sayfasında yalnızca oynat/ses vardır, **metin hiç gönderilmez**.
+
+Odalar ayrı saklanır (`podcast:` önekli yerel depolama): Podcast odası ile video stüdyo odası aynı anda açık olabilir.
+
+Doğrulama: gerçek Chromium + sahte mikrofonla yönetici, konuk ve dinleyici oturumu uçtan uca denendi (yayına alma, dinleyicide prompter sayısı 0, konuk metni kayması, sustur/kilit, kayıt → kütüphane).

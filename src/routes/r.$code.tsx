@@ -12,6 +12,7 @@ import {
   RoomGuestSession,
   type GuestSnapshot,
 } from "@/studio/room/guest-session";
+import { PodcastRoomPage } from "@/studio/ui/podcast/room-page";
 import { ParticipantChat } from "@/studio/ui/chat-panels";
 import { CreditsFooter } from "@/studio/ui/credits";
 import { BTN, BTN_ACCENT, INPUT } from "@/studio/ui/fields";
@@ -19,13 +20,17 @@ import { RemoteView, ViewerGuestView } from "@/studio/ui/guest-views";
 import { titleFromMatches } from "@/studio/branding/head";
 
 export const Route = createFileRoute("/r/$code")({
-  validateSearch: (s: Record<string, unknown>): { as?: RoomRole } =>
-    s["as"] === "guest" ||
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { as?: RoomRole; mode?: "podcast" } => ({
+    ...(s["as"] === "guest" ||
     s["as"] === "viewer" ||
     s["as"] === "remote" ||
     s["as"] === "chat"
       ? { as: s["as"] }
-      : {},
+      : {}),
+    ...(s["mode"] === "podcast" ? { mode: "podcast" as const } : {}),
+  }),
   head: ({ matches }) => ({
     meta: [
       { title: titleFromMatches(matches) },
@@ -33,8 +38,21 @@ export const Route = createFileRoute("/r/$code")({
       { name: "referrer", content: "no-referrer" },
     ],
   }),
-  component: RoomLanding,
+  component: RoomEntry,
 });
+
+function RoomEntry() {
+  const { code } = Route.useParams();
+  const search = Route.useSearch();
+  if (search.mode === "podcast")
+    return (
+      <PodcastRoomPage
+        code={code}
+        seat={search.as === "viewer" ? "listener" : "guest"}
+      />
+    );
+  return <RoomLanding />;
+}
 
 const ROLES: { role: RoomRole; icon: string }[] = [
   { role: "guest", icon: "🎥" },
