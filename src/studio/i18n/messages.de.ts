@@ -1069,4 +1069,36 @@ export const de: Record<MessageKey, string> = {
   "dl.wav": "Audio — WAV (48 kHz, 16 Bit)",
   "dl.hint":
     "Die Rohaufnahme bleibt unverändert; die Version mit Untertiteln wird als eigene Datei hinzugefügt.",
+  "an.title": "Audioanalyse",
+  "an.kind.video": "🎬 Video",
+  "an.kind.audio": "🎧 Audio",
+  "an.run": "Analysieren",
+  "an.rerun": "Erneut messen",
+  "an.working": "Wird gemessen…",
+  "an.lufs": "Lautheit",
+  "an.peak": "Spitzenpegel",
+  "an.range": "Dynamikumfang",
+  "an.pauses": "Pausen",
+  "an.speech": "Sprechanteil",
+  "an.err": "Analyse fehlgeschlagen.",
+  "an.noaudio": "Diese Datei hat kein Audio.",
+  "an.advice.silent": "Kein messbares Audio gefunden.",
+  "an.advice.quiet":
+    "Zu leise: Podcasts zielen auf etwa −16 LUFS. Beim Bearbeiten Lautheitsangleichung aktivieren.",
+  "an.advice.loud": "Zu laut: Kompression und Angleichung empfohlen.",
+  "an.advice.clipping":
+    "Der Pegel liegt nahe 0 dB: Verzerrungsgefahr. Pegel senken oder angleichen.",
+  "an.advice.wide-range": "Der Pegel schwankt stark: Kompressor aktivieren.",
+  "an.advice.pauses":
+    "Es gibt lange Pausen: „Lange Pausen kürzen“ strafft das Tempo.",
+  "an.advice.ok": "Pegel und Dynamik sind für einen Podcast in Ordnung.",
+  "pe.title": "Podcast-Bearbeitung",
+  "pe.preset": "Podcast-Voreinstellung",
+  "pe.preset.hint":
+    "Stimmenbereinigung + Rauschminderung + Kompression + −16-LUFS-Angleichung + sanftes Ausblenden.",
+  "pe.shorten": "Lange Pausen kürzen",
+  "pe.shorten.none": "Keine langen Pausen zum Kürzen.",
+  "pe.shorten.done":
+    "{n} Teile · {s} s kürzer. Wird beim Klick auf „Bearbeiten“ unten angewendet.",
+  "pe.shorten.undo": "Rückgängig",
 };

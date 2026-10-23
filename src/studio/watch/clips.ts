@@ -10,7 +10,7 @@ export interface Clip {
 }
 
 export const MIN_CLIP_MS = 40;
-export const MAX_CLIPS = 30;
+export const MAX_CLIPS = 120;
 
 let nextKey = 1;
 

@@ -1077,6 +1077,39 @@ export const tr = {
   "dl.wav": "Ses — WAV (48 kHz, 16 bit)",
   "dl.hint":
     "Ham kayıt değişmez; altyazılı sürüm ayrı bir dosya olarak kütüphaneye eklenir.",
+  "an.title": "Ses analizi",
+  "an.kind.video": "🎬 Videolu",
+  "an.kind.audio": "🎧 Sesli",
+  "an.run": "Analiz et",
+  "an.rerun": "Yeniden ölç",
+  "an.working": "Ölçülüyor…",
+  "an.lufs": "Ses seviyesi",
+  "an.peak": "Tepe",
+  "an.range": "Dinamik aralık",
+  "an.pauses": "Duraklamalar",
+  "an.speech": "Konuşma oranı",
+  "an.err": "Analiz yapılamadı.",
+  "an.noaudio": "Bu dosyada ses yok.",
+  "an.advice.silent": "Ölçülebilir ses bulunamadı.",
+  "an.advice.quiet":
+    "Çok sessiz: podcast için yaklaşık −16 LUFS hedeflenir. Düzenlemede “Ses seviyesini eşitle” açın.",
+  "an.advice.loud": "Çok yüksek: sıkıştırma ve seviye eşitleme önerilir.",
+  "an.advice.clipping":
+    "Tepe 0 dB'ye çok yakın: bozulma riski. Sesi azaltın veya seviye eşitleme kullanın.",
+  "an.advice.wide-range":
+    "Ses seviyesi çok dalgalı: sıkıştırıcı (kompresör) açın.",
+  "an.advice.pauses":
+    "Uzun sessizlikler var: “Uzun sessizlikleri kısalt” ile temposu artırın.",
+  "an.advice.ok": "Seviye ve dinamik podcast için uygun.",
+  "pe.title": "Podcast düzenleme",
+  "pe.preset": "Podcast ön ayarı",
+  "pe.preset.hint":
+    "Ses temizleme + gürültü azaltma + sıkıştırma + −16 LUFS seviye eşitleme + yumuşak çıkış.",
+  "pe.shorten": "Uzun sessizlikleri kısalt",
+  "pe.shorten.none": "Kısaltılacak uzun sessizlik yok.",
+  "pe.shorten.done":
+    "{n} parça · {s} sn kısaldı. Aşağıdaki “Düzenle”ye basınca uygulanır.",
+  "pe.shorten.undo": "Geri al",
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -2132,6 +2165,38 @@ export const en: Record<MessageKey, string> = {
   "dl.wav": "Audio — WAV (48 kHz, 16-bit)",
   "dl.hint":
     "The raw recording never changes; the subtitled version is added to the library as its own file.",
+  "an.title": "Audio analysis",
+  "an.kind.video": "🎬 Video",
+  "an.kind.audio": "🎧 Audio",
+  "an.run": "Analyse",
+  "an.rerun": "Measure again",
+  "an.working": "Measuring…",
+  "an.lufs": "Loudness",
+  "an.peak": "Peak",
+  "an.range": "Dynamic range",
+  "an.pauses": "Pauses",
+  "an.speech": "Speech share",
+  "an.err": "The analysis failed.",
+  "an.noaudio": "This file has no audio.",
+  "an.advice.silent": "No measurable audio found.",
+  "an.advice.quiet":
+    "Too quiet: podcasts aim for about −16 LUFS. Turn on loudness normalisation when editing.",
+  "an.advice.loud": "Too loud: compression and normalisation are advised.",
+  "an.advice.clipping":
+    "The peak is close to 0 dB: risk of distortion. Lower the gain or normalise.",
+  "an.advice.wide-range": "The level varies a lot: turn on the compressor.",
+  "an.advice.pauses":
+    "There are long pauses: use “Shorten long pauses” to tighten the pace.",
+  "an.advice.ok": "Level and dynamics are fine for a podcast.",
+  "pe.title": "Podcast editing",
+  "pe.preset": "Podcast preset",
+  "pe.preset.hint":
+    "Voice clean-up + noise reduction + compression + −16 LUFS levelling + soft fade-out.",
+  "pe.shorten": "Shorten long pauses",
+  "pe.shorten.none": "There are no long pauses to shorten.",
+  "pe.shorten.done":
+    "{n} parts · {s} s shorter. Applied when you press Edit below.",
+  "pe.shorten.undo": "Undo",
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = {

@@ -242,21 +242,33 @@ describe("planEdit clips", () => {
     expect(() =>
       planEdit(
         base({
-          spec: clipSpec(),
-          clips: resolved,
-          main: rec({ kind: "audio" }),
-        }),
-      ),
-    ).toThrow("clips-invalid");
-    expect(() =>
-      planEdit(
-        base({
           spec: clipSpec({ burnLang: "tr" }),
           clips: resolved,
           burnFile: "x.vtt",
         }),
       ),
     ).toThrow("clips-burn");
+  });
+
+  it("joins clips of an audio item (podcast pause cutting): atrim per clip, one concat, m4a", () => {
+    const p = planEdit(
+      base({
+        spec: clipSpec({ normalize: true, fadeMs: 500 }),
+        clips: resolved,
+        main: rec({ kind: "audio", file: "a.webm" }),
+      }),
+    );
+    const a = p.args.join(" ");
+    expect(p.ext).toBe("m4a");
+    expect(a).toContain("-vn");
+    expect(a).toContain("atrim=start=1.000:end=3.000");
+    expect(a).toContain("concat=n=2:v=0:a=1[ac]");
+    expect(a).toContain("loudnorm=I=-16");
+    expect(a).not.toContain("-ss");
+    // one input per distinct file
+    expect(a.match(/-i a\.webm/g)).toHaveLength(1);
+    expect(a.match(/-i b\.webm/g)).toHaveLength(1);
+    expect(p.expectedMs).toBe(3500);
   });
 
   it("keeps chapters of the main video that sit inside its clips", () => {
@@ -865,5 +877,86 @@ echo "progress = 100%"
         origin: "edit",
       });
     }
+  }, 60_000);
+
+  it("analyzes loudness and pauses of a podcast-like file and the pauses can be cut", async () => {
+    const s = await setup();
+    const out = join(dir, "pod.webm");
+    execFileSync("ffmpeg", [
+      "-y",
+      "-loglevel",
+      "error",
+      "-f",
+      "lavfi",
+      "-i",
+      "sine=frequency=440:duration=2",
+      "-f",
+      "lavfi",
+      "-i",
+      "anullsrc=r=48000:cl=mono:d=3",
+      "-f",
+      "lavfi",
+      "-i",
+      "sine=frequency=330:duration=2",
+      "-filter_complex",
+      "[0:a]aresample=48000,aformat=channel_layouts=mono[a0];[1:a]aformat=channel_layouts=mono[a1];[2:a]aresample=48000,aformat=channel_layouts=mono[a2];[a0][a1][a2]concat=n=3:v=0:a=1",
+      "-c:a",
+      "libopus",
+      out,
+    ]);
+    const r = await s.call("POST", "/api/media", await readFile(out), {
+      "content-type": "audio/webm",
+      "x-title": "Podcast",
+    });
+    const media = ((await r.json()) as any).media as MediaRecord;
+    expect(media.kind).toBe("audio");
+    const res = await s.call("POST", `/api/media/${media.id}/analyze`);
+    expect(res.status).toBe(200);
+    const a = ((await res.json()) as any).media.analysis;
+    expect(a.integratedLufs).toBeLessThan(0);
+    expect(a.integratedLufs).toBeGreaterThan(-40);
+    expect(a.truePeakDb).toBeLessThan(0);
+    expect(a.silences).toHaveLength(1);
+    expect(a.silences[0].startMs).toBeGreaterThan(1500);
+    expect(a.silences[0].startMs).toBeLessThan(2500);
+    expect(a.silenceMs).toBeGreaterThan(2400);
+    expect(a.speechRatio).toBeLessThan(0.7);
+    // stored on the record
+    expect(
+      ((await s.store.list()).find((x) => x.id === media.id) as any).analysis
+        .silences,
+    ).toHaveLength(1);
+    // cut the long pause out of a podcast with the same clips the editor builds
+    const { shortenPauses } = await import("../shared/media-analysis");
+    const cut = shortenPauses(a.silences, media.durationMs ?? 7000)!;
+    expect(cut.length).toBe(2);
+    const job = (
+      (await (
+        await s.call(
+          "POST",
+          `/api/media/${media.id}/edit`,
+          JSON.stringify({
+            spec: {
+              clips: cut.map((c) => ({ ...c })),
+              normalize: true,
+              fadeMs: 500,
+              audio: { voice: true, denoise: 2, compress: true },
+            },
+          }),
+        )
+      ).json()) as any
+    ).job;
+    const done = await waitJob(s, job.id);
+    expect(done.error).toBeNull();
+    expect(done.status).toBe("done");
+    const edited = (await s.store.list()).find((x) => x.id === done.resultId)!;
+    expect(edited.kind).toBe("audio");
+    expect(edited.durationMs).toBeGreaterThan(3800);
+    expect(edited.durationMs).toBeLessThan(5400);
+    // a video without audio cannot be analysed
+    const silent = await upload(s, makeVideo("sil2.webm", 2, false));
+    expect(
+      (await s.call("POST", `/api/media/${silent.id}/analyze`)).status,
+    ).toBe(422);
   }, 60_000);
 });

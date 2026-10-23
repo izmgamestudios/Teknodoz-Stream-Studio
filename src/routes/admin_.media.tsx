@@ -18,6 +18,7 @@ import {
 } from "@/studio/ui/fields";
 import { CANONICAL_CATEGORIES } from "@/studio/watch/categories";
 import { DownloadsPanel } from "@/studio/ui/watch/downloads";
+import { AnalysisPanel } from "@/studio/ui/watch/podcast-tools";
 import { EditPanel, SubtitlesPanel } from "@/studio/ui/watch/editor";
 import { AdminGate } from "@/studio/ui/admin-gate";
 import {
@@ -427,6 +428,7 @@ function MediaDetail({
           token={token}
           library={library}
           videoRef={videoRef}
+          onChanged={onChanged}
           onResult={async (id) => {
             await onChanged();
             onSelect(id);
@@ -503,6 +505,8 @@ function MediaDetail({
               ))}
             </ol>
           )}
+
+          <AnalysisPanel media={media} token={token} onChanged={onChanged} />
 
           <DownloadsPanel
             media={media}

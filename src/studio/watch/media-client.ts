@@ -1,5 +1,6 @@
 // src/studio/watch/media-client.ts
 // Browser client for the media library (/api/media). All calls need the admin token.
+import type { MediaAnalysis } from "../../shared/media-analysis";
 import type { AudioSpecWire } from "./audio-state";
 
 export interface Chapter {
@@ -27,6 +28,7 @@ export interface MediaRecord {
   parentId: string | null;
   /** captions of this language are burned into the picture */
   burnedLang?: string;
+  analysis?: MediaAnalysis;
   createdAt: string;
 }
 
@@ -355,5 +357,30 @@ export async function getStorage(token: string): Promise<StorageInfo | null> {
       : null;
   } catch {
     return null;
+  }
+}
+
+export type AnalyzeResult =
+  { ok: true; media: MediaRecord } | { ok: false; error: string };
+
+/** Measures loudness and pauses (a few seconds per hour of audio) and stores the result. */
+export async function analyzeMedia(
+  token: string,
+  id: string,
+): Promise<AnalyzeResult> {
+  try {
+    const res = await fetch(`/api/media/${id}/analyze`, {
+      method: "POST",
+      headers: auth(token),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      media?: MediaRecord;
+      error?: string;
+    };
+    return res.ok && data.media
+      ? { ok: true, media: data.media }
+      : { ok: false, error: data.error ?? "failed" };
+  } catch {
+    return { ok: false, error: "network" };
   }
 }

@@ -44,6 +44,7 @@ import {
 } from "../../watch/clips";
 import { CueEditor } from "./cue-editor";
 import { AudioPanel } from "./audio-panel";
+import { PodcastTools } from "./podcast-tools";
 import {
   DEFAULT_AUDIO,
   toAudioSpec,
@@ -439,12 +440,15 @@ export function EditPanel({
   library,
   videoRef,
   onResult,
+  onChanged,
 }: {
   media: MediaRecord;
   token: string;
   library: readonly MediaRecord[];
   videoRef: RefObject<HTMLMediaElement | null>;
   onResult: (id: string) => void;
+  /** the library list changed (e.g. a fresh analysis was stored) */
+  onChanged: () => Promise<void>;
 }) {
   const t = useT();
   const dur = media.durationMs ?? 0;
@@ -681,6 +685,20 @@ export function EditPanel({
             media={media}
           />
         </>
+      )}
+
+      {dur > 0 && (
+        <PodcastTools
+          media={media}
+          token={token}
+          audio={audio}
+          clips={clips}
+          setAudio={setAudio}
+          setNormalize={setNormalize}
+          setFade={setFade}
+          setClips={setClips}
+          onAnalyzed={onChanged}
+        />
       )}
 
       {dur > 0 && (

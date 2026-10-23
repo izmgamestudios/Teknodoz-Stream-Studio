@@ -29,6 +29,7 @@ import { Readable } from "node:stream";
 
 import { z } from "zod";
 
+import type { MediaAnalysis } from "../shared/media-analysis";
 import { vttToSrt } from "./vtt";
 
 import { isAdminRequest } from "./auth";
@@ -90,6 +91,8 @@ export interface MediaRecord {
   parentId: string | null;
   /** this file has the captions of that language burned into the picture */
   burnedLang?: string;
+  /** loudness / pause measurement (POST /api/media/:id/analyze) */
+  analysis?: MediaAnalysis;
   createdAt: string;
 }
 

@@ -1069,4 +1069,36 @@ export const es: Record<MessageKey, string> = {
   "dl.wav": "Audio — WAV (48 kHz, 16 bits)",
   "dl.hint":
     "El original no cambia; la versión con subtítulos se añade a la biblioteca como archivo aparte.",
+  "an.title": "Análisis de audio",
+  "an.kind.video": "🎬 Vídeo",
+  "an.kind.audio": "🎧 Audio",
+  "an.run": "Analizar",
+  "an.rerun": "Medir de nuevo",
+  "an.working": "Midiendo…",
+  "an.lufs": "Sonoridad",
+  "an.peak": "Pico",
+  "an.range": "Rango dinámico",
+  "an.pauses": "Pausas",
+  "an.speech": "Proporción de habla",
+  "an.err": "El análisis falló.",
+  "an.noaudio": "Este archivo no tiene audio.",
+  "an.advice.silent": "No se encontró audio medible.",
+  "an.advice.quiet":
+    "Demasiado bajo: los podcasts apuntan a unos −16 LUFS. Active la normalización al editar.",
+  "an.advice.loud": "Demasiado alto: se recomienda compresión y normalización.",
+  "an.advice.clipping":
+    "El pico está cerca de 0 dB: riesgo de distorsión. Baje la ganancia o normalice.",
+  "an.advice.wide-range": "El nivel varía mucho: active el compresor.",
+  "an.advice.pauses":
+    "Hay pausas largas: use «Acortar pausas largas» para dar ritmo.",
+  "an.advice.ok": "Nivel y dinámica correctos para un podcast.",
+  "pe.title": "Edición de podcast",
+  "pe.preset": "Ajuste para podcast",
+  "pe.preset.hint":
+    "Limpieza de voz + reducción de ruido + compresión + nivelación a −16 LUFS + fundido suave.",
+  "pe.shorten": "Acortar pausas largas",
+  "pe.shorten.none": "No hay pausas largas que acortar.",
+  "pe.shorten.done":
+    "{n} partes · {s} s menos. Se aplica al pulsar «Editar» abajo.",
+  "pe.shorten.undo": "Deshacer",
 };

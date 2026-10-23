@@ -24,6 +24,11 @@ import { join } from "node:path";
 import { z } from "zod";
 
 import { StoreUnavailableError } from "./catalog";
+import {
+  buildAnalysis,
+  MIN_SILENCE_MS,
+  SILENCE_DB,
+} from "../shared/media-analysis";
 import { audioGraph, audioSchema, hasAudioWork } from "./audio-fx";
 import { ffmpegCapabilities, ffmpegPoster, type FfmpegCaps } from "./ffmpeg";
 import {
@@ -72,7 +77,7 @@ export const editSpecSchema = z.object({
         .refine((c) => c.endMs - c.startMs >= 40, "too-short"),
     )
     .min(1)
-    .max(30)
+    .max(120)
     .optional(),
   intro: segmentSchema.optional(),
   outro: segmentSchema.optional(),
@@ -173,11 +178,7 @@ function trackInputs(
 export function planEdit(i: PlanInput): EditPlan {
   const { main, spec, caps } = i;
   if (spec.clips) {
-    if (
-      main.kind === "audio" ||
-      !i.clips ||
-      i.clips.length !== spec.clips.length
-    )
+    if (!i.clips || i.clips.length !== spec.clips.length)
       throw new PlanError("clips-invalid");
     if (spec.burnLang) throw new PlanError("clips-burn");
   }
@@ -210,7 +211,11 @@ export function planEdit(i: PlanInput): EditPlan {
       );
     }
     if (spec.normalize) post.push("loudnorm=I=-16:TP=-1.5:LRA=11");
-    const tracks = trackInputs(i, 1);
+    // cut-and-join (podcast: pauses removed, several recordings joined): one input per distinct
+    // file, atrim per clip, concat; the main audio then enters the usual clean-up graph
+    const clipFiles = i.clips ? [...new Set(i.clips.map((c) => c.file))] : [];
+    const clipArgs = clipFiles.flatMap((f) => ["-i", f]);
+    const tracks = trackInputs(i, i.clips ? clipFiles.length : 1);
     const work = hasAudioWork(spec.audio);
     const head = [
       "-y",
@@ -220,10 +225,13 @@ export function planEdit(i: PlanInput): EditPlan {
       "-nostats",
       "-progress",
       "pipe:1",
-      ...(start > 0 ? ["-ss", sec(start)] : []),
-      ...(mainMs !== null && spec.trim ? ["-t", sec(mainMs)] : []),
-      "-i",
-      main.file,
+      ...(i.clips ? [] : start > 0 ? ["-ss", sec(start)] : []),
+      ...(i.clips
+        ? []
+        : mainMs !== null && spec.trim
+          ? ["-t", sec(mainMs)]
+          : []),
+      ...(i.clips ? clipArgs : ["-i", main.file]),
       ...tracks.args,
     ];
     const tail = [
@@ -240,19 +248,29 @@ export function planEdit(i: PlanInput): EditPlan {
       "mp4",
       i.out,
     ];
-    const graph = work
+    const joined = i.clips
       ? [
-          `[0:a:0]${AFMT}[ac]`,
-          ...audioGraph({
-            inLabel: "[ac]",
-            audio: spec.audio,
-            trackInputs: tracks.indices,
-            post,
-            outLabel: "[af]",
-            fmt: AFMT,
-          }),
+          ...i.clips.map(
+            (c, n) =>
+              `[${clipFiles.indexOf(c.file)}:a:0]atrim=start=${sec(c.startMs)}:end=${sec(c.endMs)},asetpts=PTS-STARTPTS,${AFMT}[c${n}]`,
+          ),
+          `${i.clips.map((_, n) => `[c${n}]`).join("")}concat=n=${i.clips.length}:v=0:a=1[ac]`,
         ]
       : null;
+    const graph =
+      work || joined
+        ? [
+            ...(joined ?? [`[0:a:0]${AFMT}[ac]`]),
+            ...audioGraph({
+              inLabel: "[ac]",
+              audio: spec.audio,
+              trackInputs: tracks.indices,
+              post,
+              outLabel: "[af]",
+              fmt: AFMT,
+            }),
+          ]
+        : null;
     return {
       args: graph
         ? [...head, "-filter_complex", graph.join(";"), "-map", "[af]", ...tail]
@@ -685,8 +703,12 @@ export function createMediaEditApi(opts: EditApiOptions) {
         ? await Promise.all(
             spec.clips.map(async (cl) => {
               const rec = cl.mediaId ? await opts.media.find(cl.mediaId) : main;
-              if (!rec || rec.kind !== "video")
-                throw new PlanError("segment-missing");
+              const ok =
+                rec &&
+                (main.kind === "audio"
+                  ? rec.kind !== "image" && rec.hasAudio !== false
+                  : rec.kind === "video");
+              if (!rec || !ok) throw new PlanError("segment-missing");
               if (rec.durationMs !== null && cl.startMs >= rec.durationMs)
                 throw new PlanError("trim-out-of-range");
               return {
@@ -783,6 +805,77 @@ export function createMediaEditApi(opts: EditApiOptions) {
       job.resultId = id;
     });
     return job;
+  }
+
+  /* ------------------------------- analysis ------------------------------- */
+
+  /** Loudness (EBU R128 + true peak) and pauses of the audio track, stored on the record. */
+  async function analyze(main: MediaRecord): Promise<Response> {
+    if (main.kind === "image") return json({ error: "bad-request" }, 400);
+    if (main.hasAudio === false) return json({ error: "no-audio" }, 422);
+    if (!(await caps()).available)
+      return json({ error: "ffmpeg-unavailable" }, 503);
+    if ((main.durationMs ?? 0) > 6 * 3_600_000)
+      return json({ error: "too-long" }, 413);
+    let report: string;
+    try {
+      report = await new Promise<string>((resolve, reject) => {
+        const child: ChildProcess = spawnFn(
+          opts.ffmpegBin,
+          [
+            "-hide_banner",
+            "-nostdin",
+            "-nostats",
+            "-i",
+            join(opts.media.dir, main.file),
+            "-vn",
+            "-map",
+            "0:a:0",
+            "-af",
+            `ebur128=peak=true:framelog=quiet,silencedetect=noise=${SILENCE_DB}dB:d=${MIN_SILENCE_MS / 1000}`,
+            "-f",
+            "null",
+            "-",
+          ],
+          { stdio: ["ignore", "ignore", "pipe"] },
+        );
+        let out = "";
+        child.stderr?.on("data", (c: Buffer) => {
+          // keep the head (silence lines are spread out) bounded: only the last 400 KB matter
+          out = (out + c.toString()).slice(-400_000);
+        });
+        const timer = setTimeout(() => child.kill("SIGKILL"), 10 * 60_000);
+        child.on("error", (e) => {
+          clearTimeout(timer);
+          reject(e);
+        });
+        child.on("close", (code) => {
+          clearTimeout(timer);
+          if (code === 0) resolve(out);
+          else reject(new Error("ffmpeg failed"));
+        });
+      });
+    } catch {
+      return json({ error: "analyze-failed" }, 500);
+    }
+    const duration =
+      main.durationMs ??
+      Math.round(
+        1000 *
+          Number(
+            [...report.matchAll(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/g)]
+              .map(
+                (m) => Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]),
+              )
+              .pop() ?? 0,
+          ),
+      );
+    const next: MediaRecord = {
+      ...main,
+      analysis: buildAnalysis(report, duration, new Date(now()).toISOString()),
+    };
+    await opts.media.store.upsert(next);
+    return json({ media: next });
   }
 
   /* ------------------------------ WAV export ------------------------------ */
@@ -944,7 +1037,7 @@ export function createMediaEditApi(opts: EditApiOptions) {
       first === "asset" ||
       first === "jobs" ||
       (mediaIdOk(first) &&
-        ["edit", "subtitles", "captions", "export.wav"].includes(
+        ["edit", "subtitles", "captions", "export.wav", "analyze"].includes(
           rest[1] ?? "",
         ));
     if (!mine) return null;
@@ -1001,6 +1094,9 @@ export function createMediaEditApi(opts: EditApiOptions) {
 
         if (rest[1] === "export.wav" && method === "GET" && rest.length === 2)
           return await exportWav(main);
+
+        if (rest[1] === "analyze" && method === "POST" && rest.length === 2)
+          return await analyze(main);
 
         if (rest[1] === "subtitles" && method === "POST" && rest.length === 2) {
           if (main.kind === "image") return json({ error: "bad-request" }, 400);
