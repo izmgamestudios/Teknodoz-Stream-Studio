@@ -16,6 +16,8 @@ import {
   PANEL,
   PanelTitle,
 } from "@/studio/ui/fields";
+import { CANONICAL_CATEGORIES } from "@/studio/watch/categories";
+import { DownloadsPanel } from "@/studio/ui/watch/downloads";
 import { EditPanel, SubtitlesPanel } from "@/studio/ui/watch/editor";
 import { AdminGate } from "@/studio/ui/admin-gate";
 import {
@@ -502,6 +504,13 @@ function MediaDetail({
             </ol>
           )}
 
+          <DownloadsPanel
+            media={media}
+            library={library}
+            token={token}
+            onChanged={onChanged}
+          />
+
           <div className="rounded-lg border p-3">
             <h3 className="mb-2 text-sm font-bold">
               {catalogItem ? `✓ ${t("lib.published")}` : t("lib.publish.title")}
@@ -512,9 +521,15 @@ function MediaDetail({
                 <input
                   className={`${INPUT} mt-1`}
                   maxLength={30}
+                  list="lib-categories"
                   value={pub.category}
                   onChange={(e) => setPub({ ...pub, category: e.target.value })}
                 />
+                <datalist id="lib-categories">
+                  {CANONICAL_CATEGORIES.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </label>
               <label className="text-xs">
                 {t("catalog.f.playlist")}

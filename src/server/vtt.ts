@@ -102,3 +102,36 @@ export function shiftVtt(vtt: string, offsetMs: number): string {
   }
   return `WEBVTT\n\n${kept.join("\n\n")}\n`;
 }
+
+/** "00:01:02.345" -> "00:01:02,345" */
+const srtTime = (t: string): string => fixTime(t).replace(".", ",");
+
+/**
+ * WebVTT -> SubRip. Cue settings, NOTE/STYLE/REGION blocks and voice/class tags are dropped,
+ * `<i> <b> <u>` stay (SRT players understand them); cues are numbered from 1.
+ */
+export function vttToSrt(vtt: string): string {
+  const blocks = vtt
+    .replace(/\r\n?/g, "\n")
+    .replace(/^\uFEFF?WEBVTT[^\n]*\n*/, "")
+    .split(/\n\n+/);
+  const out: string[] = [];
+  for (const b of blocks) {
+    const lines = b.split("\n");
+    const idx = lines.findIndex((l) => CUE_LINE.test(l));
+    if (idx < 0) continue;
+    const m = CUE_LINE.exec(lines[idx] as string)!;
+    const text = lines
+      .slice(idx + 1)
+      .join("\n")
+      .replace(/<\/?v(?:\s[^>]*)?>/gi, "")
+      .replace(/<\/?c(?:\.[^>\s]*)?(?:\s[^>]*)?>/gi, "")
+      .replace(/<\d{1,2}:\d{2}[.:]\d{3}>/g, "")
+      .trim();
+    if (!text) continue;
+    out.push(
+      `${out.length + 1}\n${srtTime(m[1] as string)} --> ${srtTime(m[3] as string)}\n${text}`,
+    );
+  }
+  return out.length ? `${out.join("\n\n")}\n` : "";
+}

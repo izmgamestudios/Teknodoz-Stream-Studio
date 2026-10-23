@@ -1055,4 +1055,18 @@ export const es: Record<MessageKey, string> = {
   "cr.admin.whatsapp": "WhatsApp",
   "cr.admin.off":
     "Cuentas desactivadas: el servidor no tiene token de administrador (CATALOG_ADMIN_TOKEN).",
+  "dl.title": "Descargar",
+  "dl.raw": "Grabación en bruto (original, sin editar)",
+  "dl.clean": "Sin subtítulos (editado)",
+  "dl.same": "mismo archivo que el original",
+  "dl.subtitled": "Con subtítulos (incrustados)",
+  "dl.subtitled.make": "Crear versión con subtítulos",
+  "dl.subtitled.working": "Incrustando subtítulos…",
+  "dl.subtitled.unavailable":
+    "El ffmpeg de este servidor no tiene filtro de subtítulos.",
+  "dl.subtitled.error": "No se pudo crear la versión con subtítulos.",
+  "dl.captions": "Archivo de subtítulos",
+  "dl.wav": "Audio — WAV (48 kHz, 16 bits)",
+  "dl.hint":
+    "El original no cambia; la versión con subtítulos se añade a la biblioteca como archivo aparte.",
 };

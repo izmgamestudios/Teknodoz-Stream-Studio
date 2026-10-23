@@ -15,7 +15,9 @@
 // server; title cards are rendered by the browser (canvas) so no text ever reaches an ffmpeg filter.
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { mkdtemp, rename, rm, stat, writeFile } from "node:fs/promises";
+import { Readable } from "node:stream";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -25,6 +27,7 @@ import { StoreUnavailableError } from "./catalog";
 import { audioGraph, audioSchema, hasAudioWork } from "./audio-fx";
 import { ffmpegCapabilities, ffmpegPoster, type FfmpegCaps } from "./ffmpeg";
 import {
+  downloadDisposition,
   mediaIdOk,
   mediaTokenOk,
   MEDIA_API_PREFIX,
@@ -767,6 +770,7 @@ export function createMediaEditApi(opts: EditApiOptions) {
         hasPoster: false,
         origin: "edit",
         parentId: main.id,
+        ...(spec.burnLang ? { burnedLang: spec.burnLang } : {}),
         createdAt: new Date(now()).toISOString(),
       };
       if (record.kind === "video")
@@ -779,6 +783,71 @@ export function createMediaEditApi(opts: EditApiOptions) {
       job.resultId = id;
     });
     return job;
+  }
+
+  /* ------------------------------ WAV export ------------------------------ */
+
+  /**
+   * The audio track as 48 kHz 16-bit stereo WAV (for mastering / podcast hosts). Rendered to a
+   * temp file first (a pipe cannot give a proper WAV header), streamed, then removed.
+   */
+  async function exportWav(main: MediaRecord): Promise<Response> {
+    if (main.hasAudio === false) return json({ error: "no-audio" }, 422);
+    if (!(await caps()).available)
+      return json({ error: "ffmpeg-unavailable" }, 503);
+    const dir = await mkdtemp(join(tmpdir(), "tkz-wav-"));
+    const out = join(dir, "audio.wav");
+    const cleanup = () => void rm(dir, { recursive: true, force: true });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const child: ChildProcess = spawnFn(
+          opts.ffmpegBin,
+          [
+            "-hide_banner",
+            "-nostdin",
+            "-y",
+            "-i",
+            join(opts.media.dir, main.file),
+            "-vn",
+            "-map",
+            "0:a:0",
+            "-c:a",
+            "pcm_s16le",
+            "-ar",
+            "48000",
+            "-ac",
+            "2",
+            out,
+          ],
+          { stdio: ["ignore", "ignore", "pipe"] },
+        );
+        const timer = setTimeout(() => child.kill("SIGKILL"), 20 * 60_000);
+        child.on("error", (e) => {
+          clearTimeout(timer);
+          reject(e);
+        });
+        child.on("close", (code) => {
+          clearTimeout(timer);
+          if (code === 0) resolve();
+          else reject(new Error("ffmpeg failed"));
+        });
+      });
+    } catch {
+      cleanup();
+      return json({ error: "export-failed" }, 500);
+    }
+    const st = await stat(out);
+    const stream = createReadStream(out);
+    stream.on("close", cleanup);
+    return new Response(Readable.toWeb(stream) as ReadableStream, {
+      headers: {
+        "content-type": "audio/wav",
+        "content-length": String(st.size),
+        "cache-control": "no-store",
+        "x-content-type-options": "nosniff",
+        "content-disposition": downloadDisposition(main.title, "wav"),
+      },
+    });
   }
 
   /* --------------------------- subtitles job --------------------------- */
@@ -875,7 +944,9 @@ export function createMediaEditApi(opts: EditApiOptions) {
       first === "asset" ||
       first === "jobs" ||
       (mediaIdOk(first) &&
-        ["edit", "subtitles", "captions"].includes(rest[1] ?? ""));
+        ["edit", "subtitles", "captions", "export.wav"].includes(
+          rest[1] ?? "",
+        ));
     if (!mine) return null;
     if (!opts.token) return json({ error: "admin-disabled" }, 503);
     if (!mediaTokenOk(req, opts.token))
@@ -927,6 +998,9 @@ export function createMediaEditApi(opts: EditApiOptions) {
             return json({ error: "ffmpeg-unavailable" }, 503);
           return json({ job: startEdit(main, body.data.spec) }, 202);
         }
+
+        if (rest[1] === "export.wav" && method === "GET" && rest.length === 2)
+          return await exportWav(main);
 
         if (rest[1] === "subtitles" && method === "POST" && rest.length === 2) {
           if (main.kind === "image") return json({ error: "bad-request" }, 400);

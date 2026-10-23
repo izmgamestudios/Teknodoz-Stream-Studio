@@ -1056,4 +1056,17 @@ export const de: Record<MessageKey, string> = {
   "cr.admin.whatsapp": "WhatsApp",
   "cr.admin.off":
     "Konten sind aus: Auf dem Server ist kein Admin-Token (CATALOG_ADMIN_TOKEN) gesetzt.",
+  "dl.title": "Herunterladen",
+  "dl.raw": "Rohaufnahme (Original, unbearbeitet)",
+  "dl.clean": "Ohne Untertitel (bearbeitet)",
+  "dl.same": "gleiche Datei wie die Rohaufnahme",
+  "dl.subtitled": "Mit Untertiteln (eingebrannt)",
+  "dl.subtitled.make": "Version mit Untertiteln erstellen",
+  "dl.subtitled.working": "Untertitel werden eingebrannt…",
+  "dl.subtitled.unavailable": "Dieser ffmpeg hat keinen Untertitel-Filter.",
+  "dl.subtitled.error": "Version mit Untertiteln konnte nicht erstellt werden.",
+  "dl.captions": "Untertiteldatei",
+  "dl.wav": "Audio — WAV (48 kHz, 16 Bit)",
+  "dl.hint":
+    "Die Rohaufnahme bleibt unverändert; die Version mit Untertiteln wird als eigene Datei hinzugefügt.",
 };

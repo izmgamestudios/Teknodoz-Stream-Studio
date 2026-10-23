@@ -1064,6 +1064,19 @@ export const tr = {
   "cr.admin.whatsapp": "WhatsApp",
   "cr.admin.off":
     "Hesaplar kapalı: sunucuda yönetici anahtarı (CATALOG_ADMIN_TOKEN) tanımlı değil.",
+  "dl.title": "İndir",
+  "dl.raw": "Ham kayıt (orijinal, hiç işlenmemiş)",
+  "dl.clean": "Altyazısız (düzenlenmiş)",
+  "dl.same": "ham kayıtla aynı dosya",
+  "dl.subtitled": "Altyazılı (ekrana gömülü)",
+  "dl.subtitled.make": "Altyazılı sürüm oluştur",
+  "dl.subtitled.working": "Altyazı gömülüyor…",
+  "dl.subtitled.unavailable": "Bu sunucuda ffmpeg altyazı filtresi yok.",
+  "dl.subtitled.error": "Altyazılı sürüm oluşturulamadı.",
+  "dl.captions": "Altyazı dosyası",
+  "dl.wav": "Ses — WAV (48 kHz, 16 bit)",
+  "dl.hint":
+    "Ham kayıt değişmez; altyazılı sürüm ayrı bir dosya olarak kütüphaneye eklenir.",
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -2106,6 +2119,19 @@ export const en: Record<MessageKey, string> = {
   "cr.admin.whatsapp": "WhatsApp",
   "cr.admin.off":
     "Accounts are off: no admin token (CATALOG_ADMIN_TOKEN) on the server.",
+  "dl.title": "Download",
+  "dl.raw": "Raw recording (original, untouched)",
+  "dl.clean": "Without subtitles (edited)",
+  "dl.same": "same file as the raw recording",
+  "dl.subtitled": "With subtitles (burned in)",
+  "dl.subtitled.make": "Create subtitled version",
+  "dl.subtitled.working": "Burning in subtitles…",
+  "dl.subtitled.unavailable": "This server's ffmpeg has no subtitles filter.",
+  "dl.subtitled.error": "Could not create the subtitled version.",
+  "dl.captions": "Subtitle file",
+  "dl.wav": "Audio — WAV (48 kHz, 16-bit)",
+  "dl.hint":
+    "The raw recording never changes; the subtitled version is added to the library as its own file.",
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = {

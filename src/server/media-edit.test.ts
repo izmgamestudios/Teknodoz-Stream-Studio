@@ -783,4 +783,87 @@ echo "progress = 100%"
     expect(r.status).toBe(503);
     expect(((await r.json()) as any).error).toBe("whisper-unavailable");
   }, 30_000);
+
+  it("exports WAV, serves SRT and downloads with a name; burned copies are flagged", async () => {
+    const s = await setup();
+    const main = await upload(s, makeVideo("dl.webm", 3), {
+      "x-title": encodeURIComponent("Çağrı Merkezi"),
+    });
+    // captions -> SRT
+    const vtt =
+      "WEBVTT\n\n00:00:00.500 --> 00:00:01.500\n<v Ali>Merhaba</v>\n\n00:00:02.000 --> 00:00:02.800\nDünya\n";
+    expect(
+      (await s.call("PUT", `/api/media/${main.id}/captions/tr`, vtt)).status,
+    ).toBe(200);
+    const srt = await s.call(
+      "GET",
+      `/media/${main.id}/captions/tr.srt?dl=${encodeURIComponent("Çağrı Merkezi")}`,
+      undefined,
+      {},
+    );
+    expect(srt.status).toBe(200);
+    expect(srt.headers.get("content-type")).toContain("application/x-subrip");
+    expect(srt.headers.get("content-disposition")).toContain(
+      "filename*=UTF-8''%C3%87a%C4%9Fr%C4%B1%20Merkezi.srt",
+    );
+    expect(await srt.text()).toBe(
+      "1\n00:00:00,500 --> 00:00:01,500\nMerhaba\n\n2\n00:00:02,000 --> 00:00:02,800\nDünya\n",
+    );
+    expect(
+      (await s.call("GET", `/media/${main.id}/captions/en.srt`)).status,
+    ).toBe(404);
+
+    // raw download of the original with a chosen name
+    const raw = await s.call("GET", `/media/${main.id}?dl=ham`);
+    expect(raw.headers.get("content-disposition")).toMatch(
+      /^attachment; filename="ham\.webm"/,
+    );
+    expect(
+      (await s.call("GET", `/media/${main.id}`)).headers.get(
+        "content-disposition",
+      ),
+    ).toBe("inline");
+
+    // WAV
+    const wav = await s.call("GET", `/api/media/${main.id}/export.wav`);
+    expect(wav.status).toBe(200);
+    expect(wav.headers.get("content-type")).toBe("audio/wav");
+    expect(wav.headers.get("content-disposition")).toContain(".wav");
+    const buf = Buffer.from(await wav.arrayBuffer());
+    expect(buf.subarray(0, 4).toString()).toBe("RIFF");
+    expect(buf.subarray(8, 12).toString()).toBe("WAVE");
+    expect(buf.length).toBeGreaterThan(48000 * 4 * 2);
+
+    // a silent video has no WAV
+    const silent = await upload(s, makeVideo("silent.webm", 2, false));
+    expect(
+      (await s.call("GET", `/api/media/${silent.id}/export.wav`)).status,
+    ).toBe(422);
+
+    // burn-in marks the result
+    const caps = (
+      (await (await s.call("GET", "/api/media/capabilities")).json()) as any
+    ).capabilities;
+    if (caps?.ffmpeg?.subtitles) {
+      const job = (
+        (await (
+          await s.call(
+            "POST",
+            `/api/media/${main.id}/edit`,
+            JSON.stringify({
+              spec: { burnLang: "tr", fadeMs: 0, normalize: false },
+            }),
+          )
+        ).json()) as any
+      ).job;
+      const done = await waitJob(s, job.id);
+      expect(done.status).toBe("done");
+      const out = (await s.store.list()).find((r) => r.id === done.resultId)!;
+      expect(out).toMatchObject({
+        burnedLang: "tr",
+        parentId: main.id,
+        origin: "edit",
+      });
+    }
+  }, 60_000);
 });

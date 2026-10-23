@@ -25,6 +25,8 @@ export interface MediaRecord {
   hasPoster: boolean;
   origin: "studio" | "upload" | "edit";
   parentId: string | null;
+  /** captions of this language are burned into the picture */
+  burnedLang?: string;
   createdAt: string;
 }
 

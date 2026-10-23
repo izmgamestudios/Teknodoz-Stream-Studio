@@ -14,15 +14,46 @@
 // Uploads are streamed to disk (never buffered), capped by MEDIA_MAX_MB, restricted to audio /
 // video MIME types and verified with ffprobe when it is available.
 import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, readdir, rename, rm, stat, statfs } from "node:fs/promises";
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  statfs,
+} from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 
 import { z } from "zod";
 
+import { vttToSrt } from "./vtt";
+
 import { isAdminRequest } from "./auth";
 import { StoreUnavailableError, type RecordStore } from "./catalog";
+
+/**
+ * Content-Disposition for a download: ASCII fallback + RFC 5987 UTF-8 name. The name is cut to a
+ * safe set (no path separators, quotes or control characters) and always ends with `.ext`.
+ */
+export function downloadDisposition(name: string, ext: string): string {
+  const base =
+    name
+      .normalize("NFC")
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u001f\u007f"\\/:*?<>|;]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\.+$/, "")
+      .slice(0, 120) || "download";
+  const file = new RegExp(`\\.${ext}$`, "i").test(base)
+    ? base
+    : `${base}.${ext}`;
+  const ascii = file.replace(/[^\x20-\x7e]/g, "_");
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(file)}`;
+}
 
 export const MEDIA_API_PREFIX = "/api/media";
 export const MEDIA_FILE_PREFIX = "/media";
@@ -57,6 +88,8 @@ export interface MediaRecord {
   temporary?: boolean;
   origin: "studio" | "upload" | "edit";
   parentId: string | null;
+  /** this file has the captions of that language burned into the picture */
+  burnedLang?: string;
   createdAt: string;
 }
 
@@ -360,6 +393,14 @@ export function createMediaApi(opts: MediaOptions) {
 
   /* ------------------------------ serving ------------------------------ */
 
+  /** `?dl=<name>` turns a view into a download with that (sanitised) file name. */
+  function dispositionFor(req: Request, path: string): string {
+    const raw = new URL(req.url).searchParams.get("dl");
+    if (!raw) return "inline";
+    const ext = path.split(".").pop() ?? "";
+    return downloadDisposition(raw, ext);
+  }
+
   async function serveFile(
     req: Request,
     path: string,
@@ -377,7 +418,7 @@ export function createMediaApi(opts: MediaOptions) {
       "accept-ranges": "bytes",
       "cache-control": cache,
       "x-content-type-options": "nosniff",
-      "content-disposition": "inline",
+      "content-disposition": dispositionFor(req, path),
     };
     const range = req.headers.get("range");
     let start = 0;
@@ -434,6 +475,34 @@ export function createMediaApi(opts: MediaOptions) {
         "image/jpeg",
         "public, max-age=3600",
       );
+    if (
+      rest.length === 3 &&
+      rest[1] === "captions" &&
+      rest[2]!.endsWith(".srt")
+    ) {
+      const lang = rest[2]!.slice(0, -4);
+      if (LANG_RE.test(lang) && rec.captions.some((c) => c.lang === lang)) {
+        let vtt: string;
+        try {
+          vtt = await readFile(join(opts.dir, `${id}.${lang}.vtt`), "utf8");
+        } catch {
+          return json({ error: "not-found" }, 404);
+        }
+        const srt = vttToSrt(vtt);
+        if (!srt) return json({ error: "not-found" }, 404);
+        const dl = new URL(req.url).searchParams.get("dl");
+        return new Response(req.method === "HEAD" ? null : srt, {
+          headers: {
+            "content-type": "application/x-subrip; charset=utf-8",
+            "cache-control": "no-cache",
+            "x-content-type-options": "nosniff",
+            "content-disposition": dl
+              ? downloadDisposition(dl, "srt")
+              : "inline",
+          },
+        });
+      }
+    }
     if (
       rest.length === 3 &&
       rest[1] === "captions" &&

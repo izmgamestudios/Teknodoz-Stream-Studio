@@ -48,3 +48,50 @@ describe("shiftVtt", () => {
     expect(shiftVtt(v, 3000)).toContain("00:00:13.000 --> 00:00:15.000");
   });
 });
+
+import { vttToSrt } from "./vtt";
+import { downloadDisposition } from "./media";
+
+describe("vttToSrt", () => {
+  it("numbers cues, uses commas, drops settings, notes and voice tags", () => {
+    const vtt = [
+      "WEBVTT",
+      "",
+      "NOTE bu bir not",
+      "",
+      "intro",
+      "00:00:01.000 --> 00:00:02.500 align:start position:0%",
+      "<v Ayşe>Merhaba <i>dünya</i></v>",
+      "",
+      "1:05.250 --> 1:07.000",
+      "<c.yellow>İkinci</c>",
+      "satır",
+      "",
+      "00:02:00.000 --> 00:02:01.000",
+      "",
+    ].join("\n");
+    expect(vttToSrt(vtt)).toBe(
+      "1\n00:00:01,000 --> 00:00:02,500\nMerhaba <i>dünya</i>\n\n2\n00:01:05,250 --> 00:01:07,000\nİkinci\nsatır\n",
+    );
+  });
+  it("returns an empty string when there are no cues", () => {
+    expect(vttToSrt("WEBVTT\n\nNOTE x\n")).toBe("");
+  });
+});
+
+describe("downloadDisposition", () => {
+  it("keeps Turkish names via filename*, ASCII fallback, always the extension", () => {
+    const d = downloadDisposition("Çağrı Merkezi", "mp4");
+    expect(d).toContain(
+      'filename="_a_r_ Merkezi.mp4"'.replace("_a_r_", "_a_r_"),
+    );
+    expect(d).toContain("filename*=UTF-8''%C3%87a%C4%9Fr%C4%B1%20Merkezi.mp4");
+  });
+  it("strips path separators, quotes and control characters", () => {
+    const d = downloadDisposition('../../etc/pa"ss\r\nwd', "wav");
+    expect(d).not.toMatch(/[\r\n/\\]/);
+    expect(d).toContain(".wav");
+    expect(downloadDisposition("   ", "srt")).toContain("download.srt");
+    expect(downloadDisposition("a.srt", "srt")).toContain('filename="a.srt"');
+  });
+});
