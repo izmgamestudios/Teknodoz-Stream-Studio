@@ -139,6 +139,24 @@ export class PocketBase {
     return out;
   }
 
+  /** All requests succeed or none does (PocketBase batch API; must be enabled in its settings). */
+  async batch(
+    requests: {
+      method: "POST" | "PATCH" | "DELETE";
+      url: string;
+      body?: unknown;
+    }[],
+  ): Promise<void> {
+    await this.request("POST", "/api/batch", { requests });
+  }
+
+  /** Turns the batch API on (idempotent). */
+  async enableBatch(maxRequests = 1000): Promise<void> {
+    await this.request("PATCH", "/api/settings", {
+      batch: { enabled: true, maxRequests, timeout: 30, maxBodySize: 0 },
+    });
+  }
+
   /** One record, or null when it does not exist. */
   async findRecord(collection: string, id: string): Promise<PbRecord | null> {
     let res = await this.raw(

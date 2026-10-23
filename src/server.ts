@@ -14,6 +14,7 @@ import {
   type AuditSink,
   type Redirect,
 } from "./server/content";
+import { createImportApi } from "./server/content-import";
 import { createMigrationApi } from "./server/content-migrate";
 import {
   pbAuditSink,
@@ -141,6 +142,12 @@ const content = createContentApi({
   redirects: redirectStore,
   audit: contentAudit,
 });
+const contentImport = createImportApi({
+  token: adminToken,
+  store: contentStore,
+  redirects: redirectStore,
+  audit: contentAudit,
+});
 const contentMigration = createMigrationApi({
   token: adminToken,
   catalog: catalogStore,
@@ -211,6 +218,8 @@ export default {
       if (sessionResponse) return sessionResponse;
       const contentResponse = await content.handle(request);
       if (contentResponse) return contentResponse;
+      const importResponse = await contentImport.handle(request);
+      if (importResponse) return importResponse;
       const migrateResponse = await contentMigration.handle(request);
       if (migrateResponse) return migrateResponse;
       const mediaEditResponse = await mediaEdit.handle(request);

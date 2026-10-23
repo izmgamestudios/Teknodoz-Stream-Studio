@@ -50,6 +50,11 @@ export interface ContentStore {
   list(query: ContentQuery): Promise<ContentPage>;
   /** insert or replace by id */
   put(row: ContentRow): Promise<void>;
+  /**
+   * Writes many rows in one unit (PocketBase: one transaction). `isNew` says whether the row is
+   * inserted or updated, so no lookups are needed.
+   */
+  putMany(rows: readonly { row: ContentRow; isNew: boolean }[]): Promise<void>;
 }
 
 export const MAX_PER_PAGE = 100;
@@ -149,6 +154,9 @@ export function recordBackedContentStore(
     },
     async put(row) {
       await store.upsert(row);
+    },
+    async putMany(rows) {
+      for (const { row } of rows) await store.upsert(row);
     },
   };
 }
@@ -304,6 +312,51 @@ export function pbContentStore(pb: PocketBase): ContentStore {
         hasMore: q.withTotal ? page < r.totalPages : r.items.length === perPage,
         total: q.withTotal ? r.totalItems : null,
       };
+    },
+    async putMany(rows) {
+      if (rows.length === 0) return;
+      await ready();
+      const base = `/api/collections/${CONTENT_COLLECTION}/records`;
+      const requests = rows.map(({ row, isNew }) =>
+        isNew
+          ? {
+              method: "POST" as const,
+              url: base,
+              body: { id: row.id, ...rowToRecord(row) },
+            }
+          : {
+              method: "PATCH" as const,
+              url: `${base}/${row.id}`,
+              body: rowToRecord(row),
+            },
+      );
+      try {
+        await pb.batch(requests);
+        return;
+      } catch (first) {
+        // the batch API is off by default: switch it on once and retry
+        try {
+          await pb.enableBatch();
+          await pb.batch(requests);
+          return;
+        } catch {
+          // an unavailable server must not be retried row by row
+          if (
+            first instanceof StoreUnavailableError &&
+            /unreachable/.test(first.message)
+          )
+            throw first;
+        }
+      }
+      // last resort (old PocketBase without /api/batch): row by row
+      for (const { row, isNew } of rows) {
+        if (isNew)
+          await pb.create(CONTENT_COLLECTION, {
+            id: row.id,
+            ...rowToRecord(row),
+          });
+        else await pb.update(CONTENT_COLLECTION, row.id, rowToRecord(row));
+      }
     },
     async put(row) {
       await ready();
