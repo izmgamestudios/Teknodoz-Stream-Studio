@@ -8,6 +8,7 @@ import { titleFromMatches } from "@/studio/branding/head";
 import { useLang, useT } from "@/studio/i18n/use-t";
 import { BTN, BTN_ACCENT, INPUT, PANEL, PanelTitle } from "@/studio/ui/fields";
 import { AdminGate } from "@/studio/ui/admin-gate";
+import { CATALOG_TYPES, typeLabel } from "@/studio/ui/content/labels";
 import { logoutAdmin } from "@/studio/watch/admin-session";
 
 export const Route = createFileRoute("/admin")({
@@ -179,6 +180,25 @@ function AdminPage() {
                 <Link to="/watch" className={BTN}>
                   📺 {t("admin.go.watch")}
                 </Link>
+              </section>
+
+              <section
+                className={`${PANEL} space-y-2`}
+                aria-label={t("ct.title")}
+              >
+                <PanelTitle>{t("ct.title")}</PanelTitle>
+                <div className="flex flex-wrap gap-2">
+                  {CATALOG_TYPES.map((x) => (
+                    <Link
+                      key={x}
+                      to="/admin/tables/$type"
+                      params={{ type: x }}
+                      className={BTN}
+                    >
+                      {typeLabel(t, x)}
+                    </Link>
+                  ))}
+                </div>
               </section>
 
               <section className={PANEL} aria-label={t("admin.backup")}>

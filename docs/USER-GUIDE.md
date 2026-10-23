@@ -300,18 +300,18 @@ Hesap yok, veritabanı yok; ayarların ve projelerin cihazında kalır.
 
 ## ⌨️ Klavye kısayolları
 
-| Tuş | İşlem |
-| --- | --- |
-| `Shift+R` | Kaydı başlat / bitir |
-| `M` | Bölüm işareti ekle |
-| `Space` | Prompter başlat / durdur |
-| `↑` | Prompter hızlandır |
-| `↓` | Prompter yavaşlat |
-| `R` | Prompter başa dön |
-| `Shift+M` | Mikrofonu sustur |
-| `]` | Sonraki sahne |
-| `[` | Önceki sahne |
-| `1–9` | Sahneye geç (sahne numarası) |
+| Tuş       | İşlem                        |
+| --------- | ---------------------------- |
+| `Shift+R` | Kaydı başlat / bitir         |
+| `M`       | Bölüm işareti ekle           |
+| `Space`   | Prompter başlat / durdur     |
+| `↑`       | Prompter hızlandır           |
+| `↓`       | Prompter yavaşlat            |
+| `R`       | Prompter başa dön            |
+| `Shift+M` | Mikrofonu sustur             |
+| `]`       | Sonraki sahne                |
+| `[`       | Önceki sahne                 |
+| `1–9`     | Sahneye geç (sahne numarası) |
 
 Kısayollar Ayarlar sayfasından değiştirilebilir.
 

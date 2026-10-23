@@ -31,6 +31,7 @@ import { Route as ClassicJoinRouteImport } from "./routes/classic/join";
 import { Route as ClassicPrompterRouteImport } from "./routes/classic/prompter";
 import { Route as ClassicRemoteRouteImport } from "./routes/classic/remote";
 import { Route as RCodeRouteImport } from "./routes/r.$code";
+import { Route as AdminTablesTypeRouteImport } from "./routes/admin_.tables.$type";
 
 const IndexRoute = IndexRouteImport.update({
   id: "/",
@@ -142,6 +143,11 @@ const RCodeRoute = RCodeRouteImport.update({
   path: "/r/$code",
   getParentRoute: () => rootRouteImport,
 } as any);
+const AdminTablesTypeRoute = AdminTablesTypeRouteImport.update({
+  id: "/admin_/tables/$type",
+  path: "/admin/tables/$type",
+  getParentRoute: () => rootRouteImport,
+} as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   "/classic/remote": typeof ClassicRemoteRoute;
   "/r/$code": typeof RCodeRoute;
   "/classic/": typeof ClassicIndexRoute;
+  "/admin/tables/$type": typeof AdminTablesTypeRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   "/classic/remote": typeof ClassicRemoteRoute;
   "/r/$code": typeof RCodeRoute;
   "/classic": typeof ClassicIndexRoute;
+  "/admin/tables/$type": typeof AdminTablesTypeRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   "/classic/remote": typeof ClassicRemoteRoute;
   "/r/$code": typeof RCodeRoute;
   "/classic/": typeof ClassicIndexRoute;
+  "/admin_/tables/$type": typeof AdminTablesTypeRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -239,7 +248,8 @@ export interface FileRouteTypes {
     | "/classic/prompter"
     | "/classic/remote"
     | "/r/$code"
-    | "/classic/";
+    | "/classic/"
+    | "/admin/tables/$type";
   fileRoutesByTo: FileRoutesByTo;
   to:
     | "/"
@@ -262,7 +272,8 @@ export interface FileRouteTypes {
     | "/classic/prompter"
     | "/classic/remote"
     | "/r/$code"
-    | "/classic";
+    | "/classic"
+    | "/admin/tables/$type";
   id:
     | "__root__"
     | "/"
@@ -286,7 +297,8 @@ export interface FileRouteTypes {
     | "/classic/prompter"
     | "/classic/remote"
     | "/r/$code"
-    | "/classic/";
+    | "/classic/"
+    | "/admin_/tables/$type";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -308,6 +320,7 @@ export interface RootRouteChildren {
   WatchRoute: typeof WatchRoute;
   ChatCodeRoute: typeof ChatCodeRoute;
   RCodeRoute: typeof RCodeRoute;
+  AdminTablesTypeRoute: typeof AdminTablesTypeRoute;
 }
 
 declare module "@tanstack/react-router" {
@@ -466,6 +479,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof RCodeRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/admin_/tables/$type": {
+      id: "/admin_/tables/$type";
+      path: "/admin/tables/$type";
+      fullPath: "/admin/tables/$type";
+      preLoaderRoute: typeof AdminTablesTypeRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -506,6 +526,7 @@ const rootRouteChildren: RootRouteChildren = {
   WatchRoute: WatchRoute,
   ChatCodeRoute: ChatCodeRoute,
   RCodeRoute: RCodeRoute,
+  AdminTablesTypeRoute: AdminTablesTypeRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

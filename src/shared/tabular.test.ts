@@ -167,19 +167,20 @@ describe("cells <-> input", () => {
   it("row -> cells covers every exposed column and never a secret one", () => {
     const cols = templateColumns("room").map((c) => c.key);
     expect(cols).not.toContain("join_code");
-    const cells = rowToCells("video", {
+    const sample = {
       id: "abc",
       external_id: "",
       slug: "s",
       title: "T",
       summary: "",
-      body_blocks: [{ type: "paragraph", text: "Gövde" }],
+      body_blocks: [{ type: "paragraph" as const, text: "Gövde" }],
       locale: "tr",
       visibility: "draft",
       tags: ["a", "b"],
       noindex: false,
       meta: { duration_sec: 5, faq: [{ q: "q", a: "a" }] },
-    });
+    };
+    const cells = rowToCells("video", sample);
     expect(cells["body_md"]).toBe("Gövde");
     expect(cells["tags"]).toBe("a, b");
     expect(cells["duration_sec"]).toBe("5");

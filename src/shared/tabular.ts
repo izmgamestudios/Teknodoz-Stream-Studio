@@ -42,7 +42,6 @@ export function rowToCells(
     id: string;
     body_blocks: readonly Block[];
     meta: Record<string, unknown>;
-    [k: string]: unknown;
   },
 ): Cells {
   const out: Cells = {};
@@ -50,7 +49,7 @@ export function rowToCells(
     let v: unknown;
     if (key === "body_md") v = blocksToMd(row.body_blocks);
     else if (def.meta) v = row.meta[key];
-    else v = row[key];
+    else v = (row as unknown as Record<string, unknown>)[key];
     out[key] = cellOf(def, v);
   }
   return out;
