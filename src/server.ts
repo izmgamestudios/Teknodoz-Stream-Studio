@@ -45,6 +45,7 @@ import {
   pocketbaseFromEnv,
 } from "./server/pocketbase";
 import { createRoomsApi } from "./server/rooms";
+import { bridgeItems } from "./server/watch-bridge";
 import { createGuard } from "./server/guard";
 import { withSecurityHeaders } from "./server/security-headers";
 
@@ -85,7 +86,11 @@ const catalogStore = pb
 const i18nStore = pb
   ? pbI18nStore(pb)
   : fileI18nStore(liveEnv["I18N_FILE"]?.trim() || "data/i18n.json");
-const catalog = createCatalogApi({ token: adminToken, store: catalogStore });
+const catalog = createCatalogApi({
+  token: adminToken,
+  store: catalogStore,
+  extra: (listed) => bridgeItems(contentStore, listed),
+});
 // Media library: files on disk (MEDIA_DIR) + one record per file next to the catalog.
 const mediaStore = pb
   ? pbRecordStore<MediaRecord>(pb, "media_items")

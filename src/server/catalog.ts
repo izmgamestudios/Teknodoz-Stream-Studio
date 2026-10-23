@@ -139,6 +139,8 @@ export type PublicItem = Omit<
   locked: boolean;
   needsPassword: boolean;
   source: MediaSource | null;
+  /** public SEO page of an item that comes from the content engine ("" / absent = none) */
+  pageUrl?: string;
 };
 
 const text = (max: number) => z.string().trim().max(max);
@@ -238,6 +240,8 @@ const json = (body: unknown, status = 200): Response =>
 export interface CatalogOptions {
   token: string | null;
   store: CatalogStore;
+  /** extra public items merged into the list (content engine); gets the ids already listed */
+  extra?: (listed: ReadonlySet<string>) => Promise<PublicItem[]>;
   now?: () => number;
 }
 
@@ -289,7 +293,14 @@ export function createCatalogApi(opts: CatalogOptions) {
           .map(withDefaults)
           .filter((i) => !i.archived)
           .map((i) => toPublic(i, false, t));
-        return json({ items, admin: opts.token !== null });
+        let more: PublicItem[] = [];
+        try {
+          more = (await opts.extra?.(new Set(items.map((i) => i.id)))) ?? [];
+        } catch (e) {
+          // the engine being down must not take the whole watch page with it
+          console.warn("[catalog] extra items unavailable:", e);
+        }
+        return json({ items: [...items, ...more], admin: opts.token !== null });
       }
 
       if (rest[0] === "unlock" && rest.length === 1 && method === "POST") {

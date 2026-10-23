@@ -260,11 +260,11 @@ export const tr = {
   "mode.creator": "İçerik üretici modu",
   "mode.toCreator": "İçerik üretici moduna geç",
   "mode.toViewer": "İzleyici moduna geç",
-  "nav.watch": "İzle",
-  "nav.watch.hint": "Canlı yayınlar, videolar, odalar",
+  "nav.watch": "İzle & Dinle",
+  "nav.watch.hint": "Canlı yayınlar, videolar, podcast'ler",
   "nav.catalog": "Katalog",
   "nav.catalog.hint": "İzleyici sayfasındaki videoları yönet",
-  "watch.title": "İzle",
+  "watch.title": "İzle & Dinle",
   "watch.intro":
     "Canlı odalar ve videolar. Odaya girmeden doğrudan buradan izleyebilirsin.",
   "watch.search": "Ara: başlık, etiket, kategori…",
@@ -1012,6 +1012,7 @@ export const tr = {
   "pod.invite.remote": "İkinci moderatör cihazı (telefon kumandası)",
   "pod.invite.remote.hint":
     "Elle onaylamanız gerekir; mikrofon, konuk metni ve kaydı uzaktan yönetir.",
+  "watch.openPage": "Herkese açık sayfa",
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -1246,11 +1247,11 @@ export const en: Record<MessageKey, string> = {
   "mode.creator": "Creator mode",
   "mode.toCreator": "Switch to creator mode",
   "mode.toViewer": "Switch to viewer mode",
-  "nav.watch": "Watch",
-  "nav.watch.hint": "Live streams, videos, rooms",
+  "nav.watch": "Watch & Listen",
+  "nav.watch.hint": "Live streams, videos, podcasts",
   "nav.catalog": "Catalog",
   "nav.catalog.hint": "Manage the videos on the watch page",
-  "watch.title": "Watch",
+  "watch.title": "Watch & Listen",
   "watch.intro":
     "Live rooms and videos. Watch right here without entering a room.",
   "watch.search": "Search: title, tag, category…",
@@ -2003,6 +2004,7 @@ export const en: Record<MessageKey, string> = {
   "pod.invite.remote": "Second moderator device (phone remote)",
   "pod.invite.remote.hint":
     "Needs your manual approval; controls the mic, the guest script and recording remotely.",
+  "watch.openPage": "Public page",
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = {

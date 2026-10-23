@@ -617,6 +617,11 @@ export function WatchPlayer({
                     {item.description}
                   </p>
                 )}
+                {!isFs && item.pageUrl && (
+                  <a className="underline" href={item.pageUrl}>
+                    {t("watch.openPage")} →
+                  </a>
+                )}
               </div>
             )}
           </div>

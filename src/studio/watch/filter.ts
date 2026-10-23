@@ -1,5 +1,6 @@
 // src/studio/watch/filter.ts
 // Pure search / category / time filtering and sorting for the viewer gallery.
+import { categoryOptions } from "./categories";
 import type { MediaSource } from "./media-url";
 
 export interface WatchItem {
@@ -26,6 +27,8 @@ export interface WatchItem {
   storyUntil: string | null;
   featured: boolean;
   durationMs: number | null;
+  /** public page of an engine item ("" = none) */
+  pageUrl?: string;
 }
 
 export type TimeFilter =
@@ -128,7 +131,5 @@ export function filterItems(
 }
 
 export function categoriesOf(items: readonly WatchItem[]): string[] {
-  return [...new Set(items.map((i) => i.category).filter(Boolean))].sort(
-    (a, b) => a.localeCompare(b),
-  );
+  return categoryOptions(items.map((i) => i.category));
 }

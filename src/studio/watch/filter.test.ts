@@ -103,7 +103,9 @@ describe("filterItems", () => {
     expect(ids({ text: "gece haberleri" })).toEqual(["a"]);
   });
 
-  it("lists distinct sorted categories", () => {
-    expect(categoriesOf(items)).toEqual(["Müzik", "Teknoloji"]);
+  it("lists the editorial topics first, then distinct other categories", () => {
+    const c = categoriesOf(items);
+    expect(c[0]).toBe("Eğitim & Gelişim");
+    expect(c.slice(11)).toEqual(["Müzik", "Teknoloji"]);
   });
 });

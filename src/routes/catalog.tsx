@@ -1,6 +1,11 @@
 // src/routes/catalog.tsx
 // Watch-page management (administrator): create, edit, duplicate, archive and delete catalog
 // items, story expiry, featuring, search / filter / sort and bulk actions.
+import {
+  CANONICAL_CATEGORIES,
+  canonicalCategory,
+  categoryOptions,
+} from "@/studio/watch/categories";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   useCallback,
@@ -92,14 +97,13 @@ const STATUS_KEY = {
 
 /** Suggestions for the category box (free text is still allowed). */
 const CATEGORY_SUGGESTIONS = [
+  ...CANONICAL_CATEGORIES,
   "Haber",
   "Dizi",
   "Film",
   "Belgesel",
-  "Podcast",
   "Müzik",
   "Canlı TV",
-  "Eğitim",
   "Etkinlik",
   "Röportaj",
 ];
@@ -204,10 +208,7 @@ function CatalogPage() {
   );
   const counts = useMemo(() => countAdmin(items ?? [], now), [items, now]);
   const categories = useMemo(
-    () =>
-      [...new Set((items ?? []).map((i) => i.category).filter(Boolean))].sort(
-        (a, b) => a.localeCompare(b),
-      ),
+    () => categoryOptions((items ?? []).map((i) => i.category)),
     [items],
   );
   const setQ = (patch: Partial<AdminQuery>) =>
@@ -277,7 +278,7 @@ function CatalogPage() {
       ...(draft.id ? { id: draft.id } : {}),
       title: draft.title.trim(),
       description: draft.description.trim(),
-      category: draft.category.trim(),
+      category: canonicalCategory(draft.category),
       tags: draft.tags
         .split(",")
         .map((x) => x.trim())

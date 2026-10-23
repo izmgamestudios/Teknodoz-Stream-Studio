@@ -1,6 +1,7 @@
 // src/studio/watch/catalog-client.ts
 // Browser client for /api/catalog and /api/room/public.
 import type { WatchItem } from "./filter";
+import { canonicalCategory } from "./categories";
 import { isMediaSource } from "./media-url";
 
 interface ServerItem {
@@ -23,6 +24,7 @@ interface ServerItem {
   storyUntil?: string | null;
   featured?: boolean;
   durationMs?: number | null;
+  pageUrl?: string;
 }
 
 interface ServerRoom {
@@ -39,7 +41,7 @@ export function toWatchItem(i: ServerItem): WatchItem {
     origin: "catalog",
     title: i.title,
     description: i.description,
-    category: i.category,
+    category: canonicalCategory(i.category),
     tags: i.tags,
     source: isMediaSource(i.source) ? i.source : null,
     locked: i.locked || !isMediaSource(i.source),
@@ -55,6 +57,7 @@ export function toWatchItem(i: ServerItem): WatchItem {
     storyUntil: i.storyUntil ?? null,
     featured: i.featured ?? false,
     durationMs: i.durationMs ?? null,
+    pageUrl: i.pageUrl ?? "",
   };
 }
 

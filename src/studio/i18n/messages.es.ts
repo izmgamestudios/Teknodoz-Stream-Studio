@@ -234,11 +234,11 @@ export const es: Record<MessageKey, string> = {
   "mode.creator": "Modo creador",
   "mode.toCreator": "Cambiar al modo creador",
   "mode.toViewer": "Cambiar al modo espectador",
-  "nav.watch": "Ver",
-  "nav.watch.hint": "Directos, vídeos, salas",
+  "nav.watch": "Ver y escuchar",
+  "nav.watch.hint": "Directos, vídeos, podcasts",
   "nav.catalog": "Catálogo",
   "nav.catalog.hint": "Gestiona los vídeos de la página de espectador",
-  "watch.title": "Ver",
+  "watch.title": "Ver y escuchar",
   "watch.intro":
     "Salas en directo y vídeos. Míralos aquí mismo sin entrar en una sala.",
   "watch.search": "Buscar: título, etiqueta, categoría…",
@@ -1004,4 +1004,5 @@ export const es: Record<MessageKey, string> = {
   "pod.invite.remote": "Segundo dispositivo de moderador (mando en el móvil)",
   "pod.invite.remote.hint":
     "Requiere su aprobación manual; controla micrófono, texto del invitado y grabación a distancia.",
+  "watch.openPage": "Página pública",
 };

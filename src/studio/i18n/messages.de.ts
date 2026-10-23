@@ -235,11 +235,11 @@ export const de: Record<MessageKey, string> = {
   "mode.creator": "Creator-Modus",
   "mode.toCreator": "Zum Creator-Modus wechseln",
   "mode.toViewer": "Zum Zuschauermodus wechseln",
-  "nav.watch": "Ansehen",
-  "nav.watch.hint": "Live-Streams, Videos, Räume",
+  "nav.watch": "Ansehen & Hören",
+  "nav.watch.hint": "Live-Streams, Videos, Podcasts",
   "nav.catalog": "Katalog",
   "nav.catalog.hint": "Videos der Zuschauerseite verwalten",
-  "watch.title": "Ansehen",
+  "watch.title": "Ansehen & Hören",
   "watch.intro":
     "Live-Räume und Videos. Schaue direkt hier, ohne einen Raum zu betreten.",
   "watch.search": "Suchen: Titel, Tag, Kategorie…",
@@ -1005,4 +1005,5 @@ export const de: Record<MessageKey, string> = {
   "pod.invite.remote": "Zweites Moderatorgerät (Handy-Fernbedienung)",
   "pod.invite.remote.hint":
     "Muss manuell freigegeben werden; steuert Mikrofon, Gast-Text und Aufnahme aus der Ferne.",
+  "watch.openPage": "Öffentliche Seite",
 };

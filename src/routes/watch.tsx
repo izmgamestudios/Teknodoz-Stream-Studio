@@ -81,11 +81,11 @@ export const Route = createFileRoute("/watch")({
   },
   head: ({ matches }) => ({
     meta: [
-      { title: titleFromMatches(matches, "Watch") },
+      { title: titleFromMatches(matches, "Watch & Listen") },
       {
         name: "description",
         content:
-          "Live TV, series, films, news, podcasts and stories: watch right here, filter by category, playlist and time.",
+          "Live TV, series, films, news, podcasts and stories: watch and listen right here, filter by category, playlist and time.",
       },
     ],
   }),
@@ -280,6 +280,32 @@ function WatchPage() {
           >
             {t("watch.count", { n: shown.length })}
           </span>
+        </div>
+        <div
+          className="flex gap-1.5 overflow-x-auto pb-1"
+          role="group"
+          aria-label={t("watch.category")}
+        >
+          <button
+            className={BTN}
+            aria-pressed={query.category === ""}
+            onClick={() => set({ cat: undefined })}
+          >
+            {t("watch.category.all")}
+          </button>
+          {cats.map((c) => (
+            <button
+              key={c}
+              className={`${BTN} shrink-0`}
+              aria-pressed={query.category === c}
+              onClick={() => set({ cat: c })}
+            >
+              {c}
+              <span className="ml-1 opacity-60">
+                {items.filter((i) => i.category === c).length}
+              </span>
+            </button>
+          ))}
         </div>
       </section>
 

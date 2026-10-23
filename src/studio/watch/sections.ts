@@ -1,6 +1,7 @@
 // src/studio/watch/sections.ts
 // Pure grouping used by the watch home: stories, playlists (series), live TV lane, podcast lane,
 // category rails and the "up next" queue.
+import { compareCategories } from "./categories";
 import { isAudioSource } from "./media-url";
 import type { WatchItem } from "./filter";
 
@@ -112,9 +113,14 @@ export function sectionsOf(
       name,
       items: list.sort((a, b) => when(b) - when(a)),
     }))
-    // named categories alphabetically, the uncategorised rail last
+    // editorial topics first (in their fixed order), other names alphabetically, the
+    // uncategorised rail last
     .sort((a, b) =>
-      a.name === "" ? 1 : b.name === "" ? -1 : a.name.localeCompare(b.name),
+      a.name === ""
+        ? 1
+        : b.name === ""
+          ? -1
+          : compareCategories(a.name, b.name),
     );
   return {
     live,
