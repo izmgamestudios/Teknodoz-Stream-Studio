@@ -7,7 +7,8 @@ import { useT } from "@/studio/i18n/use-t";
 import type { MessageKey } from "@/studio/i18n/messages";
 import { roomBadge } from "@/studio/room/badge";
 import { loadOverrides } from "@/studio/i18n/overrides";
-import { useAudience, VIEWER_ROUTES } from "@/studio/audience";
+import { setAudience, useAudience, VIEWER_ROUTES } from "@/studio/audience";
+import { canCreate, useCreator } from "@/studio/watch/creator-session";
 import { useAdmin } from "@/studio/watch/admin-session";
 import { AudienceGate, PrefBar } from "@/studio/ui/audience-gate";
 
@@ -183,6 +184,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     void loadOverrides();
   }, []);
+  // creator mode needs a signed-in creator (or the admin) once accounts are on; a stale
+  // "creator" choice on this device falls back to the viewer pages
+  const account = useCreator();
+  useEffect(() => {
+    if (audience === "creator" && account.loaded && !canCreate(account))
+      setAudience("viewer");
+  }, [audience, account]);
   // viewers land on the watch page instead of the prompter
   useEffect(() => {
     if (audience === "viewer" && pathname === "/")

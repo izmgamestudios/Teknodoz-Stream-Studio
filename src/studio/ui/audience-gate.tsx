@@ -1,7 +1,7 @@
 // src/studio/ui/audience-gate.tsx
 // First-visit question ("viewer or creator?") plus the small preference bar (mode, language,
 // theme) used in the shell. The gate is an overlay, so server-rendered pages stay crawlable.
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { setAudience, useAudience, type Audience } from "../audience";
 import { LANGS, type Lang } from "../i18n/messages";
@@ -9,11 +9,21 @@ import { useLang, useT } from "../i18n/use-t";
 import { getSettingsSnapshot, saveSettings } from "../storage";
 import { useTheme, type ThemeChoice } from "../theme";
 import { logoutAdmin, useAdmin } from "../watch/admin-session";
+import {
+  canCreate,
+  getCreatorState,
+  logoutCreator,
+  refreshCreator,
+  useCreator,
+} from "../watch/creator-session";
+import { CreatorAccess } from "./creator-access";
 import { Link } from "@tanstack/react-router";
 
 export function AudienceGate() {
   const t = useT();
   const audience = useAudience();
+  const creator = useCreator();
+  const [asking, setAsking] = useState(false);
   const first = useRef<HTMLButtonElement>(null);
   const open = audience === null;
   useEffect(() => {
@@ -36,30 +46,45 @@ export function AudienceGate() {
         <h2 id="gate-title" className="text-center text-2xl font-bold">
           {t("gate.title")}
         </h2>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <button
-            ref={first}
-            className={card}
-            onClick={() => setAudience("viewer")}
-          >
-            <span className="text-3xl" aria-hidden="true">
-              📺
-            </span>
-            <span className="text-lg font-bold">{t("gate.viewer")}</span>
-            <span className="text-sm text-muted-foreground">
-              {t("gate.viewer.body")}
-            </span>
-          </button>
-          <button className={card} onClick={() => setAudience("creator")}>
-            <span className="text-3xl" aria-hidden="true">
-              🎬
-            </span>
-            <span className="text-lg font-bold">{t("gate.creator")}</span>
-            <span className="text-sm text-muted-foreground">
-              {t("gate.creator.body")}
-            </span>
-          </button>
-        </div>
+        {asking ? (
+          <CreatorAccess
+            onSignedIn={() => setAudience("creator")}
+            onBack={() => setAsking(false)}
+          />
+        ) : (
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              ref={first}
+              className={card}
+              onClick={() => setAudience("viewer")}
+            >
+              <span className="text-3xl" aria-hidden="true">
+                📺
+              </span>
+              <span className="text-lg font-bold">{t("gate.viewer")}</span>
+              <span className="text-sm text-muted-foreground">
+                {t("gate.viewer.body")}
+              </span>
+            </button>
+            <button
+              className={card}
+              onClick={async () => {
+                // accounts off (or already signed in): straight in, as before
+                await refreshCreator();
+                if (canCreate(getCreatorState())) setAudience("creator");
+                else setAsking(true);
+              }}
+            >
+              <span className="text-3xl" aria-hidden="true">
+                🎬
+              </span>
+              <span className="text-lg font-bold">{t("gate.creator")}</span>
+              <span className="text-sm text-muted-foreground">
+                {t("gate.creator.body")}
+              </span>
+            </button>
+          </div>
+        )}
         <p className="text-center text-xs text-muted-foreground">
           {t("gate.hint")}
         </p>
@@ -77,6 +102,7 @@ export function PrefBar({ withMode = false }: { withMode?: boolean }) {
   const [theme, setTheme] = useTheme();
   const audience = useAudience();
   const { admin } = useAdmin();
+  const creator = useCreator();
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <select
@@ -107,6 +133,7 @@ export function PrefBar({ withMode = false }: { withMode?: boolean }) {
         <option value="dark">🌙 {t("settings.theme.dark")}</option>
       </select>
       {withMode &&
+        audience === "creator" &&
         (admin ? (
           <button
             className={`${SEL} hover:bg-accent`}
@@ -120,16 +147,15 @@ export function PrefBar({ withMode = false }: { withMode?: boolean }) {
             🔒 {t("admin.login.link")}
           </Link>
         ))}
-      {withMode && audience && (
+      {withMode && audience === "creator" && (
         <button
           className={`${SEL} hover:bg-accent`}
-          onClick={() =>
-            setAudience(
-              (audience === "viewer" ? "creator" : "viewer") as Audience,
-            )
-          }
+          onClick={() => {
+            if (creator.creator) void logoutCreator();
+            setAudience("viewer" as Audience);
+          }}
         >
-          {audience === "viewer" ? t("mode.toCreator") : t("mode.toViewer")}
+          {t("mode.toViewer")}
         </button>
       )}
     </div>

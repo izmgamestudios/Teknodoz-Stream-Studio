@@ -258,6 +258,14 @@ EMBED_ORIGINS=*                                     # gömme sayfasını çerçe
 TRUSTED_IP_HEADER=cf-connecting-ip                  # YALNIZCA sitenin önünde Cloudflare varsa: istemci IP'si buradan okunur
 ```
 
+### İçerik üretici hesapları
+
+- Ziyaretçi "İçerik üreticisiyim" der → **giriş** (kullanıcı adı + şifre) ya da **başvuru** (ad soyad + telefon *veya* e-posta, biri zorunlu) formunu görür. İzleyici modunda yönetici girişi ve "üretici moduna geç" yoktur; yalnızca İzle & Dinle, Topluluk ve İndir görünür.
+- Yönetici `/admin` → **İçerik üretici başvuruları**: *Onayla ve bilgi üret* kullanıcı adı + tek seferlik şifre verir (yalnızca o anda görünür; sunucuda scrypt özeti saklanır). Ekrandaki **E-posta / SMS / WhatsApp** bağlantıları mesajı hazır doldurur; sunucu kendisi mesaj göndermez. *Şifreyi yenile*, *Erişimi kaldır* (açık oturum hemen düşer) ve *Sil* vardır.
+- Hesaplar `CATALOG_ADMIN_TOKEN` tanımlıysa açıktır; tanımlı değilse stüdyo eskisi gibi açık kalır. Oda açma (`POST /api/room`) giriş yapmış üretici ya da yönetici ister; odaya katılmak bağlantıyı bilen herkese açıktır.
+- Başvuru formunda bot tuzağı (honeypot), IP başına saatte 5 başvuru, girişte IP başına 10 deneme / 10 dk ve kullanıcı adı başına 5 hatada 15 dk kilit vardır. Aynı telefon/e-posta ile tekrar başvuru, kimin başvurduğunu belli etmemek için aynı "alındı" yanıtını alır.
+- Veri: PocketBase `creators` koleksiyonu (otomatik) ya da `CREATORS_FILE` (varsayılan `data/creators.json`).
+
 ### Sertleştirme (S6)
 
 - **İstemci IP'si:** giriş kilidi, şifreli içerik kilidi, oda katılımı ve toplu işlem sınırları tek yerden (`src/server/client-ip.ts`) IP alır. `X-Forwarded-For`'un **ilk** değerini istemci kendisi yazabildiği için artık kullanılmaz; proxy'nin eklediği **son** değer okunur. Cloudflare arkasındaysanız `TRUSTED_IP_HEADER=cf-connecting-ip` verin (sunucuya yalnızca Cloudflare'dan erişilebiliyorsa); aksi hâlde bu değişkeni boş bırakın.

@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CatalogRouteImport } from './routes/catalog'
 import { Route as ClassicRouteRouteImport } from './routes/classic/route'
 import { Route as CommunityRouteImport } from './routes/community'
+import { Route as CreatorRouteImport } from './routes/creator'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as JoinRouteImport } from './routes/join'
@@ -57,6 +58,11 @@ const ClassicRouteRoute = ClassicRouteRouteImport.update({
 const CommunityRoute = CommunityRouteImport.update({
   id: '/community',
   path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreatorRoute = CreatorRouteImport.update({
+  id: '/creator',
+  path: '/creator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DownloadRoute = DownloadRouteImport.update({
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/catalog': typeof CatalogRoute
   '/community': typeof CommunityRoute
+  '/creator': typeof CreatorRoute
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/catalog': typeof CatalogRoute
   '/community': typeof CommunityRoute
+  '/creator': typeof CreatorRoute
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/catalog': typeof CatalogRoute
   '/community': typeof CommunityRoute
+  '/creator': typeof CreatorRoute
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
   '/join': typeof JoinRoute
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/catalog'
     | '/community'
+    | '/creator'
     | '/download'
     | '/guide'
     | '/join'
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/catalog'
     | '/community'
+    | '/creator'
     | '/download'
     | '/guide'
     | '/join'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/catalog'
     | '/community'
+    | '/creator'
     | '/download'
     | '/guide'
     | '/join'
@@ -319,6 +331,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   CatalogRoute: typeof CatalogRoute
   CommunityRoute: typeof CommunityRoute
+  CreatorRoute: typeof CreatorRoute
   DownloadRoute: typeof DownloadRoute
   GuideRoute: typeof GuideRoute
   JoinRoute: typeof JoinRoute
@@ -371,6 +384,13 @@ declare module '@tanstack/react-router' {
       path: '/community'
       fullPath: '/community'
       preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/creator': {
+      id: '/creator'
+      path: '/creator'
+      fullPath: '/creator'
+      preLoaderRoute: typeof CreatorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/download': {
@@ -533,6 +553,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   CatalogRoute: CatalogRoute,
   CommunityRoute: CommunityRoute,
+  CreatorRoute: CreatorRoute,
   DownloadRoute: DownloadRoute,
   GuideRoute: GuideRoute,
   JoinRoute: JoinRoute,

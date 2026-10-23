@@ -8,6 +8,7 @@ import { titleFromMatches } from "@/studio/branding/head";
 import { useLang, useT } from "@/studio/i18n/use-t";
 import { BTN, BTN_ACCENT, INPUT, PANEL, PanelTitle } from "@/studio/ui/fields";
 import { AdminGate } from "@/studio/ui/admin-gate";
+import { CreatorApplications } from "@/studio/ui/creator-admin";
 import { CATALOG_TYPES, typeLabel } from "@/studio/ui/content/labels";
 import { logoutAdmin } from "@/studio/watch/admin-session";
 
@@ -200,6 +201,8 @@ function AdminPage() {
                   ))}
                 </div>
               </section>
+
+              <CreatorApplications />
 
               <section className={PANEL} aria-label={t("admin.backup")}>
                 <PanelTitle>{t("admin.backup")}</PanelTitle>

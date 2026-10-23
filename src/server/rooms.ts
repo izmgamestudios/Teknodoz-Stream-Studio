@@ -142,6 +142,8 @@ export interface RoomsOptions {
   now?: () => number;
   /** random bytes source (tests) */
   randomBytes?: (n: number) => Uint8Array;
+  /** who may open a room (undefined = anyone); the host page runs in a signed-in browser */
+  canCreate?: (req: Request) => boolean | Promise<boolean>;
 }
 
 function defaultRandom(n: number): Uint8Array {
@@ -809,7 +811,11 @@ export function createRoomsApi(options: RoomsOptions = {}) {
         .filter(Boolean);
       const method = req.method.toUpperCase();
       if (rest.length === 0) {
-        if (method === "POST") return createRoom(req);
+        if (method === "POST") {
+          if (options.canCreate && !(await options.canCreate(req)))
+            throw new HttpError(401, "creator-required");
+          return createRoom(req);
+        }
         throw new HttpError(405, "method-not-allowed");
       }
       if (rest[0] === "health" && rest.length === 1) {

@@ -46,6 +46,8 @@ import {
 } from "./server/pocketbase";
 import { createRoomsApi } from "./server/rooms";
 import { bridgeItems } from "./server/watch-bridge";
+import { isAdminRequest } from "./server/auth";
+import { createCreatorsApi, type CreatorRecord } from "./server/creators";
 import { createGuard } from "./server/guard";
 import { withSecurityHeaders } from "./server/security-headers";
 
@@ -60,7 +62,14 @@ type ServerEntry = {
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 // In-memory signaling relay for "room" links (see src/server/rooms.ts).
-const rooms = createRoomsApi();
+// Opening a room needs a signed-in creator or the administrator (when accounts are enabled);
+// joining one stays open to anybody with the link.
+const rooms = createRoomsApi({
+  canCreate: async (req) =>
+    !creators.enabled ||
+    isAdminRequest(req, adminToken, Date.now()) ||
+    (await creators.creatorOf(req)) !== null,
+});
 
 // RTMP(S) live bridge (see src/server/live.ts). Off unless LIVE_ADMIN_TOKEN is set; the env is
 // only readable on Node-like runtimes, elsewhere the bridge stays disabled.
@@ -86,6 +95,12 @@ const catalogStore = pb
 const i18nStore = pb
   ? pbI18nStore(pb)
   : fileI18nStore(liveEnv["I18N_FILE"]?.trim() || "data/i18n.json");
+const creatorStore = pb
+  ? pbRecordStore<CreatorRecord>(pb, "creators")
+  : fileRecordStore<CreatorRecord>(
+      liveEnv["CREATORS_FILE"]?.trim() || "data/creators.json",
+    );
+const creators = createCreatorsApi({ token: adminToken, store: creatorStore });
 const catalog = createCatalogApi({
   token: adminToken,
   store: catalogStore,
@@ -260,6 +275,8 @@ async function dispatch(request: Request, env: unknown, ctx: unknown) {
     if (roomResponse) return roomResponse;
     const catalogResponse = await catalog.handle(request);
     if (catalogResponse) return catalogResponse;
+    const creatorResponse = await creators.handle(request);
+    if (creatorResponse) return creatorResponse;
     const sessionResponse = await session.handle(request);
     if (sessionResponse) return sessionResponse;
     // bulk + unlock must be tried before the generic /api/content/* admin routes
