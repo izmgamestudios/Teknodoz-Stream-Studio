@@ -304,6 +304,19 @@ interface Channel {
   keepAliveEl: HTMLAudioElement | null;
 }
 
+interface ReturnMix {
+  exclude: string;
+  sum: GainNode;
+  limiter: DynamicsCompressorNode;
+  dest: MediaStreamAudioDestinationNode;
+}
+
+export interface ReturnHandle {
+  /** the mix of every channel except the excluded one */
+  readonly stream: MediaStream;
+  close(): void;
+}
+
 interface Graph {
   mixIn: GainNode;
   master: GainNode;
@@ -742,6 +755,7 @@ export class AudioBus {
     volume.connect(gate);
     volume.connect(analyser);
     gate.connect(g.mixIn);
+    for (const r of this.returns) if (r.exclude !== id) gate.connect(r.sum);
     gate.connect(monitor);
     monitor.connect(g.monitorBus);
     return {
@@ -795,6 +809,42 @@ export class AudioBus {
       replaceInput: (input) => void this.replaceInput(id, input),
       getLevel: () => this.getLevel(id),
       remove: () => void this.removeChannel(id),
+    };
+  }
+
+  private returns = new Set<ReturnMix>();
+
+  /**
+   * "Mix-minus": a separate mix of every channel (present and future) except `excludeId`, e.g.
+   * what a remote guest hears — the room without their own voice coming back as an echo.
+   */
+  openReturn(excludeId: string): ReturnHandle {
+    if (this.disposed)
+      throw new AudioBusError("disposed", "Ses motoru kapatıldı.");
+    const ctx = this.requireContext();
+    const sum = ctx.createGain();
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -3;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.1;
+    const dest = ctx.createMediaStreamDestination();
+    sum.connect(limiter);
+    limiter.connect(dest);
+    const r: ReturnMix = { exclude: excludeId, sum, limiter, dest };
+    for (const [id, ch] of this.channels)
+      if (id !== excludeId) ch.nodes.gate.connect(sum);
+    this.returns.add(r);
+    return {
+      stream: dest.stream,
+      close: () => {
+        if (!this.returns.delete(r)) return;
+        for (const ch of this.channels.values())
+          safeDisconnect(ch.nodes.gate, sum);
+        safeDisconnect(sum);
+        safeDisconnect(limiter);
+      },
     };
   }
 

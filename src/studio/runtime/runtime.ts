@@ -834,6 +834,8 @@ export class StudioRuntime {
 
   /** Drop the P2P host (and its timers/subscriptions). Connected peers are closed. */
   private teardownHost(): void {
+    for (const r of this.guestReturns.values()) r.close();
+    this.guestReturns.clear();
     if (this.remoteTimer) clearInterval(this.remoteTimer);
     this.remoteTimer = null;
     for (const u of this.hostUnsubs) u();
@@ -888,6 +890,46 @@ export class StudioRuntime {
     this.host?.broadcastRemoteState(this.getRemoteState());
   }
 
+  /** Mix-minus per remote guest: the program picture with the room's sound minus their own voice. */
+  private guestReturns = new Map<
+    string,
+    { close: () => void; audio: MediaStreamTrack[] }
+  >();
+
+  private syncGuestReturns(peers: readonly PeerInfo[]): void {
+    const host = this.host;
+    if (!host) return;
+    const ids = new Set(
+      peers.filter((p) => p.role === "guest").map((p) => p.id),
+    );
+    for (const [id, r] of [...this.guestReturns])
+      if (!ids.has(id)) {
+        r.close();
+        this.guestReturns.delete(id);
+        host.setPeerProgram(id, null);
+      }
+    for (const id of ids) {
+      if (this.guestReturns.has(id)) continue;
+      try {
+        const ret = this.audio.openReturn(`guest:${id}`);
+        this.guestReturns.set(id, {
+          close: ret.close,
+          audio: ret.stream.getAudioTracks(),
+        });
+      } catch {
+        continue; // audio context not running yet: retried on the next peer change
+      }
+      this.applyGuestProgram(id);
+    }
+  }
+
+  private applyGuestProgram(id: string): void {
+    const r = this.guestReturns.get(id);
+    if (!r || !this.host) return;
+    const video = this.programStream?.getVideoTracks() ?? [];
+    this.host.setPeerProgram(id, new MediaStream([...video, ...r.audio]));
+  }
+
   /** Program output (canvas video + mixed audio) that viewers/guests watch. */
   private updateProgramStream(): void {
     if (!this.canvas || !this.host) return;
@@ -898,6 +940,8 @@ export class StudioRuntime {
       ];
       this.programStream = new MediaStream(tracks);
       this.host.setProgramStream(this.programStream);
+      // guests keep their own audio, but follow the new picture track
+      for (const id of this.guestReturns.keys()) this.applyGuestProgram(id);
     } catch {
       // no audio context yet: viewers get video only until the next invite
     }
@@ -1013,6 +1057,7 @@ export class StudioRuntime {
 
   /** The audio bus mirrors the host's peer records: only on-air, unmuted guests are heard. */
   private applyGuestAudio(peers: readonly PeerInfo[]): void {
+    this.syncGuestReturns(peers);
     for (const p of peers) {
       if (p.role !== "guest") continue;
       const id = `guest:${p.id}`;

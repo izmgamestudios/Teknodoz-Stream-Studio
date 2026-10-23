@@ -227,6 +227,36 @@ describe("media serving", () => {
     ).toBeNull();
   });
 
+  it("sets chapters (sorted, validated) without touching the title", async () => {
+    const { call, media } = await uploaded();
+    const ok = await call("PATCH", `/api/media/${media.id}`, {
+      body: JSON.stringify({
+        chapters: [
+          { t: 9000, label: "B" },
+          { t: 0, label: "A" },
+        ],
+      }),
+    });
+    const m = ((await ok.json()) as any).media;
+    expect(m.chapters).toEqual([
+      { t: 0, label: "A" },
+      { t: 9000, label: "B" },
+    ]);
+    expect(m.title).toBe(media.title);
+    for (const bad of [
+      {},
+      { chapters: [{ t: -1, label: "x" }] },
+      { chapters: "no" },
+    ])
+      expect(
+        (
+          await call("PATCH", `/api/media/${media.id}`, {
+            body: JSON.stringify(bad),
+          })
+        ).status,
+      ).toBe(400);
+  });
+
   it("renames and deletes (record and every file)", async () => {
     const { call, store, media } = await uploaded();
     await writeFile(join(dir, `${media.id}.tr.vtt`), "WEBVTT");

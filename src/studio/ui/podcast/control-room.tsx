@@ -50,6 +50,7 @@ export function PodcastControlRoom({
   const [note, setNote] = useState(() => load(NOTE_KEY));
   const [copied, setCopied] = useState("");
   const [priv, setPriv] = useState<string | null>(null);
+  const [bcErr, setBcErr] = useState(false);
   const [, tick] = useState(0);
 
   useEffect(() => {
@@ -136,6 +137,42 @@ export function PodcastControlRoom({
       {inStudio && (
         <p className="text-xs text-muted-foreground">{t("pod.inStudio")}</p>
       )}
+      <div className="space-y-1">
+        <button
+          className={s.broadcast ? BTN : BTN_ACCENT}
+          onClick={async () => {
+            setBcErr(false);
+            if (s.broadcast) await host.stopBroadcast();
+            else if (!(await host.startBroadcast(title || "Podcast")))
+              setBcErr(true);
+          }}
+        >
+          📡 {s.broadcast ? t("pod.bc.stop") : t("pod.bc.start")}
+        </button>
+        {s.broadcast ? (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">{t("pod.bc.link")}</p>
+            <input
+              readOnly
+              className={INPUT}
+              value={s.broadcast.link}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+            <p className="text-xs">
+              {t("pod.bc.count", { n: s.broadcast.listeners })}
+            </p>
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">
+            {t("pod.bc.hint")}
+          </p>
+        )}
+        {bcErr && (
+          <p role="alert" className="text-xs text-destructive">
+            {t("pod.bc.err")}
+          </p>
+        )}
+      </div>
 
       <div className="grid gap-3 2xl:grid-cols-[240px_1fr]">
         <section className={`${PANEL} space-y-3`}>

@@ -127,6 +127,24 @@ export async function listMedia(token: string): Promise<MediaRecord[] | null> {
   }
 }
 
+/** Replaces the chapters of an item (sorted by the server). */
+export async function setChapters(
+  token: string,
+  id: string,
+  chapters: readonly Chapter[],
+): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/media/${id}`, {
+      method: "PATCH",
+      headers: { ...auth(token), "content-type": "application/json" },
+      body: JSON.stringify({ chapters }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function renameMedia(
   token: string,
   id: string,

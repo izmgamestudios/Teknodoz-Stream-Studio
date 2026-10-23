@@ -582,10 +582,24 @@ export function createMediaApi(opts: MediaOptions) {
         if (method === "GET") return json({ media: rec });
         if (method === "PATCH") {
           const body = z
-            .object({ title: z.string().trim().min(1).max(120) })
+            .object({
+              title: z.string().trim().min(1).max(120).optional(),
+              chapters: chaptersSchema.optional(),
+            })
+            .refine((b) => b.title !== undefined || b.chapters !== undefined)
             .safeParse(JSON.parse(await req.text()));
           if (!body.success) return json({ error: "bad-request" }, 400);
-          const next = { ...rec, title: body.data.title };
+          const next = {
+            ...rec,
+            ...(body.data.title !== undefined
+              ? { title: body.data.title }
+              : {}),
+            ...(body.data.chapters !== undefined
+              ? {
+                  chapters: [...body.data.chapters].sort((a, b) => a.t - b.t),
+                }
+              : {}),
+          };
           await opts.store.upsert(next);
           return json({ media: next });
         }

@@ -1112,4 +1112,26 @@ export const es: Record<MessageKey, string> = {
     "Añadido a la mezcla del estudio: las grabaciones y el directo incluyen este audio.",
   "pod.rec.inStudio":
     "Para grabar use el botón «Grabar» del estudio: se guardan juntos el vídeo (con el visualizador) y un WAV de la mezcla del podcast.",
+  "pod.bc.start": "Abrir escucha masiva",
+  "pod.bc.stop": "Cerrar escucha masiva",
+  "pod.bc.hint":
+    "Para cientos de oyentes: la mezcla va al servidor y la gente escucha desde el enlace (con unos segundos de retraso). Los invitados siguen en directo.",
+  "pod.bc.link": "Enlace público de escucha",
+  "pod.bc.count": "{n} escuchando",
+  "pod.bc.err":
+    "No se pudo abrir la escucha masiva (requiere sesión y ffmpeg en el servidor).",
+  "listen.title": "Escuchar en directo",
+  "listen.offline":
+    "La emisión está apagada. Esta página conectará cuando empiece.",
+  "listen.live": "Está en directo",
+  "listen.play": "▶ Escuchar",
+  "ac.title": "Capítulos automáticos",
+  "ac.run": "Crear capítulos desde los subtítulos",
+  "ac.runAll": "Transcribir + crear capítulos",
+  "ac.working": "Trabajando…",
+  "ac.done": "{n} capítulos guardados (se conservaron sus marcas manuales).",
+  "ac.none": "No se encontraron capítulos: muy corto o sin pausas.",
+  "ac.needWhisper":
+    "Transcribir requiere Whisper en el servidor; también puede subir subtítulos a mano.",
+  "ac.err": "No se pudieron guardar los capítulos.",
 };

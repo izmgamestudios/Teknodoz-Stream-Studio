@@ -1111,4 +1111,26 @@ export const de: Record<MessageKey, string> = {
     "Zum Studio-Mix hinzugefügt: Aufnahmen und Live-Streams enthalten diesen Ton.",
   "pod.rec.inStudio":
     "Zum Aufnehmen die „Aufnahme“-Taste des Studios nutzen: Video (mit Visualisierung) und WAV des Podcast-Mixes werden zusammen gespeichert.",
+  "pod.bc.start": "Massen-Zuhören öffnen",
+  "pod.bc.stop": "Massen-Zuhören schließen",
+  "pod.bc.hint":
+    "Für Hunderte Hörer: Der Mix geht zum Server, Hörer nutzen den Link (einige Sekunden verzögert). Gäste sind weiter live verbunden.",
+  "pod.bc.link": "Öffentlicher Hör-Link",
+  "pod.bc.count": "{n} Hörer",
+  "pod.bc.err":
+    "Massen-Zuhören konnte nicht geöffnet werden (Anmeldung und ffmpeg nötig).",
+  "listen.title": "Live hören",
+  "listen.offline":
+    "Die Sendung ist gerade aus. Diese Seite verbindet sich beim Start.",
+  "listen.live": "Sie hören live",
+  "listen.play": "▶ Anhören",
+  "ac.title": "Automatische Kapitel",
+  "ac.run": "Kapitel aus Untertiteln erzeugen",
+  "ac.runAll": "Transkribieren + Kapitel erzeugen",
+  "ac.working": "Läuft…",
+  "ac.done": "{n} Kapitel gespeichert (von Hand gesetzte Marken blieben).",
+  "ac.none": "Keine Kapitel gefunden: zu kurz oder keine Pausen.",
+  "ac.needWhisper":
+    "Zum Transkribieren braucht der Server Whisper; Untertitel können auch manuell hochgeladen werden.",
+  "ac.err": "Kapitel konnten nicht gespeichert werden.",
 };

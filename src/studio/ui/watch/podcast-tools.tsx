@@ -3,12 +3,22 @@
 // (one-click preset, shorten long pauses) that feed the editor's state.
 import { useState } from "react";
 
+import { chaptersFromCues, mergeChapters } from "../../../shared/auto-chapters";
 import { adviceFor, shortenPauses } from "../../../shared/media-analysis";
+import { parseCues } from "../../watch/cues";
 import type { MessageKey } from "../../i18n/messages";
 import { useT } from "../../i18n/use-t";
 import { makeClip, totalMs, type Clip } from "../../watch/clips";
 import type { AudioState } from "../../watch/audio-state";
-import { analyzeMedia, type MediaRecord } from "../../watch/media-client";
+import {
+  analyzeMedia,
+  fetchCaptionsText,
+  getCapabilities,
+  getJob,
+  setChapters,
+  startSubtitles,
+  type MediaRecord,
+} from "../../watch/media-client";
 import { BTN, BTN_ACCENT } from "../fields";
 
 const fmtDb = (n: number | null, unit: string): string =>
@@ -203,5 +213,86 @@ export function PodcastTools({
         </p>
       )}
     </fieldset>
+  );
+}
+
+/**
+ * Chapters from the speech itself: new chapter at a natural pause, named after the first words
+ * said there. Uses the subtitles (made with Whisper when there are none); hand-made markers stay.
+ */
+export function AutoChaptersPanel({
+  media,
+  token,
+  onChanged,
+}: {
+  media: MediaRecord;
+  token: string;
+  onChanged: () => Promise<void>;
+}) {
+  const t = useT();
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  if (media.kind === "image" || media.hasAudio === false) return null;
+
+  async function fromLang(lang: string): Promise<void> {
+    const text = await fetchCaptionsText(media.id, lang);
+    const cues = text ? parseCues(text) : [];
+    const auto = chaptersFromCues(cues, media.durationMs ?? 0);
+    if (auto.length === 0) return setMsg(t("ac.none"));
+    const merged = mergeChapters(media.chapters, auto);
+    if (!(await setChapters(token, media.id, merged)))
+      return setMsg(t("ac.err"));
+    setMsg(t("ac.done", { n: merged.length }));
+    await onChanged();
+  }
+
+  async function run() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      let lang = media.captions[0]?.lang;
+      if (!lang) {
+        const caps = await getCapabilities(token);
+        if (!caps?.whisper?.available) return setMsg(t("ac.needWhisper"));
+        const start = await startSubtitles(token, media.id, "tr");
+        if (!start.ok) return setMsg(t("ac.err"));
+        let job = start.job;
+        for (
+          let i = 0;
+          i < 3600 && job.status !== "done" && job.status !== "error";
+          i++
+        ) {
+          await new Promise((r) => setTimeout(r, 1500));
+          const next = await getJob(token, job.id);
+          if (next) job = next;
+        }
+        if (job.status !== "done") return setMsg(t("ac.err"));
+        lang = "tr";
+      }
+      await fromLang(lang);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section
+      className="space-y-2 rounded-lg border p-3"
+      aria-label={t("ac.title")}
+    >
+      <h3 className="text-sm font-bold">{t("ac.title")}</h3>
+      <button className={BTN} disabled={busy} onClick={() => void run()}>
+        {busy
+          ? t("ac.working")
+          : media.captions.length > 0
+            ? t("ac.run")
+            : t("ac.runAll")}
+      </button>
+      {msg && (
+        <p role="status" className="text-xs">
+          {msg}
+        </p>
+      )}
+    </section>
   );
 }

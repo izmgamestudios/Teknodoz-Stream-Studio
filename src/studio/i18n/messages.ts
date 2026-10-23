@@ -1120,6 +1120,28 @@ export const tr = {
     "Studio karışımına eklendi: kayıt ve canlı yayın bu sesi içerir.",
   "pod.rec.inStudio":
     "Kayıt için stüdyonun “Kayda başla” düğmesini kullanın: video (ekrandaki ses görseliyle) ve podcast karışımının WAV'ı birlikte alınır.",
+  "pod.bc.start": "Kitlesel dinlemeyi aç",
+  "pod.bc.stop": "Kitlesel dinlemeyi kapat",
+  "pod.bc.hint":
+    "Yüzlerce dinleyici için: karışım sunucuya gider, dinleyiciler bağlantıdan dinler (birkaç saniye gecikmeyle). Konuklar yine canlı bağlanır.",
+  "pod.bc.link": "Herkese açık dinleme bağlantısı",
+  "pod.bc.count": "{n} kişi dinliyor",
+  "pod.bc.err":
+    "Kitlesel dinleme açılamadı (giriş ya da sunucu ffmpeg gerekir).",
+  "listen.title": "Canlı dinle",
+  "listen.offline":
+    "Yayın şu an kapalı. Başlayınca bu sayfa otomatik bağlanır.",
+  "listen.live": "Canlı yayındasınız",
+  "listen.play": "▶ Dinle",
+  "ac.title": "Otomatik bölümler",
+  "ac.run": "Altyazıdan bölüm oluştur",
+  "ac.runAll": "Altyazı üret + bölüm oluştur",
+  "ac.working": "Çalışıyor…",
+  "ac.done": "{n} bölüm kaydedildi (elle eklediğiniz işaretler korundu).",
+  "ac.none": "Bölüm çıkarılamadı: konuşma çok kısa ya da duraklama yok.",
+  "ac.needWhisper":
+    "Altyazı üretmek için sunucuda Whisper gerekir; altyazıyı elle de yükleyebilirsiniz.",
+  "ac.err": "Bölümler kaydedilemedi.",
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -2217,6 +2239,28 @@ export const en: Record<MessageKey, string> = {
     "Added to the studio mix: recordings and live streams include this audio.",
   "pod.rec.inStudio":
     "To record, use the studio's “Record” button: the video (with the on-screen visualiser) and a WAV of the podcast mix are saved together.",
+  "pod.bc.start": "Open mass listening",
+  "pod.bc.stop": "Close mass listening",
+  "pod.bc.hint":
+    "For hundreds of listeners: the mix goes to the server and people listen from the link (a few seconds behind). Guests still join live.",
+  "pod.bc.link": "Public listening link",
+  "pod.bc.count": "{n} listening",
+  "pod.bc.err":
+    "Could not open mass listening (needs sign-in and ffmpeg on the server).",
+  "listen.title": "Listen live",
+  "listen.offline":
+    "The broadcast is off right now. This page connects when it starts.",
+  "listen.live": "You are live",
+  "listen.play": "▶ Listen",
+  "ac.title": "Automatic chapters",
+  "ac.run": "Make chapters from the subtitles",
+  "ac.runAll": "Transcribe + make chapters",
+  "ac.working": "Working…",
+  "ac.done": "{n} chapters saved (the markers you added by hand were kept).",
+  "ac.none": "No chapters found: the talk is too short or has no pauses.",
+  "ac.needWhisper":
+    "Transcribing needs Whisper on the server; you can also upload subtitles by hand.",
+  "ac.err": "The chapters could not be saved.",
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = {

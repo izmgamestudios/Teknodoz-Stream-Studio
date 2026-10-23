@@ -48,6 +48,7 @@ import { createRoomsApi } from "./server/rooms";
 import { bridgeItems } from "./server/watch-bridge";
 import { isAdminRequest } from "./server/auth";
 import { createCreatorsApi, type CreatorRecord } from "./server/creators";
+import { createListenApi } from "./server/listen";
 import { createGuard } from "./server/guard";
 import { withSecurityHeaders } from "./server/security-headers";
 
@@ -116,6 +117,13 @@ const ffmpegBin =
   liveEnv["FFMPEG_PATH"]?.trim() ||
   liveEnv["LIVE_FFMPEG_PATH"]?.trim() ||
   "ffmpeg";
+const listen = createListenApi({
+  ffmpegBin,
+  canStart: async (req) =>
+    !creators.enabled ||
+    isAdminRequest(req, adminToken, Date.now()) ||
+    (await creators.creatorOf(req)) !== null,
+});
 const prober = ffprobeProber(liveEnv["FFPROBE_PATH"]?.trim() || "ffprobe");
 const media = createMediaApi({
   token: adminToken,
@@ -275,6 +283,8 @@ async function dispatch(request: Request, env: unknown, ctx: unknown) {
     if (roomResponse) return roomResponse;
     const catalogResponse = await catalog.handle(request);
     if (catalogResponse) return catalogResponse;
+    const listenResponse = await listen.handle(request);
+    if (listenResponse) return listenResponse;
     const creatorResponse = await creators.handle(request);
     if (creatorResponse) return creatorResponse;
     const sessionResponse = await session.handle(request);

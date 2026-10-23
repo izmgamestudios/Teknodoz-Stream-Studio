@@ -59,6 +59,8 @@ export function guardClass(
   if (
     pathname.startsWith("/assets/") ||
     pathname.startsWith("/media/") ||
+    pathname.startsWith("/api/listen") || // chunk uploads: one per second by design
+    pathname.startsWith("/listen/") ||
     pathname.startsWith("/api/rooms") ||
     pathname.startsWith("/api/live") ||
     pathname === "/api/session" // own, stricter lock-out

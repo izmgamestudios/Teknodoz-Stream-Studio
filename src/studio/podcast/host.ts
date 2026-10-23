@@ -57,6 +57,8 @@ export interface PodcastSnapshot {
   readonly lastRecording: { blob: Blob; ms: number; markers: Chapter[] } | null;
   readonly guestPrompter: PodcastPrompter;
   readonly autoOnAir: boolean;
+  /** public live stream for a big audience (HTTP relay), null while off */
+  readonly broadcast: { link: string; listeners: number } | null;
   readonly links: { guest: string; listener: string; remote: string } | null;
 }
 
@@ -92,6 +94,15 @@ export class PodcastHost {
   private chunks: Blob[] = [];
   private markers: Chapter[] = [];
   private offs: Array<() => void> = [];
+  private bcast: {
+    id: string;
+    token: string;
+    link: string;
+    listeners: number;
+    rec: MediaRecorder;
+    queue: Promise<void>;
+    poll: ReturnType<typeof setInterval>;
+  } | null = null;
   private airTimer: ReturnType<typeof setTimeout> | null = null;
   private listeners = new Set<() => void>();
   private snap: PodcastSnapshot;
@@ -142,6 +153,9 @@ export class PodcastHost {
       lastRecording: this.state.last,
       guestPrompter: this.state.prompter,
       autoOnAir: this.state.autoOnAir,
+      broadcast: this.bcast
+        ? { link: this.bcast.link, listeners: this.bcast.listeners }
+        : null,
       links: code
         ? {
             remote: podcastLink(this.origin(), code, "remote"),
@@ -243,6 +257,7 @@ export class PodcastHost {
   }
 
   async stop(): Promise<void> {
+    await this.stopBroadcast();
     if (this.recorder?.state === "recording") await this.stopRecording();
     await this.session?.close().catch(() => undefined);
     this.teardown();
@@ -519,6 +534,104 @@ export class PodcastHost {
   }
   kick(peerId: string): void {
     this.p2p?.kick(peerId);
+  }
+
+  /* --------------------------- mass listening relay --------------------------- */
+
+  /**
+   * Streams the mix to the server as small WebM/Opus chunks; the server turns it into a live
+   * MP3 for any number of listeners (`/listen/<id>`). Guests stay on WebRTC.
+   */
+  async startBroadcast(title = "Podcast"): Promise<boolean> {
+    if (this.bcast || !this.dest) return false;
+    const type = ["audio/webm;codecs=opus", "audio/webm"].find((t) =>
+      MediaRecorder.isTypeSupported(t),
+    );
+    if (!type) return false;
+    let made: { id: string; token: string };
+    try {
+      const res = await fetch("/api/listen", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) return false;
+      made = (await res.json()) as { id: string; token: string };
+    } catch {
+      return false;
+    }
+    const rec = new MediaRecorder(this.dest.stream, {
+      mimeType: type,
+      audioBitsPerSecond: 96_000,
+    });
+    const b = {
+      ...made,
+      link: `${this.origin()}/listen/${made.id}`,
+      listeners: 0,
+      rec,
+      queue: Promise.resolve(),
+      poll: setInterval(() => void this.pollBroadcast(), 5000),
+    };
+    this.bcast = b;
+    rec.ondataavailable = (e) => {
+      if (e.data.size === 0) return;
+      // sequential, so the server receives the chunks in order
+      b.queue = b.queue.then(async () => {
+        try {
+          const res = await fetch(`/api/listen/${made.id}/chunk`, {
+            method: "POST",
+            headers: { "x-listen-token": made.token },
+            body: e.data,
+          });
+          if (res.ok) {
+            const d = (await res.json()) as { listeners?: number };
+            b.listeners = d.listeners ?? b.listeners;
+          } else if (res.status === 404 || res.status === 401)
+            void this.stopBroadcast();
+        } catch {
+          /* a lost chunk is a short glitch for listeners; the next one follows */
+        }
+      });
+    };
+    rec.start(1000);
+    this.emit();
+    return true;
+  }
+
+  private async pollBroadcast(): Promise<void> {
+    const b = this.bcast;
+    if (!b) return;
+    try {
+      const d = (await (await fetch(`/api/listen/${b.id}`)).json()) as {
+        live?: boolean;
+        listeners?: number;
+      };
+      if (!d.live) return void this.stopBroadcast();
+      if (d.listeners !== b.listeners) {
+        b.listeners = d.listeners ?? 0;
+        this.emit();
+      }
+    } catch {
+      /* offline: keep trying */
+    }
+  }
+
+  async stopBroadcast(): Promise<void> {
+    const b = this.bcast;
+    if (!b) return;
+    this.bcast = null;
+    clearInterval(b.poll);
+    try {
+      if (b.rec.state !== "inactive") b.rec.stop();
+    } catch {
+      /* already stopped */
+    }
+    await b.queue;
+    await fetch(`/api/listen/${b.id}/stop`, {
+      method: "POST",
+      headers: { "x-listen-token": b.token },
+    }).catch(() => undefined);
+    this.emit();
   }
 
   /* ------------------------------- guest prompter ------------------------------ */

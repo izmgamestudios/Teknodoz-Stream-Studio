@@ -151,6 +151,7 @@ const BARE_PREFIXES = [
   "/remote",
   "/r",
   "/chat",
+  "/listen",
   "/classic/join",
   "/classic/remote",
 ];

@@ -1816,3 +1816,34 @@ describe("dispose", () => {
     expect(ctx.closeCalls).toBe(1); // the half-built context is released
   });
 });
+
+describe("openReturn (mix-minus)", () => {
+  it("carries every channel except the excluded one, including channels added later", async () => {
+    const { bus, ctx } = rig();
+    await bus.ensureRunning();
+    const a = addMic(bus, ctx, "guest:a", "guest");
+    const b = addMic(bus, ctx, "guest:b", "guest");
+    const ret = bus.openReturn("guest:a");
+    const sum = ctx.gains[ctx.gains.length - 1] as FakeGain;
+    const sa = strip(a.source);
+    const sb = strip(b.source);
+    expect(reaches(sa.gate, sum)).toBe(false);
+    expect(reaches(sb.gate, sum)).toBe(true);
+    // a channel added after the return opens joins it, unless it is the excluded one
+    const c = addMic(bus, ctx, "mic", "mic");
+    expect(reaches(strip(c.source).gate, sum)).toBe(true);
+    expect(ret.stream).toBeTruthy();
+    // closing detaches everything
+    ret.close();
+    expect(reaches(sb.gate, sum)).toBe(false);
+    expect(reaches(strip(c.source).gate, sum)).toBe(false);
+  });
+  it("a channel with the excluded id added after opening stays out of the return", async () => {
+    const { bus, ctx } = rig();
+    await bus.ensureRunning();
+    bus.openReturn("guest:z");
+    const sum = ctx.gains[ctx.gains.length - 1] as FakeGain;
+    const z = addMic(bus, ctx, "guest:z", "guest");
+    expect(reaches(strip(z.source).gate, sum)).toBe(false);
+  });
+});

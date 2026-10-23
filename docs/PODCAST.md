@@ -68,7 +68,7 @@ Röleye `join` isteğinde `audio: true` bayrağı eklenir; onaylanınca yalnızc
 | P3 ✅ | `/podcast` yönetici sayfası, konuk ve dinleyici görünümleri, ses zinciri (NVIDIA algılama + RNNoise), kayıt → kütüphane, 4 dil |
 | P4 ✅ | Konuk başına mix-minus, ikinci moderatör cihazı |
 | P5 ✅ | Podcast stüdyonun içinde: panel, ses görseli katmanı, podcast şablonları, video ile birlikte WAV, kütüphanede ses analizi ve podcast düzenleme, İzle & Dinle sayfasında herkese açık podcast |
-| sonraki | Sunucu tarafı karışım (SFU) ile yüzlerce dinleyici, otomatik bölüm işaretleri/altyazı |
+| P6 ✅ | Video konuklarda mix-minus, kitlesel dinleme rölesi, otomatik bölüm + altyazı |
 
 ## Kullanım (P3)
 
@@ -105,3 +105,11 @@ Yönetici sayfasında üçüncü bağlantı: **telefon kumandası** (`/r/KOD?as=
 **Kütüphane:** Her kayıt *video* ya da *ses* olarak tutulur; **Ses analizi** (loudness LUFS, tepe, dinamik aralık, duraklamalar, konuşma oranı + öneriler), indirme paneli (ham kayıt, altyazısız, altyazılı, .srt/.vtt, WAV) ve **Podcast düzenleme** (tek tık ön ayar: ses temizleme + gürültü + sıkıştırma + −16 LUFS; "uzun sessizlikleri kısalt") vardır.
 
 **Herkese açık:** Yayınlanan (public) podcast / video / hikâye içerikleri **İzle & Dinle** sayfasında da görünür; kategoriler İlçede Pembe Haber konularıyla aynıdır.
+
+## Kitlesel dinleme, otomatik bölüm, video konuk mix-minus (P6)
+
+**Kitlesel dinleme (SFU yerine, yeni bağımlılık yok):** Podcast panelinde *Kitlesel dinlemeyi aç*. Moderatörün tarayıcısı karışımı saniyede bir küçük WebM/Opus parçası olarak sunucuya yollar; sunucu bunu ffmpeg ile canlı **MP3**'e çevirip HTTP ile dağıtır (`/listen/KOD/live.mp3`). Dinleyiciler `/listen/KOD` sayfasında tek düğmeyle dinler, birkaç saniye gecikme olur; konuklar yine WebRTC ile canlı bağlanır. Sınırlar: aynı anda 3 yayın, yayın başına 800 dinleyici, yavaş bağlantı (2 MB geride kalan) düşürülür, 45 sn parça gelmezse yayın biter. Sunucuda `ffmpeg` (libmp3lame) gerekir; Nginx/Cloudflare'de akışın tamponlanmaması için yanıt `X-Accel-Buffering: no` ve `no-store` ile gelir.
+
+**Otomatik bölümler:** Kütüphane → kayıt → *Otomatik bölümler*. Altyazı yoksa önce Whisper ile üretir; konuşmadaki doğal duraklamalarda (en az 2,5 dk arayla) yeni bölüm açar ve bölümü orada söylenen ilk kelimelerle adlandırır. Elle eklediğiniz işaretler korunur, yakınındaki otomatik bölüm atılır.
+
+**Video konuklarda mix-minus:** Stüdyonun video odasındaki her konuk, odanın sesini **kendi sesi olmadan** alır (resim programla aynı); izleyiciler tam karışımı alır. Konuk artık kendi sesini geri duymaz (kulaklık yine önerilir).
