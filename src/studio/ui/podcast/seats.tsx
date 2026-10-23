@@ -55,6 +55,15 @@ export function PodcastGuestSeat({
   const [prompter, setPrompter] = useState<PodcastPrompter>(DEFAULT_PROMPTER);
   const [err, setErr] = useState("");
   const bar = useLevel(mic.stream);
+  const ret = useRef<HTMLAudioElement>(null);
+  const [back, setBack] = useState<MediaStream | null>(client.stream);
+  useEffect(() => client.onStream(setBack), [client]);
+  useEffect(() => {
+    const a = ret.current;
+    if (!a || !back) return;
+    a.srcObject = back;
+    void a.play().catch(() => undefined);
+  }, [back]);
   const audioTrack = mic.stream.getAudioTracks()[0] ?? null;
 
   useEffect(() => {
@@ -96,6 +105,8 @@ export function PodcastGuestSeat({
         />
         {live ? t("pod.guest.live") : t("pod.guest.waiting")}
       </p>
+      {/* the room without your own voice (mix-minus), so nobody hears an echo of themselves */}
+      <audio ref={ret} autoPlay playsInline data-testid="return-audio" />
       <button
         type="button"
         data-testid="mute-toggle"

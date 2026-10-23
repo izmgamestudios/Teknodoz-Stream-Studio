@@ -206,3 +206,30 @@ describe("mute control", () => {
     expect(() => v.client.sendMic(true)).toThrow();
   });
 });
+
+describe("per-peer program (mix-minus)", () => {
+  it("a peer's own program wins over the shared one and falls back when cleared", async () => {
+    const h = makeHarness();
+    const a = await makePair(h, "guest", { audioOnly: true });
+    const b = await makePair(h, "guest", { audioOnly: true });
+    const shared = fakeStream("audio");
+    const forA = fakeStream("audio");
+    h.host.setProgramStream(shared);
+    expect(h.host.setPeerProgram(a.invite.peerId, forA)).toBe(true);
+    await settle();
+    const track = (p: typeof a) => p.hostPc.transceivers[0]?.sender.track;
+    expect(track(a)).toBe(forA.getAudioTracks()[0]);
+    expect(track(b)).toBe(shared.getAudioTracks()[0]);
+
+    const next = fakeStream("audio");
+    h.host.setProgramStream(next); // shared changes: A keeps its own
+    await settle();
+    expect(track(a)).toBe(forA.getAudioTracks()[0]);
+    expect(track(b)).toBe(next.getAudioTracks()[0]);
+
+    h.host.setPeerProgram(a.invite.peerId, null);
+    await settle();
+    expect(track(a)).toBe(next.getAudioTracks()[0]);
+    expect(h.host.setPeerProgram("nope", forA)).toBe(false);
+  });
+});

@@ -321,6 +321,18 @@ export class StudioHost {
     }
   }
 
+  /**
+   * Give one peer its own program (podcast mix-minus: everybody except that guest), or clear it
+   * with null to fall back to the shared `setProgramStream` output. Same `replaceTrack` path.
+   */
+  setPeerProgram(peerId: string, stream: MediaStream | null): boolean {
+    const entry = this.peers.get(peerId);
+    if (!entry || entry.closed || this.disposed) return false;
+    entry.programOverride = stream;
+    void this.applyProgramTracks(entry);
+    return true;
+  }
+
   /* -------------------------------------------------------------- */
   /* Green room / moderation                                         */
   /* -------------------------------------------------------------- */
@@ -565,6 +577,7 @@ export class StudioHost {
       invalid: 0,
       lastStateJson: null,
       lastPrompterJson: null,
+      programOverride: null,
       closed: false,
       abort: new AbortController(),
       cleanups: [],
@@ -604,7 +617,7 @@ export class StudioHost {
   }
 
   private async applyProgramTracks(entry: PeerEntry): Promise<void> {
-    const stream = this.programStream;
+    const stream = entry.programOverride ?? this.programStream;
     const video = stream?.getVideoTracks()[0] ?? null;
     const audio = stream?.getAudioTracks()[0] ?? null;
     const swap = async (

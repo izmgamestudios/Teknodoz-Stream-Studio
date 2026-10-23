@@ -85,6 +85,8 @@ export interface PeerEntry {
   lastStateJson: string | null;
   /** last prompter message sent (podcast guests), to skip identical repeats */
   lastPrompterJson: string | null;
+  /** podcast mix-minus: this peer's own program (overrides the shared one) */
+  programOverride: MediaStream | null;
   closed: boolean;
   /** Aborted on close so an in-flight ICE wait ends immediately. */
   abort: AbortController;

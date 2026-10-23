@@ -79,6 +79,11 @@ export class PodcastHost {
     { src: MediaStreamAudioSourceNode; gain: GainNode; el: HTMLAudioElement }
   >();
   private levels = new Map<string, Level>();
+  /** mix-minus buses: what guest `id` hears = host mic + every other guest, never itself */
+  private rets = new Map<
+    string,
+    { dest: MediaStreamAudioDestinationNode; wired: Set<string> }
+  >();
   private recorder: MediaRecorder | null = null;
   private chunks: Blob[] = [];
   private markers: Chapter[] = [];
@@ -234,6 +239,7 @@ export class PodcastHost {
       g.src.disconnect();
     }
     this.guests.clear();
+    this.rets.clear();
     this.levels.clear();
     this.session?.dispose();
     this.p2p?.dispose();
@@ -282,8 +288,10 @@ export class PodcastHost {
     if (old) {
       old.el.srcObject = null;
       old.src.disconnect();
+      old.gain.disconnect();
       this.guests.delete(id);
       this.levels.delete(id);
+      for (const r of this.rets.values()) r.wired.delete(id);
     }
     if (!stream) return;
     // Chrome only delivers a remote stream into WebAudio while it is attached to a media element
@@ -298,7 +306,52 @@ export class PodcastHost {
     gain.connect(this.master);
     this.tap(id, src);
     this.guests.set(id, { src, gain, el });
+    this.syncReturns();
     this.syncMix();
+  }
+
+  /**
+   * Keeps one return bus per guest seat and wires every OTHER guest (and the host microphone)
+   * into it, so a guest hears the conversation without hearing their own voice back.
+   */
+  private syncReturns(): void {
+    const ctx = this.ctx;
+    const p2p = this.p2p;
+    if (!ctx || !p2p || !this.micGain) return;
+    const seats = new Set(
+      p2p
+        .getPeers()
+        .filter((p) => p.role === "guest")
+        .map((p) => p.id),
+    );
+    for (const [id, r] of this.rets)
+      if (!seats.has(id)) {
+        const bus = r.dest;
+        const off = (n: AudioNode) => {
+          try {
+            n.disconnect(bus);
+          } catch {
+            /* not connected (that guest never reached this bus) */
+          }
+        };
+        off(this.micGain);
+        for (const g of this.guests.values()) off(g.gain);
+        this.rets.delete(id);
+      }
+    for (const id of seats) {
+      let r = this.rets.get(id);
+      if (!r) {
+        r = { dest: ctx.createMediaStreamDestination(), wired: new Set() };
+        this.micGain.connect(r.dest);
+        this.rets.set(id, r);
+        p2p.setPeerProgram(id, r.dest.stream);
+      }
+      for (const [other, g] of this.guests)
+        if (other !== id && !r.wired.has(other)) {
+          g.gain.connect(r.dest);
+          r.wired.add(other);
+        }
+    }
   }
 
   private syncMix(): void {
@@ -310,6 +363,7 @@ export class PodcastHost {
   }
 
   private onPeers(): void {
+    this.syncReturns();
     this.syncMix();
     this.emit();
     // The host answers a join request with "guest-approved" right after publishing the peer
