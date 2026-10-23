@@ -577,6 +577,24 @@ export const de: Record<MessageKey, string> = {
   "ws.err.not-json": "Die Datei konnte nicht als JSON gelesen werden.",
   "ws.err.too-large": "Die Datei ist zu groß (max. 12 MB).",
   "ws.err.newer-version": "Die Datei stammt von einer neueren Version.",
+  "ct.tree.title": "URL-Baum",
+  "ct.tree.help":
+    "Jede Zeile ist eine Quelle: '- Titel | https://adresse | draft/private | tag1, tag2'. Zwei Leerzeichen Einrückung ergeben einen Unterknoten. JSON ist ebenfalls möglich. Der Import erzeugt nur Entwürfe / private Einträge; URLs müssen öffentlich sein (http/https, ohne Zugangsdaten; localhost und interne Adressen werden abgelehnt).",
+  "ct.tree.preview": "Vorschau",
+  "ct.tree.file": "Aus Datei laden (.txt, .json)",
+  "ct.tree.export": "Exportieren:",
+  "ct.tree.exportText": "Text",
+  "ct.tree.err.empty": "Der Baum hat keine Knoten.",
+  "ct.tree.err.too-many-nodes": "Höchstens {n} Knoten erlaubt.",
+  "ct.tree.err.too-deep": "Der Baum darf höchstens 8 Ebenen tief sein.",
+  "ct.tree.err.bad-indent":
+    "Falsche Einrückung: zwei Leerzeichen, keine Ebene überspringen.",
+  "ct.tree.err.bad-line": "Zeile nicht lesbar: 'Titel | Adresse' verwenden.",
+  "ct.tree.err.bad-url":
+    "Adresse ungültig oder unsicher (nur öffentliche http/https; localhost, interne und Adressen mit Zugangsdaten werden abgelehnt).",
+  "ct.tree.err.tree-cannot-publish":
+    "Der Baum-Import kann nichts öffentlich machen; nur draft oder private verwenden.",
+  "ct.tree.err.bad-json": "JSON konnte nicht gelesen werden.",
   "ct.bulk.visibilityValue": "Neue Sichtbarkeit",
   "ct.bulk.title": "Sammelaktionen",
   "ct.bulk.action": "Sammelaktion wählen",

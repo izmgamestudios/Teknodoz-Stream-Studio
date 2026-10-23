@@ -14,6 +14,10 @@ import {
   type AuditSink,
   type Redirect,
 } from "./server/content";
+import { createSeoApi } from "./server/seo/router";
+import { siteFromEnv } from "./server/seo/site";
+import { serverBrand } from "./studio/branding/server-brand";
+import { readFile } from "node:fs/promises";
 import { createBulkApi } from "./server/content-bulk";
 import type { AccessGroup } from "./server/content-groups";
 import { createImportApi } from "./server/content-import";
@@ -144,6 +148,25 @@ const content = createContentApi({
   redirects: redirectStore,
   audit: contentAudit,
 });
+// Public SEO surface: /library/*, /docs, sitemaps, robots.txt, llms.txt, RSS, oEmbed (anonymous).
+const mediaDirPath = liveEnv["MEDIA_DIR"]?.trim() || "data/media";
+const seo = createSeoApi({
+  store: contentStore,
+  redirects: redirectStore,
+  site: () => siteFromEnv(serverBrand(liveEnv), liveEnv),
+  readVtt: async (path) => {
+    const m =
+      /^\/media\/([a-f0-9]{16})\/captions\/([a-z]{2,3}(?:-[A-Za-z0-9]{2,8})?)\.vtt$/.exec(
+        path,
+      );
+    if (!m) return null;
+    try {
+      return await readFile(`${mediaDirPath}/${m[1]}.${m[2]}.vtt`, "utf8");
+    } catch {
+      return null;
+    }
+  },
+});
 const groupStore = pb
   ? pbRecordStore<AccessGroup>(pb, "access_groups")
   : fileRecordStore<AccessGroup>(
@@ -223,6 +246,8 @@ export default {
     try {
       const manifestResponse = handleManifest(request);
       if (manifestResponse) return manifestResponse;
+      const seoResponse = await seo.handle(request);
+      if (seoResponse) return seoResponse;
       const roomResponse = await rooms.handle(request);
       if (roomResponse) return roomResponse;
       const catalogResponse = await catalog.handle(request);

@@ -249,7 +249,7 @@ function SendToLibrary() {
       {state.s === "done" && (
         <p className="mt-2" role="status">
           ✓ {t("rec.up.done")}{" "}
-          <Link to="/library" className="underline">
+          <Link to="/admin/media" className="underline">
             {t("rec.up.open")}
           </Link>
         </p>

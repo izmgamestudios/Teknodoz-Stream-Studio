@@ -88,3 +88,11 @@ Every `public` item has one canonical, server-rendered URL: `/library/{type}/{sl
 - **Dependencies:** SheetJS and `marked` were **not** added. The SheetJS CDN tarball is not reachable from the build environment and a hand-written reader/writer is smaller and has no advisory history; Markdown is parsed by `src/shared/markdown.ts` (headings, paragraphs, lists, link / image / allowlisted-embed lines; no HTML survives).
 - **Atomic commits:** one import chunk (≤ 500 rows) is written with the PocketBase batch API (one transaction); the server switches the batch API on if it is disabled.
 - **Matching** needs up to three lookups per row (id, external id, slug): fine for 500-row chunks, revisit with a prefetch if imports of tens of thousands of rows become routine.
+
+## 7. S4 / S5 notes
+
+- **S4:** bulk actions run as one request / one transaction (`/api/content/bulk`); protected items use access groups (scrypt hash, 5 failures → 15 min lock-out, per-IP unlock rate limit, `no-store` responses).
+- **S5 architecture:** the public surface is rendered as plain HTML by the Node gateway (`src/server/seo/`), not by the React app: no hydration, one constant inline script (unlock), CSP with hashes, ETag + CDN cache headers + a 60 s in-process cache. The React app keeps `/watch` and all creator tools.
+- **hreflang:** items carry one locale and there is no translation-group field yet, so each page only declares itself (+ `x-default`). A `translation_of` field is the next step for real language alternates.
+- **Admin switch for AI crawlers:** an environment variable (`AI_CRAWLERS`) for now; a settings screen is a later UI task.
+- **Chapters / `Clip` markup** need a `chapters` field on items; the media library has them, the catalog row does not yet.

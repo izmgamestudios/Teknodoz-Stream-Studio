@@ -228,6 +228,44 @@ Her toplu işlem `content_audit` kaydına işlenir (önceki/sonraki görünürl�
 
 Herkese açık tarafta `protected` kayıtlar yalnızca **taslak** olarak görünür (başlık, slug). Gövde yalnızca `POST /api/content/:id/unlock` ile `{ "password": "..." }` gönderilince döner; yanıt hiçbir yerde önbelleğe alınmaz. **5 yanlış denemede grup 15 dakika kilitlenir** (doğru şifre de reddedilir), başarılı girişte sayaç sıfırlanır; ayrıca istemci başına dakikada 10 deneme sınırı vardır. `access_groups` koleksiyonu yalnızca sunucudan okunur.
 
+## Herkese açık sayfalar: SEO / AEO / GEO
+
+Giriş gerektirmeyen, sunucuda üretilen saf HTML sayfalar (JavaScript gerekmez, önbelleğe alınabilir):
+
+| Adres | Ne |
+|---|---|
+| `/library` | Kütüphane ana sayfası (hikaye, video, podcast bölümleri) |
+| `/library/stories`, `/library/videos`, `/library/podcasts` | Sayfalı listeler (24/sayfa) |
+| `/library/<tür>/<slug>` | İçerik sayfası: özet (cevap kutusu), oynatıcı, gövde, SSS, **dökümü (transkript)**, etiketler, basın kiti, ilgili içerikler |
+| `/library/<tür>/<slug>.md` | Aynı içeriğin Markdown ikizi (yapay zekâ asistanları için temiz alıntı) |
+| `/embed/<tür>/<slug>` | Gömme sayfası (`noindex`) · `/api/oembed?url=…` oEmbed |
+| `/library/podcasts/feed.xml` | Podcast RSS (Apple/Spotify) |
+| `/docs` | Herkese açık kaynakça (APA 7, türe göre gruplu) |
+| `/sitemap.xml` | Sitemap dizini → sayfalı sitemap dosyaları (video sitemap girdileri dahil) |
+| `/robots.txt`, `/llms.txt`, `/llms-full.txt` | Tarayıcı kuralları ve LLM site haritası |
+
+Sayfalarda: kanonik adres, `hreflang`, Open Graph/Twitter kartları, JSON-LD (`Organization`, `WebSite`, `BreadcrumbList`, `VideoObject` / `PodcastEpisode`, `FAQPage`), görünür yayıncı/tarih/güncelleme, `noindex` olan içerikler sitemap ve llms dosyalarına girmez. Şifreli içerikler yalnızca başlıkla (`noindex`) görünür, şifre girilince gövde açılır. Yanıtlar `ETag` + `s-maxage=3600, stale-while-revalidate=86400` ile gelir; ayrıca sunucuda 60 sn'lik bellek önbelleği vardır, yani yoğun ziyarette veritabanı sayfa başına dakikada bir kez okunur.
+
+Ortam değişkenleri (`.env.production`):
+
+```
+SITE_URL=https://teknodoz-studio.ortakofis.org      # mutlaka ayarlayın: kanonik adresler, sitemap, JSON-LD buradan gelir
+PUBLISHER_NAME=Teknodoz · IZM Game Studios          # JSON-LD "publisher" ve sayfa alt bilgisi
+PUBLISHER_URL=https://...                           # (isteğe bağlı) kurumun sitesi
+PUBLISHER_LOGO=https://.../logo-512.png             # (isteğe bağlı) en az 112×112, kare
+AI_CRAWLERS=allow                                   # block = GPTBot, ClaudeBot, PerplexityBot, Google-Extended vb. engellenir
+EMBED_ORIGINS=*                                     # gömme sayfasını çerçeveleyebilecek kaynaklar (CSP frame-ancestors)
+```
+
+Yayına aldıktan sonra:
+
+1. İçerikleri `/admin/tables/video` (story, podcast) üzerinden **özet (summary), SSS, etiket ve döküm adresi** ile doldurun; yayınlamak için satırları seçip Toplu işlem → Görünürlük → Herkese açık.
+2. Google Search Console ve Bing Webmaster Tools'a `https://…/sitemap.xml` adresini ekleyin.
+3. Doğrulama: Google "Zengin Sonuçlar Testi" ve schema.org doğrulayıcı ile bir içerik sayfasını, `curl -sI https://…/library/videos/<slug>` ile başlıkları, `curl https://…/robots.txt` ile kuralları kontrol edin.
+4. Cloudflare önünde ise `/library*`, `/docs`, `/sitemap*`, `/llms*` için "Cache Everything" kuralı ekleyin (origin zaten `s-maxage` gönderir); yayınlama sonrası ilgili adresleri temizleyin.
+
+Yönetim medya kütüphanesi artık `/admin/media` adresindedir (`/library` herkese açık sayfadır).
+
 ## Çeviriler (`/translations`)
 
 Yerleşik metinler tr/en/de/es için kodda durur. **Çeviriler** sayfasından (içerik üretici modu,

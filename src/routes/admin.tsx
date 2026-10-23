@@ -174,7 +174,7 @@ function AdminPage() {
                 <Link to="/translations" className={BTN_ACCENT}>
                   🌐 {t("admin.go.translations")}
                 </Link>
-                <Link to="/library" className={BTN_ACCENT}>
+                <Link to="/admin/media" className={BTN_ACCENT}>
                   🎬 {t("admin.go.library")}
                 </Link>
                 <Link to="/watch" className={BTN}>

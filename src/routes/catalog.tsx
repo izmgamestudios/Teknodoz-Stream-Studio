@@ -381,7 +381,7 @@ function CatalogPage() {
           <Link to="/watch" className="underline">
             📺 {t("catalog.preview")}
           </Link>
-          <Link to="/library" className="underline">
+          <Link to="/admin/media" className="underline">
             🎬 {t("admin.go.library")}
           </Link>
         </div>

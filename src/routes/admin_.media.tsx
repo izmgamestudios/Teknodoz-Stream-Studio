@@ -1,4 +1,4 @@
-// src/routes/library.tsx
+// src/routes/admin_.media.tsx
 // Media library (admin): recordings from the studio and uploaded files. Preview, rename, delete
 // and publish to the watch page. Needs the admin token (sessionStorage, this tab only).
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -43,7 +43,7 @@ import {
   type MediaSort,
 } from "@/studio/watch/media-filter";
 
-export const Route = createFileRoute("/library")({
+export const Route = createFileRoute("/admin_/media")({
   head: ({ matches }) => ({
     meta: [
       { title: titleFromMatches(matches, "Library") },

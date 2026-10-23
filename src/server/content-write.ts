@@ -1,7 +1,8 @@
 // src/server/content-write.ts
 // Turns validated API input into a ContentRow (pure): column vs meta placement, slug, summary
 // fallbacks, timestamps. Secret fields cannot get here: zodFor() rejects them.
-import { blocksSchema, textToBlocks, type Block } from "../shared/blocks";
+import { blocksSchema, type Block } from "../shared/blocks";
+import { mdToBlocks } from "../shared/markdown";
 import {
   SCHEMA_VERSION,
   exposedFields,
@@ -60,7 +61,7 @@ export function applyInput(
     if (!b.success) return { ok: false, error: "bad-blocks" };
     blocks = b.data;
   } else if (typeof data["body_md"] === "string") {
-    blocks = textToBlocks(data["body_md"]);
+    blocks = mdToBlocks(data["body_md"]);
   }
 
   const title = (data["title"] as string | undefined) ?? existing?.title;

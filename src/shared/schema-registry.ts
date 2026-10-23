@@ -168,6 +168,8 @@ export const TYPE_FIELDS: Record<EntityType, readonly FieldDef[]> = {
       meta: true,
     }),
     f("authors", "tags", { meta: true }),
+    /** external_id of the parent node (URL tree) */
+    f("parent", "text", { max: 120, meta: true }),
     f("publisher", "text", { max: 120, meta: true }),
     f("published_on", "date", { meta: true }),
     f("accessed_on", "date", { meta: true }),

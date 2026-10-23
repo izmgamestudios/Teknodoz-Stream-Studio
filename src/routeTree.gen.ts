@@ -17,7 +17,6 @@ import { Route as CommunityRouteImport } from "./routes/community";
 import { Route as DownloadRouteImport } from "./routes/download";
 import { Route as GuideRouteImport } from "./routes/guide";
 import { Route as JoinRouteImport } from "./routes/join";
-import { Route as LibraryRouteImport } from "./routes/library";
 import { Route as LiveRouteImport } from "./routes/live";
 import { Route as RemoteRouteImport } from "./routes/remote";
 import { Route as RoomRouteImport } from "./routes/room";
@@ -25,6 +24,7 @@ import { Route as SettingsRouteImport } from "./routes/settings";
 import { Route as StudioRouteImport } from "./routes/studio";
 import { Route as TranslationsRouteImport } from "./routes/translations";
 import { Route as WatchRouteImport } from "./routes/watch";
+import { Route as AdminMediaRouteImport } from "./routes/admin_.media";
 import { Route as ChatCodeRouteImport } from "./routes/chat.$code";
 import { Route as ClassicIndexRouteImport } from "./routes/classic/index";
 import { Route as ClassicJoinRouteImport } from "./routes/classic/join";
@@ -73,11 +73,6 @@ const JoinRoute = JoinRouteImport.update({
   path: "/join",
   getParentRoute: () => rootRouteImport,
 } as any);
-const LibraryRoute = LibraryRouteImport.update({
-  id: "/library",
-  path: "/library",
-  getParentRoute: () => rootRouteImport,
-} as any);
 const LiveRoute = LiveRouteImport.update({
   id: "/live",
   path: "/live",
@@ -111,6 +106,11 @@ const TranslationsRoute = TranslationsRouteImport.update({
 const WatchRoute = WatchRouteImport.update({
   id: "/watch",
   path: "/watch",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const AdminMediaRoute = AdminMediaRouteImport.update({
+  id: "/admin_/media",
+  path: "/admin/media",
   getParentRoute: () => rootRouteImport,
 } as any);
 const ChatCodeRoute = ChatCodeRouteImport.update({
@@ -158,7 +158,6 @@ export interface FileRoutesByFullPath {
   "/download": typeof DownloadRoute;
   "/guide": typeof GuideRoute;
   "/join": typeof JoinRoute;
-  "/library": typeof LibraryRoute;
   "/live": typeof LiveRoute;
   "/remote": typeof RemoteRoute;
   "/room": typeof RoomRoute;
@@ -166,6 +165,7 @@ export interface FileRoutesByFullPath {
   "/studio": typeof StudioRoute;
   "/translations": typeof TranslationsRoute;
   "/watch": typeof WatchRoute;
+  "/admin/media": typeof AdminMediaRoute;
   "/chat/$code": typeof ChatCodeRoute;
   "/classic/join": typeof ClassicJoinRoute;
   "/classic/prompter": typeof ClassicPrompterRoute;
@@ -182,7 +182,6 @@ export interface FileRoutesByTo {
   "/download": typeof DownloadRoute;
   "/guide": typeof GuideRoute;
   "/join": typeof JoinRoute;
-  "/library": typeof LibraryRoute;
   "/live": typeof LiveRoute;
   "/remote": typeof RemoteRoute;
   "/room": typeof RoomRoute;
@@ -190,6 +189,7 @@ export interface FileRoutesByTo {
   "/studio": typeof StudioRoute;
   "/translations": typeof TranslationsRoute;
   "/watch": typeof WatchRoute;
+  "/admin/media": typeof AdminMediaRoute;
   "/chat/$code": typeof ChatCodeRoute;
   "/classic/join": typeof ClassicJoinRoute;
   "/classic/prompter": typeof ClassicPrompterRoute;
@@ -208,7 +208,6 @@ export interface FileRoutesById {
   "/download": typeof DownloadRoute;
   "/guide": typeof GuideRoute;
   "/join": typeof JoinRoute;
-  "/library": typeof LibraryRoute;
   "/live": typeof LiveRoute;
   "/remote": typeof RemoteRoute;
   "/room": typeof RoomRoute;
@@ -216,6 +215,7 @@ export interface FileRoutesById {
   "/studio": typeof StudioRoute;
   "/translations": typeof TranslationsRoute;
   "/watch": typeof WatchRoute;
+  "/admin_/media": typeof AdminMediaRoute;
   "/chat/$code": typeof ChatCodeRoute;
   "/classic/join": typeof ClassicJoinRoute;
   "/classic/prompter": typeof ClassicPrompterRoute;
@@ -235,7 +235,6 @@ export interface FileRouteTypes {
     | "/download"
     | "/guide"
     | "/join"
-    | "/library"
     | "/live"
     | "/remote"
     | "/room"
@@ -243,6 +242,7 @@ export interface FileRouteTypes {
     | "/studio"
     | "/translations"
     | "/watch"
+    | "/admin/media"
     | "/chat/$code"
     | "/classic/join"
     | "/classic/prompter"
@@ -259,7 +259,6 @@ export interface FileRouteTypes {
     | "/download"
     | "/guide"
     | "/join"
-    | "/library"
     | "/live"
     | "/remote"
     | "/room"
@@ -267,6 +266,7 @@ export interface FileRouteTypes {
     | "/studio"
     | "/translations"
     | "/watch"
+    | "/admin/media"
     | "/chat/$code"
     | "/classic/join"
     | "/classic/prompter"
@@ -284,7 +284,6 @@ export interface FileRouteTypes {
     | "/download"
     | "/guide"
     | "/join"
-    | "/library"
     | "/live"
     | "/remote"
     | "/room"
@@ -292,6 +291,7 @@ export interface FileRouteTypes {
     | "/studio"
     | "/translations"
     | "/watch"
+    | "/admin_/media"
     | "/chat/$code"
     | "/classic/join"
     | "/classic/prompter"
@@ -310,7 +310,6 @@ export interface RootRouteChildren {
   DownloadRoute: typeof DownloadRoute;
   GuideRoute: typeof GuideRoute;
   JoinRoute: typeof JoinRoute;
-  LibraryRoute: typeof LibraryRoute;
   LiveRoute: typeof LiveRoute;
   RemoteRoute: typeof RemoteRoute;
   RoomRoute: typeof RoomRoute;
@@ -318,6 +317,7 @@ export interface RootRouteChildren {
   StudioRoute: typeof StudioRoute;
   TranslationsRoute: typeof TranslationsRoute;
   WatchRoute: typeof WatchRoute;
+  AdminMediaRoute: typeof AdminMediaRoute;
   ChatCodeRoute: typeof ChatCodeRoute;
   RCodeRoute: typeof RCodeRoute;
   AdminTablesTypeRoute: typeof AdminTablesTypeRoute;
@@ -381,13 +381,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof JoinRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    "/library": {
-      id: "/library";
-      path: "/library";
-      fullPath: "/library";
-      preLoaderRoute: typeof LibraryRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
     "/live": {
       id: "/live";
       path: "/live";
@@ -435,6 +428,13 @@ declare module "@tanstack/react-router" {
       path: "/watch";
       fullPath: "/watch";
       preLoaderRoute: typeof WatchRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/admin_/media": {
+      id: "/admin_/media";
+      path: "/admin/media";
+      fullPath: "/admin/media";
+      preLoaderRoute: typeof AdminMediaRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     "/chat/$code": {
@@ -516,7 +516,6 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadRoute: DownloadRoute,
   GuideRoute: GuideRoute,
   JoinRoute: JoinRoute,
-  LibraryRoute: LibraryRoute,
   LiveRoute: LiveRoute,
   RemoteRoute: RemoteRoute,
   RoomRoute: RoomRoute,
@@ -524,6 +523,7 @@ const rootRouteChildren: RootRouteChildren = {
   StudioRoute: StudioRoute,
   TranslationsRoute: TranslationsRoute,
   WatchRoute: WatchRoute,
+  AdminMediaRoute: AdminMediaRoute,
   ChatCodeRoute: ChatCodeRoute,
   RCodeRoute: RCodeRoute,
   AdminTablesTypeRoute: AdminTablesTypeRoute,

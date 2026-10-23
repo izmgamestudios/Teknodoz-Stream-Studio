@@ -17,6 +17,7 @@ import { buildExport, download, type FileFormat } from "../../content/files";
 import { LOCALES, type EntityType } from "../../../shared/schema-registry";
 import { BTN, BTN_ACCENT, Check, INPUT_AUTO, PANEL } from "../fields";
 import { BulkBar } from "./bulk-bar";
+import { TreeDialog } from "./tree-dialog";
 import { ImportDialog } from "./import-dialog";
 import { typeLabel } from "./labels";
 import { RowDrawer } from "./row-drawer";
@@ -49,6 +50,7 @@ export function ContentTable({
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
   const [drawer, setDrawer] = useState<{ row: ContentRow | null } | null>(null);
   const [importing, setImporting] = useState(false);
+  const [tree, setTree] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [text, setText] = useState(search.q ?? "");
   const [reload, setReload] = useState(0);
@@ -186,6 +188,11 @@ export function ContentTable({
           label={`⬇ ${t("ct.export")}`}
           onPick={(f) => void exportAll(f)}
         />
+        {type === "source" && (
+          <button className={BTN} onClick={() => setTree(true)}>
+            🌳 {t("ct.tree.title")}
+          </button>
+        )}
         {selected.size > 0 && (
           <>
             <span className="text-xs text-muted-foreground" aria-live="polite">
@@ -487,6 +494,12 @@ export function ContentTable({
             setDrawer(null);
             setReload((n) => n + 1);
           }}
+        />
+      )}
+      {tree && (
+        <TreeDialog
+          onClose={() => setTree(false)}
+          onDone={() => setReload((n) => n + 1)}
         />
       )}
       {importing && (

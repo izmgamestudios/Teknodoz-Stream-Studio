@@ -200,6 +200,14 @@ describe("admin API", () => {
       summary: "Birinci paragraf.",
     });
     expect(c.json.item.body_blocks).toHaveLength(2);
+    const md = await s.call("POST", "/api/content", {
+      type: "video",
+      title: "Md",
+      body_md: "# Başlık\n\n- a\n- b\n\nMetin",
+    });
+    expect(
+      md.json.item.body_blocks.map((b: { type: string }) => b.type),
+    ).toEqual(["heading", "list", "paragraph"]);
     expect(c.json.item.meta).toMatchObject({ duration_sec: 120 });
     expect(
       (
@@ -223,7 +231,7 @@ describe("admin API", () => {
       (await s.call("POST", "/api/content", { type: "nope", title: "x" })).res
         .status,
     ).toBe(400);
-    expect(s.audit.entries.map((e) => e.action)).toEqual(["create"]);
+    expect(s.audit.entries.map((e) => e.action)).toEqual(["create", "create"]);
   });
 
   it("keeps slugs unique and refuses an explicit duplicate", async () => {

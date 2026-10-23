@@ -3,6 +3,8 @@
 // (confirm unpublish) -> commit -> downloadable JSON report. Nothing is written before the plan.
 import { useEffect, useRef, useState } from "react";
 
+import type { Cells } from "../../../shared/tabular";
+
 import { useT } from "../../i18n/use-t";
 import {
   postImport,
@@ -41,10 +43,13 @@ export function ImportDialog({
   type,
   onClose,
   onDone,
+  preloaded,
 }: {
   type: EntityType;
   onClose: () => void;
   onDone: () => void;
+  /** cells already read elsewhere (URL tree): skips the file step */
+  preloaded?: Cells[];
 }) {
   const t = useT();
   const [phase, setPhase] = useState<Phase>({ s: "pick" });
@@ -77,6 +82,16 @@ export function ImportDialog({
     );
     setPhase(r.ok ? { s: "plan", dry: r } : { s: "error", key: err(r.error) });
   };
+
+  const started = useRef(false);
+  useEffect(() => {
+    if (!preloaded || started.current) return;
+    started.current = true;
+    rowsRef.current = buildImportRows(type, preloaded);
+    void plan(rowsRef.current, "draft");
+    // runs once for the preloaded cells
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const pick = async (f: File) => {
     setPhase({ s: "working", label: t("ct.imp.parsing") });

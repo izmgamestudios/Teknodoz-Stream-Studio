@@ -596,6 +596,24 @@ export const tr = {
   "ws.err.not-json": "Dosya JSON olarak okunamadı.",
   "ws.err.too-large": "Dosya çok büyük (en fazla 12 MB).",
   "ws.err.newer-version": "Dosya daha yeni bir sürümle oluşturulmuş.",
+  "ct.tree.title": "URL ağacı",
+  "ct.tree.help":
+    "Her satır bir kaynak: '- Başlık | https://adres | taslak/özel | etiket1, etiket2'. İki boşlukla girinti alt düğüm olur. JSON da yapıştırabilirsiniz. İçe aktarma yalnızca taslak/özel oluşturur; adresler herkese açık, http(s) ve kimlik bilgisiz olmalı (localhost ve iç ağ adresleri reddedilir).",
+  "ct.tree.preview": "Ön izleme",
+  "ct.tree.file": "Dosyadan yükle (.txt, .json)",
+  "ct.tree.export": "Dışa aktar:",
+  "ct.tree.exportText": "Metin",
+  "ct.tree.err.empty": "Ağaçta düğüm yok.",
+  "ct.tree.err.too-many-nodes": "En fazla {n} düğüm olabilir.",
+  "ct.tree.err.too-deep": "Ağaç en fazla 8 düzey derinliğinde olabilir.",
+  "ct.tree.err.bad-indent":
+    "Girinti hatalı: iki boşlukla, düzey atlamadan girinti yapın.",
+  "ct.tree.err.bad-line": "Satır okunamadı: 'Başlık | adres' biçiminde olmalı.",
+  "ct.tree.err.bad-url":
+    "Adres geçersiz ya da güvensiz (yalnızca herkese açık http/https; localhost, iç ağ ve kimlik bilgili adresler reddedilir).",
+  "ct.tree.err.tree-cannot-publish":
+    "Ağaç içe aktarma 'herkese açık' yapamaz; yalnızca taslak ya da özel yazın.",
+  "ct.tree.err.bad-json": "JSON okunamadı.",
   "ct.bulk.visibilityValue": "Yeni görünürlük",
   "ct.bulk.title": "Toplu işlem",
   "ct.bulk.action": "Toplu işlem seç",
@@ -1490,6 +1508,24 @@ export const en: Record<MessageKey, string> = {
   "ws.err.not-json": "The file could not be read as JSON.",
   "ws.err.too-large": "The file is too large (12 MB max).",
   "ws.err.newer-version": "The file was made by a newer version.",
+  "ct.tree.title": "URL tree",
+  "ct.tree.help":
+    "Each line is one source: '- Title | https://address | draft/private | tag1, tag2'. Two spaces of indent make a child. You can paste JSON too. Import only creates drafts / private items; URLs must be public http(s) without credentials (localhost and internal addresses are rejected).",
+  "ct.tree.preview": "Preview",
+  "ct.tree.file": "Load from file (.txt, .json)",
+  "ct.tree.export": "Export:",
+  "ct.tree.exportText": "Text",
+  "ct.tree.err.empty": "The tree has no nodes.",
+  "ct.tree.err.too-many-nodes": "At most {n} nodes are allowed.",
+  "ct.tree.err.too-deep": "The tree can be at most 8 levels deep.",
+  "ct.tree.err.bad-indent":
+    "Wrong indentation: use two spaces and do not skip levels.",
+  "ct.tree.err.bad-line": "The line could not be read: use 'Title | address'.",
+  "ct.tree.err.bad-url":
+    "The address is invalid or unsafe (public http/https only; localhost, internal and credentialed addresses are rejected).",
+  "ct.tree.err.tree-cannot-publish":
+    "Tree import cannot make items public; use draft or private only.",
+  "ct.tree.err.bad-json": "The JSON could not be read.",
   "ct.bulk.visibilityValue": "New visibility",
   "ct.bulk.title": "Bulk actions",
   "ct.bulk.action": "Choose bulk action",

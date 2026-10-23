@@ -575,6 +575,24 @@ export const es: Record<MessageKey, string> = {
   "ws.err.not-json": "No se pudo leer el archivo como JSON.",
   "ws.err.too-large": "El archivo es demasiado grande (máx. 12 MB).",
   "ws.err.newer-version": "El archivo fue creado por una versión más reciente.",
+  "ct.tree.title": "Árbol de URL",
+  "ct.tree.help":
+    "Cada línea es una fuente: '- Título | https://dirección | draft/private | etiqueta1, etiqueta2'. Dos espacios de sangría crean un hijo. También puedes pegar JSON. La importación solo crea borradores / privados; las URL deben ser públicas (http/https sin credenciales; se rechazan localhost y direcciones internas).",
+  "ct.tree.preview": "Vista previa",
+  "ct.tree.file": "Cargar desde archivo (.txt, .json)",
+  "ct.tree.export": "Exportar:",
+  "ct.tree.exportText": "Texto",
+  "ct.tree.err.empty": "El árbol no tiene nodos.",
+  "ct.tree.err.too-many-nodes": "Se permiten como máximo {n} nodos.",
+  "ct.tree.err.too-deep": "El árbol puede tener como máximo 8 niveles.",
+  "ct.tree.err.bad-indent":
+    "Sangría incorrecta: usa dos espacios y no saltes niveles.",
+  "ct.tree.err.bad-line": "No se pudo leer la línea: usa 'Título | dirección'.",
+  "ct.tree.err.bad-url":
+    "La dirección no es válida o es insegura (solo http/https públicas; se rechazan localhost, internas y con credenciales).",
+  "ct.tree.err.tree-cannot-publish":
+    "La importación del árbol no puede publicar; usa solo draft o private.",
+  "ct.tree.err.bad-json": "No se pudo leer el JSON.",
   "ct.bulk.visibilityValue": "Nueva visibilidad",
   "ct.bulk.title": "Acciones en lote",
   "ct.bulk.action": "Elegir acción en lote",
