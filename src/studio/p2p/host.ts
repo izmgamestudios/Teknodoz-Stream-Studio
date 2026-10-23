@@ -32,6 +32,7 @@ import type {
   PeerStatus,
   RemoteCommand,
   RemoteState,
+  PodcastPrompter,
 } from "../types";
 import { uid } from "../defaults";
 import { applyCompactCodecs } from "./codecs";
@@ -107,6 +108,9 @@ export class StudioHost {
   private snapshot: readonly PeerInfo[] = EMPTY_PEERS;
   private snapshotDirty = false;
   private latestRemoteState: RemoteState | null = null;
+  private latestPrompter: PodcastPrompter | null = null;
+  /** text overrides per guest (a guest-specific script) */
+  private readonly prompterTexts = new Map<string, string>();
   private readonly stateThrottle = new LeadingTrailingThrottle<RemoteState>(
     REMOTE_STATE_MIN_INTERVAL_MS,
     (state) => this.flushRemoteState(state),
@@ -188,7 +192,11 @@ export class StudioHost {
    * (<= `iceTimeoutMs`). The peer appears in `getPeers()` as "connecting".
    * @throws P2PError max-peers | unsupported | ice-failed | disposed
    */
-  async createInvite(role: PeerRole, name?: string): Promise<InviteResult> {
+  async createInvite(
+    role: PeerRole,
+    name?: string,
+    opts: { audioOnly?: boolean } = {},
+  ): Promise<InviteResult> {
     this.assertAlive();
     if (this.liveCount() >= (this.options.maxPeers ?? DEFAULT_MAX_PEERS)) {
       throw new P2PError("max-peers");
@@ -199,12 +207,16 @@ export class StudioHost {
     );
     const peerId = uid("peer");
     const entry = this.newEntry(peerId, role, name, pc);
+    // podcast seats (guest / listener) carry audio only; a remote has no media at all
+    const audioOnly = opts.audioOnly === true && role !== "remote";
+    if (audioOnly) entry.info = { ...entry.info, audioOnly: true };
     this.peers.set(peerId, entry);
     try {
       this.attachPeerConnection(entry);
       const dc = pc.createDataChannel("ctl", { ordered: true });
       this.attachChannel(entry, dc);
-      if (role !== "remote") await this.addMediaTransceivers(entry, role);
+      if (role !== "remote")
+        await this.addMediaTransceivers(entry, role, audioOnly);
       this.assertEntryAlive(entry);
       const offer = await pc.createOffer();
       this.assertEntryAlive(entry);
@@ -397,6 +409,60 @@ export class StudioHost {
   }
 
   /* -------------------------------------------------------------- */
+  /* Podcast: guest prompter + mute control                          */
+  /* -------------------------------------------------------------- */
+
+  /**
+   * Push the guest prompter state. PRIVACY: only peers whose invite role is "guest" ever get it;
+   * viewers (listeners) and remotes never do. A text set with `setPrompterText` replaces the
+   * shared text for that one guest. Identical consecutive states are not re-sent.
+   */
+  setPrompter(state: PodcastPrompter | null): void {
+    this.latestPrompter = state;
+    if (this.disposed || !state) return;
+    for (const entry of this.peers.values())
+      if (entry.info.role === "guest" && !entry.closed)
+        this.sendPrompterTo(entry);
+  }
+
+  /** A script for one guest only (null: back to the shared text). */
+  setPrompterText(peerId: string, text: string | null): boolean {
+    const entry = this.guestEntry(peerId);
+    if (!entry) return false;
+    if (text === null) this.prompterTexts.delete(peerId);
+    else this.prompterTexts.set(peerId, text);
+    this.sendPrompterTo(entry);
+    return true;
+  }
+
+  getPrompterText(peerId: string): string | null {
+    return this.prompterTexts.get(peerId) ?? null;
+  }
+
+  private sendPrompterTo(entry: PeerEntry): void {
+    const state = this.latestPrompter;
+    if (!state || entry.info.role !== "guest") return;
+    const text = this.prompterTexts.get(entry.info.id) ?? state.text;
+    const message: PodcastPrompter = { ...state, text };
+    const json = JSON.stringify(message);
+    if (json === entry.lastPrompterJson) return;
+    if (this.send(entry, { type: "prompter", state: message }))
+      entry.lastPrompterJson = json;
+  }
+
+  /**
+   * The moderator mutes / unmutes a guest: the guest is told (its own mute button locks while
+   * muted) and PeerInfo.muted drives the mix. Guests only.
+   */
+  lockGuestMute(peerId: string, muted: boolean): boolean {
+    const entry = this.guestEntry(peerId);
+    if (!entry) return false;
+    this.patch(entry, { muted: Boolean(muted) });
+    this.send(entry, { type: "mute", muted: Boolean(muted) });
+    return true;
+  }
+
+  /* -------------------------------------------------------------- */
   /* Remote control                                                  */
   /* -------------------------------------------------------------- */
 
@@ -498,6 +564,7 @@ export class StudioHost {
       limiter: new FixedWindowLimiter(MAX_MESSAGES_PER_SECOND, 1000),
       invalid: 0,
       lastStateJson: null,
+      lastPrompterJson: null,
       closed: false,
       abort: new AbortController(),
       cleanups: [],
@@ -514,18 +581,22 @@ export class StudioHost {
   private async addMediaTransceivers(
     entry: PeerEntry,
     role: PeerRole,
+    audioOnly = false,
   ): Promise<void> {
     // Guests publish later (replaceTrack), so their transceivers must be sendrecv in the offer.
     // Viewers never publish: sendonly keeps their answer recvonly and wastes no decoder.
     const direction = role === "guest" ? "sendrecv" : "sendonly";
-    const video = entry.pc.addTransceiver("video", { direction });
+    // (m-line order matters to existing peers: video first, then audio)
+    const video = audioOnly
+      ? null
+      : entry.pc.addTransceiver("video", { direction });
     const audio = entry.pc.addTransceiver("audio", { direction });
-    entry.videoSender = video.sender;
+    entry.videoSender = video?.sender ?? null;
     entry.audioSender = audio.sender;
     if (this.options.compactCodecs !== false) {
       const factory = this.getFactory();
       applyCompactCodecs(
-        [audio, video],
+        video ? [audio, video] : [audio],
         (kind) => factory.getCodecCapabilities?.(kind) ?? null,
       );
     }
@@ -647,6 +718,7 @@ export class StudioHost {
     if (entry.info.role === "remote" && this.latestRemoteState) {
       this.sendRemoteState(entry, this.latestRemoteState);
     }
+    if (entry.info.role === "guest") this.sendPrompterTo(entry);
   }
 
   /** Close + mark "disconnected" (idempotent). Failed, closed and channel-closed peers end here. */
@@ -658,6 +730,7 @@ export class StudioHost {
 
   /** Release every resource of an entry. Never throws, never stops host-owned tracks. */
   private closeEntry(entry: PeerEntry): void {
+    this.prompterTexts.delete(entry.info.id);
     if (entry.closed) return;
     entry.closed = true;
     entry.abort.abort();
@@ -769,6 +842,10 @@ export class StudioHost {
       case "join-request":
         this.onJoinRequest(entry, message.name);
         break;
+      case "mic":
+        if (entry.info.role === "guest")
+          this.patch(entry, { micMuted: message.muted });
+        break;
       case "remote-cmd":
         if (entry.info.role === "remote")
           this.emitRemoteCommand(entry.info.id, message.cmd);
@@ -838,7 +915,9 @@ export class StudioHost {
 
   private patch(
     entry: PeerEntry,
-    change: Partial<Pick<PeerInfo, "name" | "status" | "gain" | "muted">>,
+    change: Partial<
+      Pick<PeerInfo, "name" | "status" | "gain" | "muted" | "micMuted">
+    >,
   ): void {
     const next: PeerInfo = { ...entry.info };
     let modified = false;
@@ -856,6 +935,13 @@ export class StudioHost {
     }
     if (change.muted !== undefined && change.muted !== next.muted) {
       next.muted = change.muted;
+      modified = true;
+    }
+    if (
+      change.micMuted !== undefined &&
+      change.micMuted !== (next.micMuted ?? false)
+    ) {
+      next.micMuted = change.micMuted;
       modified = true;
     }
     if (!modified) return;

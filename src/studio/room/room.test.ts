@@ -33,15 +33,19 @@ function fakeBridge() {
   let peers: PeerInfo[] = [];
   const subs = new Set<() => void>();
   const calls = {
-    invites: [] as { role: string; name?: string }[],
+    invites: [] as { role: string; name?: string; audioOnly?: boolean }[],
     answers: [] as { peerId: string; code: string }[],
     kicked: [] as string[],
   };
   let n = 0;
   const bridge: HostBridge = {
-    async createInvite(role, name) {
+    async createInvite(role, name, opts) {
       const peerId = `p${++n}`;
-      calls.invites.push({ role, ...(name ? { name } : {}) });
+      calls.invites.push({
+        role,
+        ...(name ? { name } : {}),
+        ...(opts?.audioOnly ? { audioOnly: true } : {}),
+      });
       peers = [
         ...peers,
         {
@@ -199,6 +203,32 @@ describe("host + guest through the relay", () => {
     expect(texts).toContain("Ayşe bağlandı");
 
     g.dispose();
+    h.session.dispose();
+  });
+
+  it("a podcast guest (audio seat) gets an audio-only invite; a normal guest does not", async () => {
+    const h = makeHost();
+    await h.session.open();
+    const code = h.session.getSnapshot().code as string;
+    const a = makeGuest(code);
+    const b = makeGuest(code);
+    expect(await a.g.join("Konuk", "guest", { audio: true })).toBe(true);
+    await until(() => h.session.getSnapshot().waiting === 1);
+    expect(await b.g.join("Video", "guest")).toBe(true);
+    await until(() => h.session.getSnapshot().waiting === 2);
+    const pool = h.session.getSnapshot().pool;
+    expect(pool.map((e) => [e.name, e.audio ?? false])).toEqual([
+      ["Konuk", true],
+      ["Video", false],
+    ]);
+    await h.session.approve(pool[0]!.guestId);
+    await h.session.approve(pool[1]!.guestId);
+    expect(h.calls.invites).toEqual([
+      { role: "guest", name: "Konuk", audioOnly: true },
+      { role: "guest", name: "Video" },
+    ]);
+    a.g.dispose();
+    b.g.dispose();
     h.session.dispose();
   });
 

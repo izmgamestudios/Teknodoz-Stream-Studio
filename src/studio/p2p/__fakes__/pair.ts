@@ -48,6 +48,8 @@ export interface PairOptions {
   clientName?: string;
   /** apply the answer on the host (default true); false leaves the offer pending */
   connect?: boolean;
+  /** podcast seat: audio-only invite (no video transceiver) */
+  audioOnly?: boolean;
   client?: AcceptOfferOptions;
   host?: StudioHost;
 }
@@ -62,7 +64,11 @@ export async function makePair(
   opts: PairOptions = {},
 ): Promise<Pair> {
   const host = opts.host ?? h.host;
-  const invite = await host.createInvite(role, opts.name);
+  const invite = await host.createInvite(
+    role,
+    opts.name,
+    opts.audioOnly ? { audioOnly: true } : {},
+  );
   const hostPc = h.net.pcs[h.net.pcs.length - 1] as FakePeerConnection;
   const { client, answerCode } = await StudioClient.acceptOffer(invite.code, {
     rtcFactory: fakeRtcFactory(h.net),

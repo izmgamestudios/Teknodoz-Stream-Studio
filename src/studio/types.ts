@@ -390,6 +390,22 @@ export interface PeerInfo {
   /** 0..1.5 gain for guest audio */
   gain: number;
   muted: boolean;
+  /** podcast seat: the invite carries audio only (no camera, no program video) */
+  audioOnly?: boolean;
+  /** the guest muted its own microphone (reported over the ctl channel) */
+  micMuted?: boolean;
+}
+
+/** Teleprompter state pushed to podcast guests (the text never goes to viewers or remotes). */
+export interface PodcastPrompter {
+  text: string;
+  playing: boolean;
+  /** scroll speed in px per second at the reference width */
+  speed: number;
+  /** 0..1 scroll position (resync) */
+  pos: number;
+  /** font size in px */
+  size: number;
 }
 
 /** Messages sent over the WebRTC DataChannel named "ctl". JSON, one object per message. */
@@ -399,6 +415,9 @@ export type HostToPeer =
   | { type: "guest-on-air" }
   | { type: "guest-off-air" }
   | { type: "guest-rejected" }
+  | { type: "prompter"; state: PodcastPrompter }
+  /** the host muted / unmuted this guest (locks the guest's own mute button while true) */
+  | { type: "mute"; muted: boolean }
   | { type: "remote-state"; state: RemoteState }
   /** optional in-band renegotiation (the ctl channel is the only signaling path once connected) */
   | { type: "sdp"; description: { type: "offer" | "answer"; sdp: string } }
@@ -414,6 +433,8 @@ export type HostToPeer =
 export type PeerToHost =
   | { type: "role"; role: PeerRole; name: string }
   | { type: "join-request"; name: string }
+  /** podcast guest: own microphone mute state */
+  | { type: "mic"; muted: boolean }
   | { type: "remote-cmd"; cmd: RemoteCommand }
   | { type: "sdp"; description: { type: "offer" | "answer"; sdp: string } }
   | {

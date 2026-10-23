@@ -52,6 +52,7 @@ interface Saved {
   token: string;
   name: string;
   role: RoomRole;
+  audio?: boolean;
 }
 
 function defaultStorage(): GuestSessionOptions["storage"] {
@@ -175,13 +176,21 @@ export class RoomGuestSession {
     }
   }
 
-  async join(name: string, role: RoomRole): Promise<boolean> {
+  async join(
+    name: string,
+    role: RoomRole,
+    opts: { audio?: boolean } = {},
+  ): Promise<boolean> {
     if (this.phase === "joining" || this.disposed) return false;
     this.name = name.trim();
     this.role = role;
     this.set({ phase: "joining", error: null });
     try {
-      const r = await this.api.join(this.code, { name: this.name, role });
+      const r = await this.api.join(this.code, {
+        name: this.name,
+        role,
+        ...(opts.audio ? { audio: true } : {}),
+      });
       this.guestId = r.guestId;
       this.token = r.guestToken;
       this.name = r.name;
@@ -193,6 +202,7 @@ export class RoomGuestSession {
             token: r.guestToken,
             name: r.name,
             role,
+            ...(opts.audio ? { audio: true } : {}),
           }),
         );
       } catch {

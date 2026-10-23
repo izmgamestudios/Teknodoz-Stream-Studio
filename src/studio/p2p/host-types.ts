@@ -83,6 +83,8 @@ export interface PeerEntry {
   limiter: FixedWindowLimiter;
   invalid: number;
   lastStateJson: string | null;
+  /** last prompter message sent (podcast guests), to skip identical repeats */
+  lastPrompterJson: string | null;
   closed: boolean;
   /** Aborted on close so an in-flight ICE wait ends immediately. */
   abort: AbortController;

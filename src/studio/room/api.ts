@@ -45,6 +45,8 @@ export interface HostEvent {
   guestId: string;
   name?: string;
   role?: RoomRole;
+  /** podcast seat (audio only) */
+  audio?: boolean;
   at?: number;
   answer?: string;
   reason?: "left" | "stale";
@@ -149,12 +151,16 @@ export function createRoomApi(opts: RoomApiOptions = {}) {
       ),
     closeRoom: (code: string, host: string) =>
       request<{ ok: true }>(`/${code}`, { method: "DELETE", host }),
-    join: (code: string, body: { name: string; role: RoomRole }) =>
+    join: (
+      code: string,
+      body: { name: string; role: RoomRole; audio?: boolean },
+    ) =>
       request<{
         guestId: string;
         guestToken: string;
         name: string;
         role: RoomRole;
+        audio?: boolean;
       }>(`/${code}/join`, { method: "POST", json: body }),
     hostEvents: (
       code: string,

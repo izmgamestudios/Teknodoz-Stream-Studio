@@ -19,6 +19,7 @@ export interface HostBridge {
   createInvite(
     role: PeerRole,
     name?: string,
+    opts?: { audioOnly?: boolean },
   ): Promise<{ peerId: string; code: string }>;
   acceptAnswer(peerId: string, code: string): Promise<void>;
   kickPeer(peerId: string): boolean;
@@ -42,6 +43,8 @@ export interface PoolEntry {
   guestId: string;
   name: string;
   role: PoolRole;
+  /** podcast seat: the invite is audio only */
+  audio?: boolean;
   requestedAt: number;
   state: PoolState;
   peerId?: string;
@@ -554,6 +557,7 @@ export class RoomHostSession {
         guestId: ev.guestId,
         name: ev.name ?? "Konuk",
         role,
+        ...(ev.audio ? { audio: true } : {}),
         requestedAt: ev.at ?? this.now(),
         state: "waiting",
       };
@@ -648,7 +652,11 @@ export class RoomHostSession {
     e.state = "approving";
     this.emit();
     try {
-      const inv = await this.bridge.createInvite(e.role, e.name);
+      const inv = await this.bridge.createInvite(
+        e.role,
+        e.name,
+        e.audio ? { audioOnly: true } : {},
+      );
       e.peerId = inv.peerId;
       await this.api.hostOffer(this.code, this.token, guestId, inv.code);
       e.state = "connecting";

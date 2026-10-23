@@ -136,6 +136,48 @@ describe("room lifecycle", () => {
   });
 });
 
+describe("podcast seats (audio flag)", () => {
+  async function joinAudio(
+    code: string,
+    role: string,
+    audio: unknown,
+    ip: string,
+  ) {
+    return call(`/api/room/${code}/join`, {
+      method: "POST",
+      body: { name: "Ayşe", role, audio },
+      ip,
+    });
+  }
+
+  it("carries audio=true for guest / viewer through the join event, and ignores it elsewhere", async () => {
+    const { code, host } = await makeRoom();
+    const g = await joinAudio(code, "guest", true, "3.3.3.1");
+    const v = await joinAudio(code, "viewer", true, "3.3.3.2");
+    const r = await joinAudio(code, "remote", true, "3.3.3.3");
+    const plain = await joinAudio(code, "guest", false, "3.3.3.4");
+    expect(g.data).toMatchObject({ audio: true });
+    expect(v.data).toMatchObject({ audio: true });
+    expect(r.data["audio"]).toBeUndefined();
+    expect(plain.data["audio"]).toBeUndefined();
+    const ev = await call(`/api/room/${code}/host/events?since=0&wait=0`, {
+      host,
+    });
+    const events = ev.data["events"] as { role: string; audio?: boolean }[];
+    expect(events.map((e) => [e.role, e.audio ?? false])).toEqual([
+      ["guest", true],
+      ["viewer", true],
+      ["remote", false],
+      ["guest", false],
+    ]);
+  });
+
+  it("rejects a non-boolean audio flag", async () => {
+    const { code } = await makeRoom();
+    expect((await joinAudio(code, "guest", "yes", "3.3.3.9")).status).toBe(400);
+  });
+});
+
 describe("join → approve → connect flow", () => {
   it("delivers the whole handshake without any client polling delay", async () => {
     const { code, host } = await makeRoom();

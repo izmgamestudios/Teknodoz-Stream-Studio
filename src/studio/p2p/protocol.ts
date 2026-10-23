@@ -54,6 +54,19 @@ const candidateSchema = z
   })
   .strict();
 
+/** Podcast guest prompter: one message must fit MAX_MESSAGE_BYTES even with 3-byte characters. */
+export const MAX_PROMPTER_CHARS = 20_000;
+
+export const prompterStateSchema = z
+  .object({
+    text: z.string().max(MAX_PROMPTER_CHARS),
+    playing: z.boolean(),
+    speed: z.number().finite().min(0).max(2000),
+    pos: z.number().finite().min(0).max(1),
+    size: z.number().finite().min(12).max(160),
+  })
+  .strict();
+
 export const remoteStateSchema = z
   .object({
     scenes: z
@@ -111,6 +124,10 @@ export const hostMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("guest-off-air") }).strict(),
   z.object({ type: z.literal("guest-rejected") }).strict(),
   z
+    .object({ type: z.literal("prompter"), state: prompterStateSchema })
+    .strict(),
+  z.object({ type: z.literal("mute"), muted: z.boolean() }).strict(),
+  z
     .object({ type: z.literal("remote-state"), state: remoteStateSchema })
     .strict(),
   z.object({ type: z.literal("sdp"), description: descriptionSchema }).strict(),
@@ -122,6 +139,7 @@ export const peerMessageSchema = z.discriminatedUnion("type", [
     .object({ type: z.literal("role"), role: peerRoleSchema, name: nameSchema })
     .strict(),
   z.object({ type: z.literal("join-request"), name: nameSchema }).strict(),
+  z.object({ type: z.literal("mic"), muted: z.boolean() }).strict(),
   z
     .object({ type: z.literal("remote-cmd"), cmd: remoteCommandSchema })
     .strict(),

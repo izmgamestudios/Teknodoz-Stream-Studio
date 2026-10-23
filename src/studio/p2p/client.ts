@@ -18,7 +18,12 @@
 // granted camera/mic access browsers expose real LAN IPs instead of mDNS (*.local) names, which
 // makes same-network connections much more reliable. There is no TURN server by design, so
 // symmetric NAT / strict firewalls may still fail.
-import type { PeerRole, RemoteCommand, RemoteState } from "../types";
+import type {
+  PeerRole,
+  PodcastPrompter,
+  RemoteCommand,
+  RemoteState,
+} from "../types";
 import { P2PError } from "./errors";
 import {
   encodeMessage,
@@ -106,6 +111,10 @@ export class StudioClient {
   private currentPeerId: string | null = null;
   private currentName: string;
   private latestState: RemoteState | null = null;
+  private latestPrompter: PodcastPrompter | null = null;
+  private hostMuted = false;
+  private readonly prompterListeners = new Set<(p: PodcastPrompter) => void>();
+  private readonly muteListeners = new Set<(muted: boolean) => void>();
   private joined = false;
   private joinPending = false;
   private graceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -303,6 +312,36 @@ export class StudioClient {
     if (this.isStatusActive()) this.setStatus("connected");
   }
 
+  /** Podcast guest: prompter pushes from the moderator (immediately with the latest, if any). */
+  onPrompter(listener: (state: PodcastPrompter) => void): () => void {
+    this.prompterListeners.add(listener);
+    if (this.latestPrompter)
+      this.guard(() => listener(this.latestPrompter as PodcastPrompter));
+    return () => {
+      this.prompterListeners.delete(listener);
+    };
+  }
+
+  /** The moderator muted / unmuted us (true locks our own mute button). Immediate when muted. */
+  onHostMute(listener: (muted: boolean) => void): () => void {
+    this.muteListeners.add(listener);
+    if (this.hostMuted) this.guard(() => listener(true));
+    return () => {
+      this.muteListeners.delete(listener);
+    };
+  }
+
+  get isHostMuted(): boolean {
+    return this.hostMuted;
+  }
+
+  /** Tell the moderator whether our microphone is muted. False when the channel is not open. */
+  sendMic(muted: boolean): boolean {
+    this.assertAlive();
+    if (this.role !== "guest") throw new P2PError("wrong-role");
+    return this.sendMessage({ type: "mic", muted: Boolean(muted) });
+  }
+
   /* -------------------------------------------------------------- */
   /* Remote                                                          */
   /* -------------------------------------------------------------- */
@@ -470,6 +509,19 @@ export class StudioClient {
         for (const listener of [...this.stateListeners]) {
           this.guard(() => listener(message.state));
         }
+        break;
+      case "prompter":
+        // only guests are ever sent a prompter; a viewer ignores a (bogus) one
+        if (this.role !== "guest") break;
+        this.latestPrompter = message.state;
+        for (const listener of [...this.prompterListeners])
+          this.guard(() => listener(message.state));
+        break;
+      case "mute":
+        if (this.role !== "guest") break;
+        this.hostMuted = message.muted;
+        for (const listener of [...this.muteListeners])
+          this.guard(() => listener(message.muted));
         break;
       case "guest-approved":
         if (this.joined) this.setStatus("waiting");

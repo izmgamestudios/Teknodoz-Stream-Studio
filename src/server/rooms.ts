@@ -68,6 +68,8 @@ export type HostEvent =
       name: string;
       role: RoomRole;
       at: number;
+      /** podcast seat: audio only (no camera, no program video) */
+      audio?: boolean;
     }
   | { n: number; type: "answer"; guestId: string; answer: string }
   | { n: number; type: "leave"; guestId: string; reason: "left" | "stale" };
@@ -89,6 +91,7 @@ interface Guest {
   token: string;
   name: string;
   role: RoomRole;
+  audio: boolean;
   status: "waiting" | "offered" | "rejected" | "answered";
   lastSeen: number;
   doneAt: number | null;
@@ -193,6 +196,8 @@ const codeField = z
 const joinBody = z.object({
   name: z.string().max(1000).optional(),
   role: z.enum(["guest", "viewer", "remote", "chat"]),
+  /** podcast seat: audio only. Only meaningful for guest / viewer. */
+  audio: z.boolean().optional(),
 });
 const offerBody = z.object({ guestId: z.string().max(40), offer: codeField });
 const rejectBody = z.object({ guestId: z.string().max(40) });
@@ -519,6 +524,9 @@ export function createRoomsApi(options: RoomsOptions = {}) {
       token: newToken(24),
       name: cleanName(body.name ?? "", DEFAULT_NAME[body.role]),
       role: body.role,
+      audio:
+        body.audio === true &&
+        (body.role === "guest" || body.role === "viewer"),
       // chat-only: no approval, no WebRTC handshake, moderation happens per message
       status: chatOnly ? "answered" : "waiting",
       lastSeen: t,
@@ -535,6 +543,7 @@ export function createRoomsApi(options: RoomsOptions = {}) {
         name: guest.name,
         role: guest.role,
         at: now(),
+        ...(guest.audio ? { audio: true } : {}),
       });
     return json(
       {
@@ -542,6 +551,7 @@ export function createRoomsApi(options: RoomsOptions = {}) {
         guestToken: guest.token,
         name: guest.name,
         role: guest.role,
+        ...(guest.audio ? { audio: true } : {}),
       },
       201,
     );

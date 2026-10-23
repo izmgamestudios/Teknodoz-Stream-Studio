@@ -702,11 +702,15 @@ export class StudioRuntime {
   }
 
   /** Create an invite (link + code). Call from a click: it unlocks the audio context. */
-  async createInvite(role: PeerRole, name?: string): Promise<InviteResult> {
+  async createInvite(
+    role: PeerRole,
+    name?: string,
+    opts: { audioOnly?: boolean } = {},
+  ): Promise<InviteResult> {
     const host = this.ensureHost();
     await this.audio.ensureRunning();
     if (!this.programStream) this.updateProgramStream();
-    return host.createInvite(role, name);
+    return host.createInvite(role, name, opts);
   }
 
   async acceptAnswer(peerId: string, code: string): Promise<void> {
@@ -842,7 +846,8 @@ export class StudioRuntime {
     if (!this.roomSession) {
       const session = new RoomHostSession({
         bridge: {
-          createInvite: (role, name) => this.createInvite(role, name),
+          createInvite: (role, name, opts) =>
+            this.createInvite(role, name, opts),
           acceptAnswer: (peerId, code) => this.acceptAnswer(peerId, code),
           kickPeer: (peerId) => this.kickPeer(peerId),
           getPeers: () => this.peers,
